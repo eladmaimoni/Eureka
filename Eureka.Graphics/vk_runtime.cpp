@@ -58,7 +58,7 @@ namespace eureka
         }
     }
 
-    void LogDeviceProperties(const vk::PhysicalDevice& device) 
+    void LogDeviceProperties(const vk::PhysicalDevice& device)
     {
         /*
         * void vkGetPhysicalDeviceProperties(
@@ -80,10 +80,10 @@ namespace eureka
             VkPhysicalDeviceLimits              limits;
             VkPhysicalDeviceSparseProperties    sparseProperties;
             } VkPhysicalDeviceProperties;
-        */        
+        */
         std::string device_type;
 
-        switch (properties.deviceType)       
+        switch (properties.deviceType)
         {
         case (vk::PhysicalDeviceType::eCpu): device_type = "CPU"; break;
         case (vk::PhysicalDeviceType::eDiscreteGpu): device_type = "Discrete GPU"; break;
@@ -95,7 +95,7 @@ namespace eureka
         DEBUGGER_TRACE("Device name: {} type: {}", properties.deviceName, device_type);
     }
 
-    bool IsDeviceSuitableForDisplay(const vk::PhysicalDevice& device) 
+    bool IsDeviceSuitableForDisplay(const vk::PhysicalDevice& device)
     {
         /*
         * A device is suitable if it can present to the screen, ie support
@@ -130,27 +130,45 @@ namespace eureka
     }
 
 
-
-    uint32_t FindSutableQueueFamiliyIndex(const vk::PhysicalDevice& device)
+    struct QueueFamilies
     {
+        std::optional<uint32_t> direct_graphics;
+        std::optional<uint32_t> copy;
+        std::optional<uint32_t> compute;
+    };
+
+    QueueFamilies QueryAvailableQueueFamilies(const vk::PhysicalDevice& device)
+    {
+        QueueFamilies families;
 
         std::vector<vk::QueueFamilyProperties> queueFamilies = device.getQueueFamilyProperties();
     
-        auto desiredFlags = vk::QueueFlagBits::eGraphics | vk::QueueFlagBits::eCompute | vk::QueueFlagBits::eTransfer;
-
+        auto directQueueDesiredFlags = vk::QueueFlagBits::eGraphics | vk::QueueFlagBits::eCompute | vk::QueueFlagBits::eTransfer;
+        auto copyQueueDesiredFlags = vk::QueueFlagBits::eTransfer;
         uint32_t i = 0u;
         for (const auto& queueFamilyProperties : queueFamilies)
         {
-            // TODO: how to create 3 separte queues? compute graphics and compute?
-            if (queueFamilyProperties.queueFlags & desiredFlags && queueFamilyProperties.queueCount >= 3)
+            auto copy     = queueFamilyProperties.queueFlags & vk::QueueFlagBits::eTransfer;
+            auto compute  = queueFamilyProperties.queueFlags & vk::QueueFlagBits::eCompute;
+            auto graphics = queueFamilyProperties.queueFlags & vk::QueueFlagBits::eGraphics;
+
+
+            if (!families.direct_graphics && copy && compute && graphics)
             {
-                return i;
+                families.direct_graphics = i;
+            }
+            else if (!families.copy && copy && (!compute) && (!graphics))
+            {
+                families.copy = i;
+            }
+            else if (!families.compute && compute && (!graphics))
+            {
+                families.compute = i;
             }
             ++i;
         }
 
-        DEBUGGER_TRACE("no suitable vulkan device found");
-        throw vk::SystemError(vk::Result::eErrorUnknown);
+        return families;
     }
 
     VkRuntime::VkRuntime(const VkRuntimeDesc& desc)
@@ -159,7 +177,7 @@ namespace eureka
 
         InitDebugMessenger();
 
-        InitDevice(desc);
+        InitDeviceAndQueues(desc);
 
       
 
@@ -223,7 +241,7 @@ namespace eureka
     }
 
 
-    void VkRuntime::InitDevice(const VkRuntimeDesc& desc)
+    void VkRuntime::InitDeviceAndQueues(const VkRuntimeDesc& desc)
     {
         /*
         * Vulkan separates the concept of physical and logical devices.
@@ -260,39 +278,86 @@ namespace eureka
             throw vk::SystemError(vk::Result::eErrorUnknown);
         }
 
-        auto queueFamilyIndex = FindSutableQueueFamiliyIndex(chosenPhysicalDevice);
+        auto queueFamilies = QueryAvailableQueueFamilies(chosenPhysicalDevice);
+
+
+
+
 
 
 
         std::array<float, 3> queuePriorities{ 1.0f, 1.0f, 1.0f };
-        vk::DeviceQueueCreateInfo queueCreateInfo = vk::DeviceQueueCreateInfo(
-            vk::DeviceQueueCreateFlags(),
-            queueFamilyIndex,
-            3,
-            queuePriorities.data()
-        );
+        if (queueFamilies.direct_graphics && queueFamilies.compute && queueFamilies.copy)
+        {
+            // create 3 queues from different families
+            std::array<vk::DeviceQueueCreateInfo, 3> queueCreateInfos;
+            queueCreateInfos[0] = vk::DeviceQueueCreateInfo(
+                vk::DeviceQueueCreateFlags(),
+                *queueFamilies.direct_graphics,
+                1,
+                &queuePriorities[0]
+            );
 
-        vk::PhysicalDeviceFeatures deviceFeatures = vk::PhysicalDeviceFeatures();
+            queueCreateInfos[1] = vk::DeviceQueueCreateInfo(
+                vk::DeviceQueueCreateFlags(),
+                *queueFamilies.compute,
+                1,
+                &queuePriorities[1]
+            );
+            queueCreateInfos[2] = vk::DeviceQueueCreateInfo(
+                vk::DeviceQueueCreateFlags(),
+                *queueFamilies.copy,
+                1,
+                &queuePriorities[2]
+            );
 
-        vk::DeviceCreateInfo deviceInfo = vk::DeviceCreateInfo(
-            vk::DeviceCreateFlags(),
-            1, &queueCreateInfo,
-            static_cast<uint32_t>(desc.required_layers.size()),
-            desc.required_layers.data(),
-            0, nullptr,
-            &deviceFeatures
-        );
+            vk::PhysicalDeviceFeatures deviceFeatures = vk::PhysicalDeviceFeatures();
 
-        _device = chosenPhysicalDevice.createDevice(deviceInfo);
-
-
-        _graphicsQueue = _device.getQueue(queueFamilyIndex, 0);
-        _computeQueue = _device.getQueue(queueFamilyIndex, 1);
-        _copyQueue = _device.getQueue(queueFamilyIndex, 2);
+            vk::DeviceCreateInfo deviceInfo = vk::DeviceCreateInfo(
+                vk::DeviceCreateFlags(),
+                3, queueCreateInfos.data(),
+                static_cast<uint32_t>(desc.required_layers.size()),
+                desc.required_layers.data(),
+                0, nullptr,
+                &deviceFeatures
+            );
 
 
-        
-        DEBUGGER_TRACE("got queue");
+            _device = chosenPhysicalDevice.createDevice(deviceInfo);
+
+            _graphicsQueue = _device.getQueue(*queueFamilies.direct_graphics, 0);
+            _computeQueue = _device.getQueue(*queueFamilies.compute, 0);
+            _copyQueue = _device.getQueue(*queueFamilies.copy, 0);
+        }
+        else
+        {
+            // create 3 queues from the same family
+
+            auto queueCreateInfo = vk::DeviceQueueCreateInfo(
+                vk::DeviceQueueCreateFlags(),
+                *queueFamilies.direct_graphics,
+                3,
+                queuePriorities.data()
+            );
+
+            vk::PhysicalDeviceFeatures deviceFeatures = vk::PhysicalDeviceFeatures();
+
+            vk::DeviceCreateInfo deviceInfo = vk::DeviceCreateInfo(
+                vk::DeviceCreateFlags(),
+                1, &queueCreateInfo,
+                static_cast<uint32_t>(desc.required_layers.size()),
+                desc.required_layers.data(),
+                0, nullptr,
+                &deviceFeatures
+            );
+
+            _device = chosenPhysicalDevice.createDevice(deviceInfo);
+
+            _graphicsQueue = _device.getQueue(*queueFamilies.direct_graphics, 0);
+            _computeQueue = _device.getQueue(*queueFamilies.compute, 1);
+            _copyQueue = _device.getQueue(*queueFamilies.copy, 2);
+
+            DEBUGGER_TRACE("warning: created 3 queues from the same family");
+        }
     }
-
 }

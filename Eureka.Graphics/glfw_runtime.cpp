@@ -1,5 +1,6 @@
 #include "glfw_runtime.hpp"
 #include <cassert>
+#include <stdexcept>
 
 namespace eureka
 {
@@ -7,6 +8,17 @@ namespace eureka
     GLFWRuntime::GLFWRuntime()
     {
         assert(glfwInit() == GLFW_TRUE);
+
+        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);   // no default rendering client, we'll hook vulkan later
+        glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);     // resizing breaks the swapchain, we'll disable it for now
+
+         
+        _window = glfwCreateWindow(1200, 800, "Eureka Engine", nullptr, nullptr);
+
+        if (!_window)
+        {
+            throw std::runtime_error("failed creating window");
+        }
     }
 
     GLFWRuntime::~GLFWRuntime()

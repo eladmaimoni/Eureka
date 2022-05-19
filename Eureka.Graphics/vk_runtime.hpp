@@ -36,11 +36,9 @@ namespace eureka
     public:
         VkRuntime(const VkRuntimeDesc& desc);
         ~VkRuntime();
-        
-
     private:
         void InitInstance(const VkRuntimeDesc& desc);
         void InitDebugMessenger();
-        void InitDevice(const VkRuntimeDesc& desc);
+        void InitDeviceAndQueues(const VkRuntimeDesc& desc);
     };
 }

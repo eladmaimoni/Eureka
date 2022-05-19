@@ -8,6 +8,8 @@ namespace eureka
 {
     class GLFWRuntime
     {
+    private:
+        GLFWwindow* _window;
     public:
         GLFWRuntime();
 
