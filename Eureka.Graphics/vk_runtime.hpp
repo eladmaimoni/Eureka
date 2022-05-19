@@ -11,9 +11,13 @@ https://vulkan-tutorial.com/Drawing_a_triangle/Setup/Instance
 */
 namespace eureka
 {
+    inline constexpr char VALIDATION_LAYER_NAME[] = "VK_LAYER_KHRONOS_validation";
+
     struct VkRuntimeDesc
     {
         std::vector<const char*> required_instance_extentions;
+        std::vector<const char*> required_layers;
+
     };
 
     class VkRuntime
@@ -25,38 +29,9 @@ namespace eureka
             InitInstance(desc);
         }
 
-        void InitInstance(const VkRuntimeDesc& desc)
-        {
+        void InitInstance(const VkRuntimeDesc& desc);
 
-            uint32_t version;
-            VK_CHECK(vk::enumerateInstanceVersion(&version));
-
-  
-            DEBUGGER_TRACE("vulkan api version {}.{}.{}", 
-                VK_API_VERSION_MAJOR(version),
-                VK_API_VERSION_MINOR(version),
-                VK_API_VERSION_PATCH(version)            
-            );
-
-            auto appInfo = vk::ApplicationInfo(
-                "Eureka",
-                version,
-                "Eureka Engine",
-                version,
-                version
-            );
-            
-            auto createInfo = vk::InstanceCreateInfo(
-                vk::InstanceCreateFlags(),
-                &appInfo,
-                0, nullptr, // enabled layers
-                static_cast<uint32_t>(desc.required_instance_extentions.size()),
-                desc.required_instance_extentions.data()
-            );
-
-            _instance = vk::createInstance(createInfo);
-
-        }
+    private:
 
     };
 }

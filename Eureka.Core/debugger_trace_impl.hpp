@@ -1,18 +1,13 @@
 #pragma once
 #include <string_view>
+
+#ifdef __cpp_lib_format
 #include <format>
 namespace format_ns = std;
-//#ifdef __cpp_lib_format
-//#include <format>
-//namespace format_ns = std;
-//#else
-//#include <fmt/format.h>
-//namespace format_ns = fmt;
-//#endif
-
-
-
-
+#else
+#include <fmt/format.h>
+namespace format_ns = fmt;
+#endif
 
 namespace eureka
 {
