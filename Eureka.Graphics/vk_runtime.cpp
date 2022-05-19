@@ -1,12 +1,14 @@
 #include "vk_runtime.hpp"
-
+#include <string_view>
+#include <debugger_trace.hpp>
+#include "vk_error_handling.hpp"
 /*
 https://vulkan-tutorial.com/Drawing_a_triangle/Setup/Base_code
 
 */
 namespace eureka
 {
-
+    
 
     void ValidateRequiredExtentionsExists(const VkRuntimeDesc& desc)
     {
@@ -56,6 +58,21 @@ namespace eureka
         }
     }
 
+
+
+
+    VkRuntime::VkRuntime(const VkRuntimeDesc& desc)
+    {
+        InitInstance(desc);
+
+        InitDebugMessenger();
+
+     
+
+      
+
+    }
+
     void VkRuntime::InitInstance(const VkRuntimeDesc& desc)
     {
         uint32_t version;
@@ -78,6 +95,7 @@ namespace eureka
         ValidateRequiredExtentionsExists(desc);
         ValidateRequiredLayersExists(desc);
         
+        //vk::DebugUtilsMessangerEXT;
 
         auto createInfo = vk::InstanceCreateInfo(
             vk::InstanceCreateFlags(),
@@ -91,5 +109,20 @@ namespace eureka
     }
 
 
+
+    void VkRuntime::InitDebugMessenger()
+    {
+        _loader = vk::DispatchLoaderDynamic(_instance, vkGetInstanceProcAddr);
+
+
+        vk::DebugUtilsMessengerCreateInfoEXT createInfo = vk::DebugUtilsMessengerCreateInfoEXT(
+            vk::DebugUtilsMessengerCreateFlagsEXT(),
+            vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose | vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning | vk::DebugUtilsMessageSeverityFlagBitsEXT::eError,
+            vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance,
+            VkDebugMessengerCallback,
+            nullptr
+        );
+        _messanger = _instance.createDebugUtilsMessengerEXT(createInfo, nullptr, _loader);
+    }
 
 }
