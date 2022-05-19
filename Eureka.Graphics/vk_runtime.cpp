@@ -2,14 +2,14 @@
 #include <string_view>
 #include <debugger_trace.hpp>
 #include "vk_error_handling.hpp"
+#include <optional>
+
 /*
 https://vulkan-tutorial.com/Drawing_a_triangle/Setup/Base_code
 
 */
 namespace eureka
 {
-    
-
     void ValidateRequiredExtentionsExists(const VkRuntimeDesc& desc)
     {
         auto supported_extentions = vk::enumerateInstanceExtensionProperties();
@@ -17,7 +17,7 @@ namespace eureka
         for (auto required_extention : desc.required_instance_extentions)
         {
             bool found = false;
-            for (auto supported_extention : supported_extentions)
+            for (const auto& supported_extention : supported_extentions)
             {
                 std::string_view supported_extention_name(supported_extention.extensionName.data());
                 if (supported_extention_name == required_extention)
@@ -38,10 +38,10 @@ namespace eureka
     {
         auto supported_layers = vk::enumerateInstanceLayerProperties();
 
-        for (auto required_layer : desc.required_layers)
+        for (const auto& required_layer : desc.required_layers)
         {
             bool found = false;
-            for (auto supported_layer : supported_layers)
+            for (const auto& supported_layer : supported_layers)
             {
                 std::string_view supported_layer_name(supported_layer.layerName.data());
                 if (supported_layer_name == required_layer)
@@ -58,8 +58,100 @@ namespace eureka
         }
     }
 
+    void LogDeviceProperties(const vk::PhysicalDevice& device) 
+    {
+        /*
+        * void vkGetPhysicalDeviceProperties(
+            VkPhysicalDevice                            physicalDevice,
+            VkPhysicalDeviceProperties*                 pProperties);
+        */
+
+        vk::PhysicalDeviceProperties properties = device.getProperties();
+
+        /*
+        * typedef struct VkPhysicalDeviceProperties {
+            uint32_t                            apiVersion;
+            uint32_t                            driverVersion;
+            uint32_t                            vendorID;
+            uint32_t                            deviceID;
+            VkPhysicalDeviceType                deviceType;
+            char                                deviceName[VK_MAX_PHYSICAL_DEVICE_NAME_SIZE];
+            uint8_t                             pipelineCacheUUID[VK_UUID_SIZE];
+            VkPhysicalDeviceLimits              limits;
+            VkPhysicalDeviceSparseProperties    sparseProperties;
+            } VkPhysicalDeviceProperties;
+        */        
+        std::string device_type;
+
+        switch (properties.deviceType)       
+        {
+        case (vk::PhysicalDeviceType::eCpu): device_type = "CPU"; break;
+        case (vk::PhysicalDeviceType::eDiscreteGpu): device_type = "Discrete GPU"; break;
+        case (vk::PhysicalDeviceType::eIntegratedGpu): device_type = "Integrated GPU"; break;
+        case (vk::PhysicalDeviceType::eVirtualGpu):  device_type = "Virtual GPU"; break;
+        default: device_type = "Other"; break;
+        }
+
+        DEBUGGER_TRACE("Device name: {} type: {}", properties.deviceName, device_type);
+    }
+
+    bool IsDeviceSuitableForDisplay(const vk::PhysicalDevice& device) 
+    {
+        /*
+        * A device is suitable if it can present to the screen, ie support
+        * the swapchain extension
+        */
+        const std::vector<std::string_view> requestedExtensions = {
+            VK_KHR_SWAPCHAIN_EXTENSION_NAME
+        };
+
+        auto availableExtentions = device.enumerateDeviceExtensionProperties();
+
+        for (const auto& requestedExtension : requestedExtensions)
+        {
+            bool found = false;
+            for (auto availableExtention : availableExtentions)
+            {
+                std::string_view availableExtentionName(availableExtention.extensionName);
+                if (requestedExtension == availableExtentionName)
+                {
+                    found = true;
+                    break;
+                }
+            }
+
+            if (!found)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
 
 
+
+    uint32_t FindSutableQueueFamiliyIndex(const vk::PhysicalDevice& device)
+    {
+
+        std::vector<vk::QueueFamilyProperties> queueFamilies = device.getQueueFamilyProperties();
+    
+        auto desiredFlags = vk::QueueFlagBits::eGraphics | vk::QueueFlagBits::eCompute | vk::QueueFlagBits::eTransfer;
+
+        uint32_t i = 0u;
+        for (const auto& queueFamilyProperties : queueFamilies)
+        {
+            // TODO: how to create 3 separte queues? compute graphics and compute?
+            if (queueFamilyProperties.queueFlags & desiredFlags && queueFamilyProperties.queueCount >= 3)
+            {
+                return i;
+            }
+            ++i;
+        }
+
+        DEBUGGER_TRACE("no suitable vulkan device found");
+        throw vk::SystemError(vk::Result::eErrorUnknown);
+    }
 
     VkRuntime::VkRuntime(const VkRuntimeDesc& desc)
     {
@@ -67,10 +159,15 @@ namespace eureka
 
         InitDebugMessenger();
 
-     
+        InitDevice(desc);
 
       
 
+    }
+
+    VkRuntime::~VkRuntime()
+    {
+        
     }
 
     void VkRuntime::InitInstance(const VkRuntimeDesc& desc)
@@ -123,6 +220,79 @@ namespace eureka
             nullptr
         );
         _messanger = _instance.createDebugUtilsMessengerEXT(createInfo, nullptr, _loader);
+    }
+
+
+    void VkRuntime::InitDevice(const VkRuntimeDesc& desc)
+    {
+        /*
+        * Vulkan separates the concept of physical and logical devices.
+        *
+          A physical device usually represents a single complete implementation of Vulkan
+          (excluding instance-level functionality) available to the host,
+          of which there are a finite number.
+
+          A logical device represents an instance of that implementation
+          with its own state and resources independent of other logical devices.
+
+         */
+
+        std::vector<vk::PhysicalDevice> availableDevices = _instance.enumeratePhysicalDevices();
+
+        vk::PhysicalDevice chosenPhysicalDevice;
+        bool found = false;
+        for (vk::PhysicalDevice device : availableDevices)
+        {
+            LogDeviceProperties(device);
+
+            if (IsDeviceSuitableForDisplay(device))
+            {
+                chosenPhysicalDevice = device;
+                found = true;
+                break;
+
+            }
+        }
+
+        if (!found)
+        {
+            DEBUGGER_TRACE("no suitable vulkan device found");
+            throw vk::SystemError(vk::Result::eErrorUnknown);
+        }
+
+        auto queueFamilyIndex = FindSutableQueueFamiliyIndex(chosenPhysicalDevice);
+
+
+
+        std::array<float, 3> queuePriorities{ 1.0f, 1.0f, 1.0f };
+        vk::DeviceQueueCreateInfo queueCreateInfo = vk::DeviceQueueCreateInfo(
+            vk::DeviceQueueCreateFlags(),
+            queueFamilyIndex,
+            3,
+            queuePriorities.data()
+        );
+
+        vk::PhysicalDeviceFeatures deviceFeatures = vk::PhysicalDeviceFeatures();
+
+        vk::DeviceCreateInfo deviceInfo = vk::DeviceCreateInfo(
+            vk::DeviceCreateFlags(),
+            1, &queueCreateInfo,
+            static_cast<uint32_t>(desc.required_layers.size()),
+            desc.required_layers.data(),
+            0, nullptr,
+            &deviceFeatures
+        );
+
+        _device = chosenPhysicalDevice.createDevice(deviceInfo);
+
+
+        _graphicsQueue = _device.getQueue(queueFamilyIndex, 0);
+        _computeQueue = _device.getQueue(queueFamilyIndex, 1);
+        _copyQueue = _device.getQueue(queueFamilyIndex, 2);
+
+
+        
+        DEBUGGER_TRACE("got queue");
     }
 
 }

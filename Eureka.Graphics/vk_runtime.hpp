@@ -26,13 +26,21 @@ namespace eureka
         vk::Instance _instance;
         vk::DispatchLoaderDynamic _loader;
         vk::DebugUtilsMessengerEXT _messanger;
+
+        vk::Device _device;
+        vk::Queue _graphicsQueue;
+        vk::Queue _computeQueue;
+        vk::Queue _copyQueue;
+
+
     public:
         VkRuntime(const VkRuntimeDesc& desc);
-
-    
+        ~VkRuntime();
+        
 
     private:
         void InitInstance(const VkRuntimeDesc& desc);
         void InitDebugMessenger();
+        void InitDevice(const VkRuntimeDesc& desc);
     };
 }

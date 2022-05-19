@@ -56,13 +56,17 @@ namespace eureka
 
     VKAPI_ATTR VkBool32 VKAPI_CALL VkDebugMessengerCallback(
         VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-        VkDebugUtilsMessageTypeFlagsEXT messageType,
+        VkDebugUtilsMessageTypeFlagsEXT /*messageType*/,
         const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
         void* /*userData*/
     )
     {
 
-        DEBUGGER_TRACE("validation layer: {}", pCallbackData->pMessage);
+        if (messageSeverity & (VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT))
+        {
+            DEBUGGER_TRACE("validation layer: {}", pCallbackData->pMessage);
+        }
+       
 
         return VK_FALSE;
     }
