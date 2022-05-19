@@ -23,9 +23,12 @@ namespace eureka
 
     class VkRuntime
     {
+    public:
         vk::Instance _instance;
         vk::DispatchLoaderDynamic _loader;
         vk::DebugUtilsMessengerEXT _messanger;
+
+        
 
         vk::Device _device;
         vk::Queue _graphicsQueue;
@@ -34,6 +37,7 @@ namespace eureka
 
 
     public:
+        
         VkRuntime(const VkRuntimeDesc& desc);
         ~VkRuntime();
     private:

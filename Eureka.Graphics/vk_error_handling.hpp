@@ -2,8 +2,12 @@
 #include <vulkan/vulkan.hpp>
 namespace eureka
 {
+
     void CheckVulkan(vk::Result res, const char* stmt, const char* fname, int line);
     void CheckVulkan(vk::Result res);
+
+    inline void CheckVulkan(VkResult res, const char* stmt, const char* fname, int line) { CheckVulkan(vk::Result{ res }, stmt, fname, line); }
+    inline void CheckVulkan(VkResult res) { CheckVulkan(vk::Result{ res }); }
 
     VKAPI_ATTR VkBool32 VKAPI_CALL VkDebugMessengerCallback(
         VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,

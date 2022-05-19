@@ -1,4 +1,4 @@
-#include "vk_runtime.hpp"
+#include "VkRuntime.hpp"
 #include <string_view>
 #include <debugger_trace.hpp>
 #include "vk_error_handling.hpp"
@@ -143,8 +143,6 @@ namespace eureka
 
         std::vector<vk::QueueFamilyProperties> queueFamilies = device.getQueueFamilyProperties();
     
-        auto directQueueDesiredFlags = vk::QueueFlagBits::eGraphics | vk::QueueFlagBits::eCompute | vk::QueueFlagBits::eTransfer;
-        auto copyQueueDesiredFlags = vk::QueueFlagBits::eTransfer;
         uint32_t i = 0u;
         for (const auto& queueFamilyProperties : queueFamilies)
         {
@@ -199,26 +197,26 @@ namespace eureka
             VK_API_VERSION_PATCH(version)
         );
 
-        auto appInfo = vk::ApplicationInfo(
-            "Eureka",
-            version,
-            "Eureka Engine",
-            version,
-            version
-        );
+
+        vk::ApplicationInfo appInfo{
+            .pApplicationName = "Eureka",
+            .applicationVersion = version,
+            .pEngineName = "Eureka Engine",
+            .engineVersion = version,
+            .apiVersion = version
+        };
 
         ValidateRequiredExtentionsExists(desc);
         ValidateRequiredLayersExists(desc);
         
-        //vk::DebugUtilsMessangerEXT;
-
-        auto createInfo = vk::InstanceCreateInfo(
-            vk::InstanceCreateFlags(),
-            &appInfo,
-            static_cast<uint32_t>(desc.required_layers.size()), desc.required_layers.data(), // enabled layers
-            static_cast<uint32_t>(desc.required_instance_extentions.size()),
-            desc.required_instance_extentions.data()
-        );
+        vk::InstanceCreateInfo createInfo{
+            .flags = vk::InstanceCreateFlags(),
+            .pApplicationInfo = &appInfo,
+            .enabledLayerCount = static_cast<uint32_t>(desc.required_layers.size()), 
+            .ppEnabledLayerNames = desc.required_layers.data(), // enabled layers
+            .enabledExtensionCount = static_cast<uint32_t>(desc.required_instance_extentions.size()),
+            .ppEnabledExtensionNames = desc.required_instance_extentions.data()
+        };
 
         _instance = vk::createInstance(createInfo);
     }
@@ -229,14 +227,13 @@ namespace eureka
     {
         _loader = vk::DispatchLoaderDynamic(_instance, vkGetInstanceProcAddr);
 
-
-        vk::DebugUtilsMessengerCreateInfoEXT createInfo = vk::DebugUtilsMessengerCreateInfoEXT(
-            vk::DebugUtilsMessengerCreateFlagsEXT(),
-            vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose | vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning | vk::DebugUtilsMessageSeverityFlagBitsEXT::eError,
-            vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance,
-            VkDebugMessengerCallback,
-            nullptr
-        );
+        vk::DebugUtilsMessengerCreateInfoEXT createInfo{
+            .flags = vk::DebugUtilsMessengerCreateFlagsEXT(),
+            .messageSeverity = vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose | vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning | vk::DebugUtilsMessageSeverityFlagBitsEXT::eError,
+            .messageType = vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance,
+            .pfnUserCallback = VkDebugMessengerCallback,
+            .pUserData = nullptr
+        };
         _messanger = _instance.createDebugUtilsMessengerEXT(createInfo, nullptr, _loader);
     }
 
@@ -291,36 +288,41 @@ namespace eureka
         {
             // create 3 queues from different families
             std::array<vk::DeviceQueueCreateInfo, 3> queueCreateInfos;
-            queueCreateInfos[0] = vk::DeviceQueueCreateInfo(
-                vk::DeviceQueueCreateFlags(),
-                *queueFamilies.direct_graphics,
-                1,
-                &queuePriorities[0]
-            );
 
-            queueCreateInfos[1] = vk::DeviceQueueCreateInfo(
-                vk::DeviceQueueCreateFlags(),
-                *queueFamilies.compute,
-                1,
-                &queuePriorities[1]
-            );
-            queueCreateInfos[2] = vk::DeviceQueueCreateInfo(
-                vk::DeviceQueueCreateFlags(),
-                *queueFamilies.copy,
-                1,
-                &queuePriorities[2]
-            );
+            queueCreateInfos[0] = vk::DeviceQueueCreateInfo{
+                .flags = vk::DeviceQueueCreateFlags{},
+                .queueFamilyIndex = *queueFamilies.direct_graphics,
+                .queueCount = 1,
+                .pQueuePriorities = &queuePriorities[0]
+            };
+            queueCreateInfos[1] = vk::DeviceQueueCreateInfo{
+                .flags = vk::DeviceQueueCreateFlags{},
+                .queueFamilyIndex = *queueFamilies.compute,
+                .queueCount = 1,
+                .pQueuePriorities = &queuePriorities[1]
+            };
+
+            queueCreateInfos[2] = vk::DeviceQueueCreateInfo{
+                .flags = vk::DeviceQueueCreateFlags{},
+                .queueFamilyIndex = *queueFamilies.copy,
+                .queueCount = 1,
+                .pQueuePriorities = &queuePriorities[2]
+            };
 
             vk::PhysicalDeviceFeatures deviceFeatures = vk::PhysicalDeviceFeatures();
 
-            vk::DeviceCreateInfo deviceInfo = vk::DeviceCreateInfo(
-                vk::DeviceCreateFlags(),
-                3, queueCreateInfos.data(),
-                static_cast<uint32_t>(desc.required_layers.size()),
-                desc.required_layers.data(),
-                0, nullptr,
-                &deviceFeatures
-            );
+
+
+            vk::DeviceCreateInfo deviceInfo{
+                .flags = vk::DeviceCreateFlags(),
+                .queueCreateInfoCount = 3,
+                .pQueueCreateInfos = queueCreateInfos.data(),
+                .enabledLayerCount = static_cast<uint32_t>(desc.required_layers.size()),
+                .ppEnabledLayerNames = desc.required_layers.data(),
+                .enabledExtensionCount = 0,
+                .ppEnabledExtensionNames = nullptr,
+                .pEnabledFeatures = &deviceFeatures
+            };
 
 
             _device = chosenPhysicalDevice.createDevice(deviceInfo);
@@ -332,24 +334,25 @@ namespace eureka
         else
         {
             // create 3 queues from the same family
-
-            auto queueCreateInfo = vk::DeviceQueueCreateInfo(
-                vk::DeviceQueueCreateFlags(),
-                *queueFamilies.direct_graphics,
-                3,
-                queuePriorities.data()
-            );
+            vk::DeviceQueueCreateInfo queueCreateInfo{
+                .flags = vk::DeviceQueueCreateFlags(),
+                .queueFamilyIndex = *queueFamilies.direct_graphics,
+                .queueCount = 3,
+                .pQueuePriorities = queuePriorities.data()
+            };
 
             vk::PhysicalDeviceFeatures deviceFeatures = vk::PhysicalDeviceFeatures();
-
-            vk::DeviceCreateInfo deviceInfo = vk::DeviceCreateInfo(
-                vk::DeviceCreateFlags(),
-                1, &queueCreateInfo,
-                static_cast<uint32_t>(desc.required_layers.size()),
-                desc.required_layers.data(),
-                0, nullptr,
-                &deviceFeatures
-            );
+ 
+            vk::DeviceCreateInfo deviceInfo{
+                .flags = vk::DeviceCreateFlags(),
+                .queueCreateInfoCount = 1,
+                .pQueueCreateInfos = &queueCreateInfo,
+                .enabledLayerCount = static_cast<uint32_t>(desc.required_layers.size()),
+                .ppEnabledLayerNames = desc.required_layers.data(),
+                .enabledExtensionCount = 0,
+                .ppEnabledExtensionNames = nullptr,
+                .pEnabledFeatures = &deviceFeatures
+            };
 
             _device = chosenPhysicalDevice.createDevice(deviceInfo);
 

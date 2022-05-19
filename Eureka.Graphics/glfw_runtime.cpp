@@ -1,6 +1,7 @@
 #include "glfw_runtime.hpp"
 #include <cassert>
 #include <stdexcept>
+#include "vk_error_handling.hpp"
 
 namespace eureka
 {
@@ -31,6 +32,13 @@ namespace eureka
         uint32_t extentions_count = 0;
         auto extentions = glfwGetRequiredInstanceExtensions(&extentions_count);
         return std::vector<const char*>(extentions, extentions + extentions_count);
+    }
+
+    vk::SurfaceKHR GLFWRuntime::CreateVulkanSurface(const vk::Instance& instance)
+    {
+        VkSurfaceKHR c_style_surface;
+        VK_CHECK(glfwCreateWindowSurface(instance, _window, nullptr, &c_style_surface));
+        return c_style_surface;
     }
 
 }

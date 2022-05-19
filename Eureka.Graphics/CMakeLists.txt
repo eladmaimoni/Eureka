@@ -3,15 +3,23 @@
 # Add source to this project's executable.
 add_library(
     Eureka.Graphics 
-    "vk_runtime.hpp"
-    "vk_runtime.cpp"
+    "VkRuntime.hpp"
+    "VkRuntime.cpp"
     "vk_error_handling.hpp"
     "vk_error_handling.cpp"
     "glfw_runtime.hpp"
     "glfw_runtime.cpp"
+    "SwapChainTarget.hpp"
+    "SwapChainTarget.cpp"
 )
 
 set_compiler_flags(Eureka.Graphics)
+
+target_compile_definitions(
+    Eureka.Graphics
+    PUBLIC
+    VULKAN_HPP_NO_CONSTRUCTORS
+)
 
 target_include_directories(
     Eureka.Graphics
