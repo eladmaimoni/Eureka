@@ -10,9 +10,9 @@ https://vulkan-tutorial.com/Drawing_a_triangle/Setup/Base_code
 */
 namespace eureka
 {
-    void ValidateRequiredExtentionsExists(const VkRuntimeDesc& desc)
+    void ValidateRequiredExtentionsExists(const vk::raii::Context& context, const VkRuntimeDesc& desc)
     {
-        auto supported_extentions = vk::enumerateInstanceExtensionProperties();
+        auto supported_extentions = context.enumerateInstanceExtensionProperties();
 
         for (auto required_extention : desc.required_instance_extentions)
         {
@@ -34,9 +34,9 @@ namespace eureka
         }
     }
 
-    void ValidateRequiredLayersExists(const VkRuntimeDesc& desc)
+    void ValidateRequiredLayersExists(const vk::raii::Context& context, const VkRuntimeDesc& desc)
     {
-        auto supported_layers = vk::enumerateInstanceLayerProperties();
+        auto supported_layers = context.enumerateInstanceLayerProperties();
 
         for (const auto& required_layer : desc.required_layers)
         {
@@ -58,7 +58,41 @@ namespace eureka
         }
     }
 
-    void LogDeviceProperties(const vk::PhysicalDevice& device)
+    vk::raii::Instance InitInstance(const vk::raii::Context& context, const VkRuntimeDesc& desc)
+    {
+        uint32_t version = context.enumerateInstanceVersion();
+
+        DEBUGGER_TRACE("vulkan api version {}.{}.{}",
+            VK_API_VERSION_MAJOR(version),
+            VK_API_VERSION_MINOR(version),
+            VK_API_VERSION_PATCH(version)
+        );
+
+        vk::ApplicationInfo appInfo{
+            .pApplicationName = "Eureka",
+            .applicationVersion = version,
+            .pEngineName = "Eureka Engine",
+            .engineVersion = version,
+            .apiVersion = version
+        };
+
+        ValidateRequiredExtentionsExists(context, desc);
+        ValidateRequiredLayersExists(context, desc);
+
+        vk::InstanceCreateInfo createInfo{
+            .flags = vk::InstanceCreateFlags(),
+            .pApplicationInfo = &appInfo,
+            .enabledLayerCount = static_cast<uint32_t>(desc.required_layers.size()),
+            .ppEnabledLayerNames = desc.required_layers.data(), // enabled layers
+            .enabledExtensionCount = static_cast<uint32_t>(desc.required_instance_extentions.size()),
+            .ppEnabledExtensionNames = desc.required_instance_extentions.data()
+        };
+
+        return vk::raii::Instance(context, createInfo);
+    }
+
+
+    void LogDeviceProperties(const vk::raii::PhysicalDevice & device)
     {
         /*
         * void vkGetPhysicalDeviceProperties(
@@ -81,21 +115,21 @@ namespace eureka
             VkPhysicalDeviceSparseProperties    sparseProperties;
             } VkPhysicalDeviceProperties;
         */
-        std::string device_type;
+        //std::string device_type = ;
 
-        switch (properties.deviceType)
-        {
-        case (vk::PhysicalDeviceType::eCpu): device_type = "CPU"; break;
-        case (vk::PhysicalDeviceType::eDiscreteGpu): device_type = "Discrete GPU"; break;
-        case (vk::PhysicalDeviceType::eIntegratedGpu): device_type = "Integrated GPU"; break;
-        case (vk::PhysicalDeviceType::eVirtualGpu):  device_type = "Virtual GPU"; break;
-        default: device_type = "Other"; break;
-        }
+        //switch (properties.deviceType)
+        //{
+        //case (vk::PhysicalDeviceType::eCpu): device_type = "CPU"; break;
+        //case (vk::PhysicalDeviceType::eDiscreteGpu): device_type = "Discrete GPU"; break;
+        //case (vk::PhysicalDeviceType::eIntegratedGpu): device_type = "Integrated GPU"; break;
+        //case (vk::PhysicalDeviceType::eVirtualGpu):  device_type = "Virtual GPU"; break;
+        //default: device_type = "Other"; break;
+        //}
 
-        DEBUGGER_TRACE("Device name: {} type: {}", properties.deviceName, device_type);
+        DEBUGGER_TRACE("Device name: {} type: {}", properties.deviceName, vk::to_string(properties.deviceType));
     }
 
-    bool IsDeviceSuitableForDisplay(const vk::PhysicalDevice& device)
+    bool IsDeviceSuitableForDisplay(const vk::raii::PhysicalDevice& device)
     {
         /*
         * A device is suitable if it can present to the screen, ie support
@@ -137,7 +171,7 @@ namespace eureka
         std::optional<uint32_t> compute;
     };
 
-    QueueFamilies QueryAvailableQueueFamilies(const vk::PhysicalDevice& device)
+    QueueFamilies QueryAvailableQueueFamilies(const vk::raii::PhysicalDevice& device)
     {
         QueueFamilies families;
 
@@ -169,16 +203,27 @@ namespace eureka
         return families;
     }
 
-    VkRuntime::VkRuntime(const VkRuntimeDesc& desc)
+    vk::raii::DebugUtilsMessengerEXT InitDebugMessenger(const vk::raii::Instance& instance)
     {
-        InitInstance(desc);
+        vk::DebugUtilsMessengerCreateInfoEXT createInfo{
+        .flags = vk::DebugUtilsMessengerCreateFlagsEXT(),
+        .messageSeverity = vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose | vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning | vk::DebugUtilsMessageSeverityFlagBitsEXT::eError,
+        .messageType = vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance,
+        .pfnUserCallback = VkDebugMessengerCallback,
+        .pUserData = nullptr
+        };
 
-        InitDebugMessenger();
+        return vk::raii::DebugUtilsMessengerEXT(instance, createInfo);
 
+    }
+
+
+    VkRuntime::VkRuntime(const VkRuntimeDesc& desc)
+        :
+        _instance(InitInstance(_context, desc)),
+        _debugMessenger(InitDebugMessenger(_instance))
+    {
         InitDeviceAndQueues(desc);
-
-      
-
     }
 
     VkRuntime::~VkRuntime()
@@ -186,102 +231,29 @@ namespace eureka
         
     }
 
-    void VkRuntime::InitInstance(const VkRuntimeDesc& desc)
-    {
-        uint32_t version;
-        VK_CHECK(vk::enumerateInstanceVersion(&version));
-
-        DEBUGGER_TRACE("vulkan api version {}.{}.{}",
-            VK_API_VERSION_MAJOR(version),
-            VK_API_VERSION_MINOR(version),
-            VK_API_VERSION_PATCH(version)
-        );
-
-
-        vk::ApplicationInfo appInfo{
-            .pApplicationName = "Eureka",
-            .applicationVersion = version,
-            .pEngineName = "Eureka Engine",
-            .engineVersion = version,
-            .apiVersion = version
-        };
-
-        ValidateRequiredExtentionsExists(desc);
-        ValidateRequiredLayersExists(desc);
-        
-        vk::InstanceCreateInfo createInfo{
-            .flags = vk::InstanceCreateFlags(),
-            .pApplicationInfo = &appInfo,
-            .enabledLayerCount = static_cast<uint32_t>(desc.required_layers.size()), 
-            .ppEnabledLayerNames = desc.required_layers.data(), // enabled layers
-            .enabledExtensionCount = static_cast<uint32_t>(desc.required_instance_extentions.size()),
-            .ppEnabledExtensionNames = desc.required_instance_extentions.data()
-        };
-
-        _instance = vk::createInstance(createInfo);
-    }
-
-
-
-    void VkRuntime::InitDebugMessenger()
-    {
-        _loader = vk::DispatchLoaderDynamic(_instance, vkGetInstanceProcAddr);
-
-        vk::DebugUtilsMessengerCreateInfoEXT createInfo{
-            .flags = vk::DebugUtilsMessengerCreateFlagsEXT(),
-            .messageSeverity = vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose | vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning | vk::DebugUtilsMessageSeverityFlagBitsEXT::eError,
-            .messageType = vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance,
-            .pfnUserCallback = VkDebugMessengerCallback,
-            .pUserData = nullptr
-        };
-        _messanger = _instance.createDebugUtilsMessengerEXT(createInfo, nullptr, _loader);
-    }
-
-
     void VkRuntime::InitDeviceAndQueues(const VkRuntimeDesc& desc)
     {
-        /*
-        * Vulkan separates the concept of physical and logical devices.
-        *
-          A physical device usually represents a single complete implementation of Vulkan
-          (excluding instance-level functionality) available to the host,
-          of which there are a finite number.
+        vk::raii::PhysicalDevices availableDevices(_instance);
+        vk::raii::PhysicalDevice* chosenPhysicalDevice = nullptr;
 
-          A logical device represents an instance of that implementation
-          with its own state and resources independent of other logical devices.
-
-         */
-
-        std::vector<vk::PhysicalDevice> availableDevices = _instance.enumeratePhysicalDevices();
-
-        vk::PhysicalDevice chosenPhysicalDevice;
-        bool found = false;
-        for (vk::PhysicalDevice device : availableDevices)
+        for (auto& physicalDevice : availableDevices)
         {
-            LogDeviceProperties(device);
+            LogDeviceProperties(physicalDevice);
 
-            if (IsDeviceSuitableForDisplay(device))
+            if (IsDeviceSuitableForDisplay(physicalDevice))
             {
-                chosenPhysicalDevice = device;
-                found = true;
+                chosenPhysicalDevice = &physicalDevice;
                 break;
-
             }
         }
 
-        if (!found)
+        if (!chosenPhysicalDevice)
         {
             DEBUGGER_TRACE("no suitable vulkan device found");
             throw vk::SystemError(vk::Result::eErrorUnknown);
         }
 
-        auto queueFamilies = QueryAvailableQueueFamilies(chosenPhysicalDevice);
-
-
-
-
-
-
+        auto queueFamilies = QueryAvailableQueueFamilies(*chosenPhysicalDevice);
 
         std::array<float, 3> queuePriorities{ 1.0f, 1.0f, 1.0f };
         if (queueFamilies.direct_graphics && queueFamilies.compute && queueFamilies.copy)
@@ -324,16 +296,17 @@ namespace eureka
                 .pEnabledFeatures = &deviceFeatures
             };
 
+            _device = std::make_shared<vk::raii::Device>(*chosenPhysicalDevice, deviceInfo);
 
-            _device = chosenPhysicalDevice.createDevice(deviceInfo);
+            _graphicsQueue = std::make_shared<vk::raii::Queue>(*_device, *queueFamilies.direct_graphics, 0);
+            _computeQueue = std::make_shared<vk::raii::Queue>(*_device, *queueFamilies.compute, 0);
+            _copyQueue = std::make_shared<vk::raii::Queue>(*_device, *queueFamilies.copy, 0);
 
-            _graphicsQueue = _device.getQueue(*queueFamilies.direct_graphics, 0);
-            _computeQueue = _device.getQueue(*queueFamilies.compute, 0);
-            _copyQueue = _device.getQueue(*queueFamilies.copy, 0);
         }
         else
         {
             // create 3 queues from the same family
+
             vk::DeviceQueueCreateInfo queueCreateInfo{
                 .flags = vk::DeviceQueueCreateFlags(),
                 .queueFamilyIndex = *queueFamilies.direct_graphics,
@@ -354,13 +327,15 @@ namespace eureka
                 .pEnabledFeatures = &deviceFeatures
             };
 
-            _device = chosenPhysicalDevice.createDevice(deviceInfo);
+            _device = std::make_shared<vk::raii::Device>(*chosenPhysicalDevice, deviceInfo);
+            _graphicsQueue = std::make_shared<vk::raii::Queue>(*_device, *queueFamilies.direct_graphics, 0);
+            _computeQueue = std::make_shared<vk::raii::Queue>(*_device, *queueFamilies.direct_graphics, 1);
+            _copyQueue = std::make_shared<vk::raii::Queue>(*_device, *queueFamilies.direct_graphics, 2);
 
-            _graphicsQueue = _device.getQueue(*queueFamilies.direct_graphics, 0);
-            _computeQueue = _device.getQueue(*queueFamilies.compute, 1);
-            _copyQueue = _device.getQueue(*queueFamilies.copy, 2);
+
 
             DEBUGGER_TRACE("warning: created 3 queues from the same family");
         }
     }
+
 }

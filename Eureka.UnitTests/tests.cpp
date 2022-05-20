@@ -18,7 +18,7 @@ TEST_CASE("vk init", "[vulkan]")
         runtime_desc.required_layers.emplace_back(eureka::VK_LAYER_VALIDATION);
         eureka::VkRuntime runtime(std::move(runtime_desc));
   
-        auto vkSurface = glfw.CreateVulkanSurface(runtime._instance);
+        //auto vkSurface = glfw.CreateVulkanSurface(runtime._instance);
      
    
 
