@@ -27,6 +27,13 @@ TEST_CASE("vk init", "[vulkan]")
         eureka::VkDeviceContext device_context(runtime.Instance(), device_context_desc);
    
 
+
+        //vk::CommandPoolCreateInfo graphicsThreadCommandPoolCreateInfo({}, device_context.Families().direct_graphics_family_index);
+        //vk::raii::CommandPool     graphicsThreadCommandPool(*device_context.Device(), graphicsThreadCommandPoolCreateInfo);
+
+        //vk::CommandBufferAllocateInfo graphicsCommandBufferAllocateInfo(*graphicsThreadCommandPool, vk::CommandBufferLevel::ePrimary, 1);
+        //vk::raii::CommandBuffer       commandBuffer = std::move(vk::raii::CommandBuffers(*device_context.Device(), graphicsCommandBufferAllocateInfo).front());
+
         DEBUGGER_TRACE("hi");
   
 

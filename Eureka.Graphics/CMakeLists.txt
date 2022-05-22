@@ -11,15 +11,19 @@ add_library(
     "glfw_runtime.cpp"
     "SwapChainTarget.hpp"
     "SwapChainTarget.cpp"
+    "CommandBuffer.hpp"
+    "CommandBuffer.cpp"
+
 )
 
 set_compiler_flags(Eureka.Graphics)
 
-target_compile_definitions(
-    Eureka.Graphics
-    PUBLIC
-    VULKAN_HPP_NO_CONSTRUCTORS
+target_shared_precompiled_headers(
+    Eureka.Graphics 
+    Eureka.Precompiled
 )
+
+
 
 target_include_directories(
     Eureka.Graphics
@@ -32,8 +36,10 @@ target_include_directories(
 target_link_libraries(
     Eureka.Graphics 
     PRIVATE 
+    Eureka.Precompiled
     Eureka.Core 
     Eigen3::Eigen
+    Vulkan::Vulkan
     glfw
 )
 

@@ -162,14 +162,12 @@ namespace eureka
 
         return true;
     }
+    
 
 
-    struct QueueFamilies
+    struct DeviceCreationDesc
     {
-        uint32_t                               direct_graphics_family_index;
-        uint32_t                               present_family_index;
-        uint32_t                               copy_family_index;
-        uint32_t                               compute_family_index;
+        QueueFamilies                          queue_families;
 
         uint32_t                               direct_graphics_create_index;
         uint32_t                               present_create_index;
@@ -180,12 +178,12 @@ namespace eureka
         std::vector<vk::DeviceQueueCreateInfo> create_info;
     };
 
-    QueueFamilies QueryAvailableQueueFamilies(const vk::raii::PhysicalDevice& device, vk::SurfaceKHR presentationSurface)
+    DeviceCreationDesc EnumerateQueueFamiliesForDeviceCreation(const vk::raii::PhysicalDevice& device, vk::SurfaceKHR presentationSurface)
     {
 
-        QueueFamilies families;
-        families.create_info.reserve(5);
-        families.queue_priorities.reserve(5);
+        DeviceCreationDesc deviceCreationDesc;
+        deviceCreationDesc.create_info.reserve(5);
+        deviceCreationDesc.queue_priorities.reserve(5);
 
         std::vector<vk::QueueFamilyProperties> queueFamilies = device.getQueueFamilyProperties();
     
@@ -207,15 +205,15 @@ namespace eureka
 
             if (graphics && compute_family_index && copy_family_index)
             {
-                families.direct_graphics_family_index = i;
-                families.direct_graphics_create_index = 0;
+                deviceCreationDesc.queue_families.direct_graphics_family_index = i;
+                deviceCreationDesc.direct_graphics_create_index = 0;
 
-                graphicsCreateInfoPriority = &families.queue_priorities.emplace_back();
+                graphicsCreateInfoPriority = &deviceCreationDesc.queue_priorities.emplace_back();
                 auto priority = &graphicsCreateInfoPriority->emplace_back(1.0f);
-                graphicsCreateInfo = &families.create_info.emplace_back(
+                graphicsCreateInfo = &deviceCreationDesc.create_info.emplace_back(
                     vk::DeviceQueueCreateInfo{
                         .flags = vk::DeviceQueueCreateFlags{},
-                        .queueFamilyIndex = families.direct_graphics_family_index,
+                        .queueFamilyIndex = deviceCreationDesc.queue_families.direct_graphics_family_index,
                         .queueCount = 1,
                         .pQueuePriorities = priority
                     }
@@ -244,16 +242,16 @@ namespace eureka
             auto compute_family_index = queueFamilyProperties.queueFlags & vk::QueueFlagBits::eCompute;
             auto graphics = queueFamilyProperties.queueFlags & vk::QueueFlagBits::eGraphics;
 
-            if (i != families.direct_graphics_family_index && queueFamilyProperties.queueFlags & vk::QueueFlagBits::eCompute)
+            if (i != deviceCreationDesc.queue_families.direct_graphics_family_index && queueFamilyProperties.queueFlags & vk::QueueFlagBits::eCompute)
             {
-                families.compute_family_index = i;
-                families.compute_create_index = 0;
-                computeCreateInfoPriority = &families.queue_priorities.emplace_back();
+                deviceCreationDesc.queue_families.compute_family_index = i;
+                deviceCreationDesc.compute_create_index = 0;
+                computeCreateInfoPriority = &deviceCreationDesc.queue_priorities.emplace_back();
                 auto priority = &computeCreateInfoPriority->emplace_back(1.0f);
-                computeCreateInfo = &families.create_info.emplace_back(
+                computeCreateInfo = &deviceCreationDesc.create_info.emplace_back(
                     vk::DeviceQueueCreateInfo{
                         .flags = vk::DeviceQueueCreateFlags{},
-                        .queueFamilyIndex = families.compute_family_index,
+                        .queueFamilyIndex = deviceCreationDesc.queue_families.compute_family_index,
                         .queueCount = 1,
                         .pQueuePriorities = priority
                     }
@@ -265,9 +263,9 @@ namespace eureka
 
         if (!computeCreateInfo)
         {
-            families.compute_family_index = families.direct_graphics_family_index;
+            deviceCreationDesc.queue_families.compute_family_index = deviceCreationDesc.queue_families.direct_graphics_family_index;
             computeCreateInfo = graphicsCreateInfo;
-            families.compute_create_index = graphicsCreateInfo->queueCount++;
+            deviceCreationDesc.compute_create_index = graphicsCreateInfo->queueCount++;
             graphicsCreateInfoPriority->emplace_back(1.0f);
             computeCreateInfoPriority = graphicsCreateInfoPriority;
         }
@@ -289,15 +287,15 @@ namespace eureka
 
             if (copy_family_index && !compute_family_index && !graphics)
             {
-                families.copy_family_index = i;
-                families.copy_create_index = 0;
-                copyCreateInfoPriority = &families.queue_priorities.emplace_back();
+                deviceCreationDesc.queue_families.copy_family_index = i;
+                deviceCreationDesc.copy_create_index = 0;
+                copyCreateInfoPriority = &deviceCreationDesc.queue_priorities.emplace_back();
                 auto priority = &copyCreateInfoPriority->emplace_back(1.0f);
 
-                copyCreateInfo = &families.create_info.emplace_back(
+                copyCreateInfo = &deviceCreationDesc.create_info.emplace_back(
                     vk::DeviceQueueCreateInfo{
                         .flags = vk::DeviceQueueCreateFlags{},
-                        .queueFamilyIndex = families.copy_family_index,
+                        .queueFamilyIndex = deviceCreationDesc.queue_families.copy_family_index,
                         .queueCount = 1,
                         .pQueuePriorities = priority
                     }
@@ -307,11 +305,11 @@ namespace eureka
             ++i;
         }
 
-        if (!copyCreateInfo && (queueFamilies[families.compute_family_index].queueFlags & vk::QueueFlagBits::eTransfer))
+        if (!copyCreateInfo && (queueFamilies[deviceCreationDesc.queue_families.compute_family_index].queueFlags & vk::QueueFlagBits::eTransfer))
         {
-            families.copy_family_index = families.compute_family_index;
+            deviceCreationDesc.queue_families.copy_family_index = deviceCreationDesc.queue_families.compute_family_index;
             copyCreateInfo = computeCreateInfo;
-            families.copy_create_index = computeCreateInfo->queueCount++;
+            deviceCreationDesc.copy_create_index = computeCreateInfo->queueCount++;
             computeCreateInfoPriority->emplace_back(1.0f);
             copyCreateInfoPriority = computeCreateInfoPriority;
             copyCreateInfo->setPQueuePriorities(copyCreateInfoPriority->data());
@@ -319,9 +317,9 @@ namespace eureka
 
         if (!copyCreateInfo)
         {
-            families.copy_family_index = families.direct_graphics_family_index;
+            deviceCreationDesc.queue_families.copy_family_index = deviceCreationDesc.queue_families.direct_graphics_family_index;
             computeCreateInfo = graphicsCreateInfo;
-            families.copy_create_index = graphicsCreateInfo->queueCount++; 
+            deviceCreationDesc.copy_create_index = graphicsCreateInfo->queueCount++; 
             graphicsCreateInfoPriority->emplace_back(1.0f);
             copyCreateInfoPriority = graphicsCreateInfoPriority;
             copyCreateInfo->setPQueuePriorities(copyCreateInfoPriority->data());
@@ -333,27 +331,27 @@ namespace eureka
 
    
 
-        if(device.getSurfaceSupportKHR(families.copy_family_index, presentationSurface))
+        if(device.getSurfaceSupportKHR(deviceCreationDesc.queue_families.copy_family_index, presentationSurface))
         {
-            families.present_family_index = families.copy_family_index;
-            families.present_create_index = copyCreateInfo->queueCount++;
+            deviceCreationDesc.queue_families.present_family_index = deviceCreationDesc.queue_families.copy_family_index;
+            deviceCreationDesc.present_create_index = copyCreateInfo->queueCount++;
             
             copyCreateInfoPriority->emplace_back(1.0f);
             copyCreateInfo->setPQueuePriorities(copyCreateInfoPriority->data());
 
         }
-        else if (device.getSurfaceSupportKHR(families.compute_family_index, presentationSurface))
+        else if (device.getSurfaceSupportKHR(deviceCreationDesc.queue_families.compute_family_index, presentationSurface))
         {
-            families.present_family_index = families.compute_family_index;
-            families.present_create_index = computeCreateInfo->queueCount++;
+            deviceCreationDesc.queue_families.present_family_index = deviceCreationDesc.queue_families.compute_family_index;
+            deviceCreationDesc.present_create_index = computeCreateInfo->queueCount++;
             computeCreateInfoPriority->emplace_back(1.0f);
             computeCreateInfo->setPQueuePriorities(computeCreateInfoPriority->data());
 
         }
-        else if (device.getSurfaceSupportKHR(families.direct_graphics_family_index, presentationSurface))
+        else if (device.getSurfaceSupportKHR(deviceCreationDesc.queue_families.direct_graphics_family_index, presentationSurface))
         {
-            families.present_family_index = families.direct_graphics_family_index;
-            families.present_create_index = graphicsCreateInfo->queueCount++;
+            deviceCreationDesc.queue_families.present_family_index = deviceCreationDesc.queue_families.direct_graphics_family_index;
+            deviceCreationDesc.present_create_index = graphicsCreateInfo->queueCount++;
             graphicsCreateInfoPriority->emplace_back(1.0f);
             graphicsCreateInfo->setPQueuePriorities(graphicsCreateInfoPriority->data());
         }
@@ -366,13 +364,13 @@ namespace eureka
 
                 if (presentation)
                 {
-                    families.present_family_index = i;
-                    families.present_create_index = 0;
-                    auto priority = &families.queue_priorities.emplace_back().emplace_back(1.0f);
-                    families.create_info.emplace_back(
+                    deviceCreationDesc.queue_families.present_family_index = i;
+                    deviceCreationDesc.present_create_index = 0;
+                    auto priority = &deviceCreationDesc.queue_priorities.emplace_back().emplace_back(1.0f);
+                    deviceCreationDesc.create_info.emplace_back(
                         vk::DeviceQueueCreateInfo{
                             .flags = vk::DeviceQueueCreateFlags{},
-                            .queueFamilyIndex = families.present_family_index,
+                            .queueFamilyIndex = deviceCreationDesc.queue_families.present_family_index,
                             .queueCount = 1,
                             .pQueuePriorities = priority
                         }
@@ -387,7 +385,7 @@ namespace eureka
                 throw vk::SystemError(vk::Result::eErrorUnknown);
             }
         }
-        return families;
+        return deviceCreationDesc;
     }
 
     vk::raii::DebugUtilsMessengerEXT InitDebugMessenger(const vk::raii::Instance& instance)
@@ -456,13 +454,13 @@ namespace eureka
             throw vk::SystemError(vk::Result::eErrorUnknown);
         }
 
-        auto queueFamilies = QueryAvailableQueueFamilies(*chosenPhysicalDevice, desc.presentation_surface);
+        auto deviceCreationDesc = EnumerateQueueFamiliesForDeviceCreation(*chosenPhysicalDevice, desc.presentation_surface);
 
         vk::PhysicalDeviceFeatures deviceFeatures = vk::PhysicalDeviceFeatures();
         vk::DeviceCreateInfo deviceInfo{
             .flags = vk::DeviceCreateFlags(),
             .queueCreateInfoCount = 3,
-            .pQueueCreateInfos = queueFamilies.create_info.data(),
+            .pQueueCreateInfos = deviceCreationDesc.create_info.data(),
             .enabledLayerCount = static_cast<uint32_t>(desc.required_layers.size()),
             .ppEnabledLayerNames = desc.required_layers.data(),
             .enabledExtensionCount = 0,
@@ -472,11 +470,13 @@ namespace eureka
 
         _device = std::make_shared<vk::raii::Device>(*chosenPhysicalDevice, deviceInfo);
 
-        _graphicsQueue = std::make_shared<vk::raii::Queue>(*_device, queueFamilies.direct_graphics_family_index, queueFamilies.direct_graphics_create_index);
-        _computeQueue = std::make_shared<vk::raii::Queue>(*_device, queueFamilies.compute_family_index, queueFamilies.compute_create_index);
-        _copyQueue = std::make_shared<vk::raii::Queue>(*_device, queueFamilies.copy_family_index, queueFamilies.copy_create_index);
-        _presentQueue = std::make_shared<vk::raii::Queue>(*_device, queueFamilies.present_family_index, queueFamilies.present_create_index);
 
+        _graphicsQueue = std::make_shared<vk::raii::Queue>(*_device, deviceCreationDesc.queue_families.direct_graphics_family_index, deviceCreationDesc.direct_graphics_create_index);
+        _computeQueue = std::make_shared<vk::raii::Queue>(*_device, deviceCreationDesc.queue_families.compute_family_index, deviceCreationDesc.compute_create_index);
+        _copyQueue = std::make_shared<vk::raii::Queue>(*_device, deviceCreationDesc.queue_families.copy_family_index, deviceCreationDesc.copy_create_index);
+        _presentQueue = std::make_shared<vk::raii::Queue>(*_device, deviceCreationDesc.queue_families.present_family_index, deviceCreationDesc.present_create_index);
+
+        _families = deviceCreationDesc.queue_families;
     }
 
 

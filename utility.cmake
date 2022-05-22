@@ -10,6 +10,7 @@ function(set_compiler_flags target_name)
             $<$<COMPILE_LANGUAGE:CXX>:
             /W4 
             #"$<$<CONFIG:Debug>:/ZI>"
+            "$<$<CONFIG:Debug>:/Zi>"
             "$<$<CONFIG:Release>:/WX>"
             "$<$<CONFIG:RELEASE>:/O2>"
             >
@@ -155,45 +156,45 @@ macro(set_source_group name)
 endmacro(set_source_group)
 
 function(target_shared_precompiled_headers target_name precompiled_target)
-    target_precompile_headers(${target_name} REUSE_FROM precompiled)
-    if (MSVC)
-        string(APPEND config_str "")
-        if (GENERATOR_IS_MULTI_CONFIG)
-            string(APPEND config_str "$<CONFIG>/")
-        endif()
-        # hack to copy .idb file in MSVC Edit & Continue
-        get_target_property(pdb_base_src ${precompiled_target} COMPILE_PDB_OUTPUT_DIRECTORY)
-        get_target_property(binary_base ${precompiled_target} PRECOMPILED_BINARY_DIR)
-        string(APPEND pdb_src "${binary_base}/${pdb_base_src}${config_str}${precompiled_target}.idb")
-        string(APPEND pdb_dst "$<TARGET_PROPERTY:${target_name},COMPILE_PDB_OUTPUT_DIRECTORY>${config_str}${precompiled_target}.idb")
-        string(
-            APPEND copy_idb_cmd
-            "$<IF:$<CONFIG:Debug>,"
-                "${CMAKE_COMMAND};-E;copy;${pdb_src};${pdb_dst},"
-                ""
-            ">"
-        )
-        
-        add_custom_command(TARGET ${target_name} PRE_BUILD COMMAND "${copy_idb_cmd}" COMMAND_EXPAND_LISTS)
-
-        
-        #source_group(precompiled FILES ${PRECOMPILED_HEADER_FILES})
-        string(APPEND hxx_folder "${binary_base}${CMAKE_FILES_DIRECTORY}/${pdb_base_src}$<CONFIG>")
-        file (GLOB_RECURSE PRECOMPILED_HEADER_FILES ${hxx_folder}/cmake_pch.hxx)
-        source_group(pch FILES ${PRECOMPILED_HEADER_FILES})
-         
-
-        file(GENERATE OUTPUT "C:/Projects/$<CONFIG>${target_name}tmp.txt" 
-        CONTENT 
-        "
-        $command: ${copy_idb_cmd}
-        ${COMPILE_PDB_OUTPUT_DIRECTORY}  
-        ${PRECOMPILED_BINARY_DIR}
-        $<CONFIG>
-        ${pdb_src}
-        ${pdb_dst}
-        "
-        )
-
-    endif()
+    target_precompile_headers(${target_name} REUSE_FROM ${precompiled_target})
+    #if (MSVC)
+    #    string(APPEND config_str "")
+    #    if (GENERATOR_IS_MULTI_CONFIG)
+    #        string(APPEND config_str "$<CONFIG>/")
+    #    endif()
+    #    # hack to copy .idb file in MSVC Edit & Continue
+    #    get_target_property(pdb_base_src ${precompiled_target} COMPILE_PDB_OUTPUT_DIRECTORY)
+    #    get_target_property(binary_base ${precompiled_target} PRECOMPILED_BINARY_DIR)
+    #    string(APPEND pdb_src "${binary_base}/${pdb_base_src}${config_str}${precompiled_target}.idb")
+    #    string(APPEND pdb_dst "$<TARGET_PROPERTY:${target_name},COMPILE_PDB_OUTPUT_DIRECTORY>${config_str}${precompiled_target}.idb")
+    #    string(
+    #        APPEND copy_idb_cmd
+    #        "$<IF:$<CONFIG:Debug>,"
+    #            "${CMAKE_COMMAND};-E;copy;${pdb_src};${pdb_dst},"
+    #            ""
+    #        ">"
+    #    )
+    #    
+    #    add_custom_command(TARGET ${target_name} PRE_BUILD COMMAND "${copy_idb_cmd}" COMMAND_EXPAND_LISTS)
+    #
+    #    
+    #    #source_group(precompiled FILES ${PRECOMPILED_HEADER_FILES})
+    #    string(APPEND hxx_folder "${binary_base}${CMAKE_FILES_DIRECTORY}/${pdb_base_src}$<CONFIG>")
+    #    file (GLOB_RECURSE PRECOMPILED_HEADER_FILES ${hxx_folder}/cmake_pch.hxx)
+    #    source_group(pch FILES ${PRECOMPILED_HEADER_FILES})
+    #     
+    #
+    #    file(GENERATE OUTPUT "C:/Projects/$<CONFIG>${target_name}tmp.txt" 
+    #    CONTENT 
+    #    "
+    #    $command: ${copy_idb_cmd}
+    #    ${COMPILE_PDB_OUTPUT_DIRECTORY}  
+    #    ${PRECOMPILED_BINARY_DIR}
+    #    $<CONFIG>
+    #    ${pdb_src}
+    #    ${pdb_dst}
+    #    "
+    #    )
+    #
+    #endif()
 endfunction()

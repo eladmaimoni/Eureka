@@ -33,6 +33,7 @@ find_package(glfw3 CONFIG REQUIRED)
 find_package(Vulkan REQUIRED FATAL_ERROR) 
 
 # include sub-projects.
+add_subdirectory (Eureka.Precompiled)
 add_subdirectory (Eureka.Core)
 add_subdirectory (Eureka.Graphics)
 add_subdirectory (Eureka.UnitTests)

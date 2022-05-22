@@ -34,6 +34,14 @@ namespace eureka
 
     };
 
+    struct QueueFamilies
+    {
+        uint32_t                               direct_graphics_family_index;
+        uint32_t                               present_family_index;
+        uint32_t                               copy_family_index;
+        uint32_t                               compute_family_index;
+    };
+
     struct VkDeviceContextDesc
     {
         std::vector<const char*> required_layers;
@@ -48,9 +56,17 @@ namespace eureka
         std::shared_ptr<vk::raii::Queue>  _computeQueue;
         std::shared_ptr<vk::raii::Queue>  _copyQueue;
         std::shared_ptr<vk::raii::Queue>  _presentQueue;
+        QueueFamilies                     _families;
     public:
         VkDeviceContext(const vk::raii::Instance& instance, const VkDeviceContextDesc& desc);
         ~VkDeviceContext();
+
+        const std::shared_ptr<vk::raii::Device>& Device() const { return _device;};
+        const std::shared_ptr<vk::raii::Queue>& GraphicsQueue() const { return _graphicsQueue; };
+        const std::shared_ptr<vk::raii::Queue>& ComputeQueue() const { return _computeQueue; };
+        const std::shared_ptr<vk::raii::Queue>& CopyQueue() const { return _copyQueue; };
+        const std::shared_ptr<vk::raii::Queue>& PresentQueue() const { return _presentQueue; };
+        const QueueFamilies& Families() const { return _families; }
     private:
         void InitDeviceAndQueues(const vk::raii::Instance& instance, const VkDeviceContextDesc& desc);
     };
