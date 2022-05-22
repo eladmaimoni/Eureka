@@ -34,11 +34,11 @@ namespace eureka
         return std::vector<const char*>(extentions, extentions + extentions_count);
     }
 
-    vk::SurfaceKHR GLFWRuntime::CreateVulkanSurface(const vk::Instance& instance)
+    vk::raii::SurfaceKHR GLFWRuntime::CreateVulkanSurface(const vk::raii::Instance& instance)
     {
         VkSurfaceKHR c_style_surface;
-        VK_CHECK(glfwCreateWindowSurface(instance, _window, nullptr, &c_style_surface));
-        return c_style_surface;
+        VK_CHECK(glfwCreateWindowSurface(*instance, _window, nullptr, &c_style_surface));
+        return vk::raii::SurfaceKHR(instance, c_style_surface);
     }
 
 }

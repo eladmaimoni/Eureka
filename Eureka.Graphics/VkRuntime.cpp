@@ -166,40 +166,227 @@ namespace eureka
 
     struct QueueFamilies
     {
-        std::optional<uint32_t> direct_graphics;
-        std::optional<uint32_t> copy;
-        std::optional<uint32_t> compute;
+        uint32_t                               direct_graphics_family_index;
+        uint32_t                               present_family_index;
+        uint32_t                               copy_family_index;
+        uint32_t                               compute_family_index;
+
+        uint32_t                               direct_graphics_create_index;
+        uint32_t                               present_create_index;
+        uint32_t                               copy_create_index;
+        uint32_t                               compute_create_index;
+
+        std::vector<std::vector<float>>        queue_priorities;
+        std::vector<vk::DeviceQueueCreateInfo> create_info;
     };
 
-    QueueFamilies QueryAvailableQueueFamilies(const vk::raii::PhysicalDevice& device)
+    QueueFamilies QueryAvailableQueueFamilies(const vk::raii::PhysicalDevice& device, vk::SurfaceKHR presentationSurface)
     {
+
         QueueFamilies families;
+        families.create_info.reserve(5);
+        families.queue_priorities.reserve(5);
 
         std::vector<vk::QueueFamilyProperties> queueFamilies = device.getQueueFamilyProperties();
     
+
+
+        //
+        // graphics queue
+        // 
         uint32_t i = 0u;
+        vk::DeviceQueueCreateInfo* graphicsCreateInfo{ nullptr };
+        std::vector<float>* graphicsCreateInfoPriority{ nullptr };
+
+
         for (const auto& queueFamilyProperties : queueFamilies)
         {
-            auto copy     = queueFamilyProperties.queueFlags & vk::QueueFlagBits::eTransfer;
-            auto compute  = queueFamilyProperties.queueFlags & vk::QueueFlagBits::eCompute;
+            auto copy_family_index = queueFamilyProperties.queueFlags & vk::QueueFlagBits::eTransfer;
+            auto compute_family_index = queueFamilyProperties.queueFlags & vk::QueueFlagBits::eCompute;
             auto graphics = queueFamilyProperties.queueFlags & vk::QueueFlagBits::eGraphics;
 
+            if (graphics && compute_family_index && copy_family_index)
+            {
+                families.direct_graphics_family_index = i;
+                families.direct_graphics_create_index = 0;
 
-            if (!families.direct_graphics && copy && compute && graphics)
-            {
-                families.direct_graphics = i;
+                graphicsCreateInfoPriority = &families.queue_priorities.emplace_back();
+                auto priority = &graphicsCreateInfoPriority->emplace_back(1.0f);
+                graphicsCreateInfo = &families.create_info.emplace_back(
+                    vk::DeviceQueueCreateInfo{
+                        .flags = vk::DeviceQueueCreateFlags{},
+                        .queueFamilyIndex = families.direct_graphics_family_index,
+                        .queueCount = 1,
+                        .pQueuePriorities = priority
+                    }
+                );
+                break;
             }
-            else if (!families.copy && copy && (!compute) && (!graphics))
+            
+            ++i;
+        }
+
+        if (!graphicsCreateInfo)
+        {
+            // no graphics queue
+            throw vk::SystemError(vk::Result::eErrorUnknown);
+        }
+
+        //
+        // compute queue
+        //
+        i = 0u;
+        vk::DeviceQueueCreateInfo* computeCreateInfo{ nullptr };
+        std::vector<float>* computeCreateInfoPriority{ nullptr };
+        for (const auto& queueFamilyProperties : queueFamilies)
+        {
+            auto copy_family_index = queueFamilyProperties.queueFlags & vk::QueueFlagBits::eTransfer;
+            auto compute_family_index = queueFamilyProperties.queueFlags & vk::QueueFlagBits::eCompute;
+            auto graphics = queueFamilyProperties.queueFlags & vk::QueueFlagBits::eGraphics;
+
+            if (i != families.direct_graphics_family_index && queueFamilyProperties.queueFlags & vk::QueueFlagBits::eCompute)
             {
-                families.copy = i;
-            }
-            else if (!families.compute && compute && (!graphics))
-            {
-                families.compute = i;
+                families.compute_family_index = i;
+                families.compute_create_index = 0;
+                computeCreateInfoPriority = &families.queue_priorities.emplace_back();
+                auto priority = &computeCreateInfoPriority->emplace_back(1.0f);
+                computeCreateInfo = &families.create_info.emplace_back(
+                    vk::DeviceQueueCreateInfo{
+                        .flags = vk::DeviceQueueCreateFlags{},
+                        .queueFamilyIndex = families.compute_family_index,
+                        .queueCount = 1,
+                        .pQueuePriorities = priority
+                    }
+                );
+                break;
             }
             ++i;
         }
 
+        if (!computeCreateInfo)
+        {
+            families.compute_family_index = families.direct_graphics_family_index;
+            computeCreateInfo = graphicsCreateInfo;
+            families.compute_create_index = graphicsCreateInfo->queueCount++;
+            graphicsCreateInfoPriority->emplace_back(1.0f);
+            computeCreateInfoPriority = graphicsCreateInfoPriority;
+        }
+
+
+        //
+        // copy queue
+        //
+
+        i = 0u;
+        vk::DeviceQueueCreateInfo* copyCreateInfo{ nullptr };
+        std::vector<float>* copyCreateInfoPriority{ nullptr };
+
+        for (const auto& queueFamilyProperties : queueFamilies)
+        {
+            auto copy_family_index = queueFamilyProperties.queueFlags & vk::QueueFlagBits::eTransfer;
+            auto compute_family_index = queueFamilyProperties.queueFlags & vk::QueueFlagBits::eCompute;
+            auto graphics = queueFamilyProperties.queueFlags & vk::QueueFlagBits::eGraphics;
+
+            if (copy_family_index && !compute_family_index && !graphics)
+            {
+                families.copy_family_index = i;
+                families.copy_create_index = 0;
+                copyCreateInfoPriority = &families.queue_priorities.emplace_back();
+                auto priority = &copyCreateInfoPriority->emplace_back(1.0f);
+
+                copyCreateInfo = &families.create_info.emplace_back(
+                    vk::DeviceQueueCreateInfo{
+                        .flags = vk::DeviceQueueCreateFlags{},
+                        .queueFamilyIndex = families.copy_family_index,
+                        .queueCount = 1,
+                        .pQueuePriorities = priority
+                    }
+                );
+                break;
+            }
+            ++i;
+        }
+
+        if (!copyCreateInfo && (queueFamilies[families.compute_family_index].queueFlags & vk::QueueFlagBits::eTransfer))
+        {
+            families.copy_family_index = families.compute_family_index;
+            copyCreateInfo = computeCreateInfo;
+            families.copy_create_index = computeCreateInfo->queueCount++;
+            computeCreateInfoPriority->emplace_back(1.0f);
+            copyCreateInfoPriority = computeCreateInfoPriority;
+            copyCreateInfo->setPQueuePriorities(copyCreateInfoPriority->data());
+        }
+
+        if (!copyCreateInfo)
+        {
+            families.copy_family_index = families.direct_graphics_family_index;
+            computeCreateInfo = graphicsCreateInfo;
+            families.copy_create_index = graphicsCreateInfo->queueCount++; 
+            graphicsCreateInfoPriority->emplace_back(1.0f);
+            copyCreateInfoPriority = graphicsCreateInfoPriority;
+            copyCreateInfo->setPQueuePriorities(copyCreateInfoPriority->data());
+        }
+
+        //
+        // present queue
+        //
+
+   
+
+        if(device.getSurfaceSupportKHR(families.copy_family_index, presentationSurface))
+        {
+            families.present_family_index = families.copy_family_index;
+            families.present_create_index = copyCreateInfo->queueCount++;
+            
+            copyCreateInfoPriority->emplace_back(1.0f);
+            copyCreateInfo->setPQueuePriorities(copyCreateInfoPriority->data());
+
+        }
+        else if (device.getSurfaceSupportKHR(families.compute_family_index, presentationSurface))
+        {
+            families.present_family_index = families.compute_family_index;
+            families.present_create_index = computeCreateInfo->queueCount++;
+            computeCreateInfoPriority->emplace_back(1.0f);
+            computeCreateInfo->setPQueuePriorities(computeCreateInfoPriority->data());
+
+        }
+        else if (device.getSurfaceSupportKHR(families.direct_graphics_family_index, presentationSurface))
+        {
+            families.present_family_index = families.direct_graphics_family_index;
+            families.present_create_index = graphicsCreateInfo->queueCount++;
+            graphicsCreateInfoPriority->emplace_back(1.0f);
+            graphicsCreateInfo->setPQueuePriorities(graphicsCreateInfoPriority->data());
+        }
+        else
+        {
+            bool found = false;
+            for (i = 0u; i < queueFamilies.size(); ++i)
+            {
+                auto presentation = device.getSurfaceSupportKHR(i, presentationSurface);
+
+                if (presentation)
+                {
+                    families.present_family_index = i;
+                    families.present_create_index = 0;
+                    auto priority = &families.queue_priorities.emplace_back().emplace_back(1.0f);
+                    families.create_info.emplace_back(
+                        vk::DeviceQueueCreateInfo{
+                            .flags = vk::DeviceQueueCreateFlags{},
+                            .queueFamilyIndex = families.present_family_index,
+                            .queueCount = 1,
+                            .pQueuePriorities = priority
+                        }
+                    );
+                    break;
+                }
+            }
+
+            if (!found)
+            {
+                // no present queue
+                throw vk::SystemError(vk::Result::eErrorUnknown);
+            }
+        }
         return families;
     }
 
@@ -223,7 +410,7 @@ namespace eureka
         _instance(InitInstance(_context, desc)),
         _debugMessenger(InitDebugMessenger(_instance))
     {
-        InitDeviceAndQueues(desc);
+      
     }
 
     VkRuntime::~VkRuntime()
@@ -231,9 +418,25 @@ namespace eureka
         
     }
 
-    void VkRuntime::InitDeviceAndQueues(const VkRuntimeDesc& desc)
+
+
+
+
+
+
+    VkDeviceContext::VkDeviceContext(const vk::raii::Instance& instance, const VkDeviceContextDesc& desc)
     {
-        vk::raii::PhysicalDevices availableDevices(_instance);
+        InitDeviceAndQueues(instance, desc);
+    }
+
+    VkDeviceContext::~VkDeviceContext()
+    {
+
+    }
+
+    void VkDeviceContext::InitDeviceAndQueues(const vk::raii::Instance& instance, const VkDeviceContextDesc& desc)
+    {
+        vk::raii::PhysicalDevices availableDevices(instance);
         vk::raii::PhysicalDevice* chosenPhysicalDevice = nullptr;
 
         for (auto& physicalDevice : availableDevices)
@@ -253,89 +456,29 @@ namespace eureka
             throw vk::SystemError(vk::Result::eErrorUnknown);
         }
 
-        auto queueFamilies = QueryAvailableQueueFamilies(*chosenPhysicalDevice);
+        auto queueFamilies = QueryAvailableQueueFamilies(*chosenPhysicalDevice, desc.presentation_surface);
 
-        std::array<float, 3> queuePriorities{ 1.0f, 1.0f, 1.0f };
-        if (queueFamilies.direct_graphics && queueFamilies.compute && queueFamilies.copy)
-        {
-            // create 3 queues from different families
-            std::array<vk::DeviceQueueCreateInfo, 3> queueCreateInfos;
+        vk::PhysicalDeviceFeatures deviceFeatures = vk::PhysicalDeviceFeatures();
+        vk::DeviceCreateInfo deviceInfo{
+            .flags = vk::DeviceCreateFlags(),
+            .queueCreateInfoCount = 3,
+            .pQueueCreateInfos = queueFamilies.create_info.data(),
+            .enabledLayerCount = static_cast<uint32_t>(desc.required_layers.size()),
+            .ppEnabledLayerNames = desc.required_layers.data(),
+            .enabledExtensionCount = 0,
+            .ppEnabledExtensionNames = nullptr,
+            .pEnabledFeatures = &deviceFeatures
+        };
 
-            queueCreateInfos[0] = vk::DeviceQueueCreateInfo{
-                .flags = vk::DeviceQueueCreateFlags{},
-                .queueFamilyIndex = *queueFamilies.direct_graphics,
-                .queueCount = 1,
-                .pQueuePriorities = &queuePriorities[0]
-            };
-            queueCreateInfos[1] = vk::DeviceQueueCreateInfo{
-                .flags = vk::DeviceQueueCreateFlags{},
-                .queueFamilyIndex = *queueFamilies.compute,
-                .queueCount = 1,
-                .pQueuePriorities = &queuePriorities[1]
-            };
+        _device = std::make_shared<vk::raii::Device>(*chosenPhysicalDevice, deviceInfo);
 
-            queueCreateInfos[2] = vk::DeviceQueueCreateInfo{
-                .flags = vk::DeviceQueueCreateFlags{},
-                .queueFamilyIndex = *queueFamilies.copy,
-                .queueCount = 1,
-                .pQueuePriorities = &queuePriorities[2]
-            };
+        _graphicsQueue = std::make_shared<vk::raii::Queue>(*_device, queueFamilies.direct_graphics_family_index, queueFamilies.direct_graphics_create_index);
+        _computeQueue = std::make_shared<vk::raii::Queue>(*_device, queueFamilies.compute_family_index, queueFamilies.compute_create_index);
+        _copyQueue = std::make_shared<vk::raii::Queue>(*_device, queueFamilies.copy_family_index, queueFamilies.copy_create_index);
+        _presentQueue = std::make_shared<vk::raii::Queue>(*_device, queueFamilies.present_family_index, queueFamilies.present_create_index);
 
-            vk::PhysicalDeviceFeatures deviceFeatures = vk::PhysicalDeviceFeatures();
-
-
-
-            vk::DeviceCreateInfo deviceInfo{
-                .flags = vk::DeviceCreateFlags(),
-                .queueCreateInfoCount = 3,
-                .pQueueCreateInfos = queueCreateInfos.data(),
-                .enabledLayerCount = static_cast<uint32_t>(desc.required_layers.size()),
-                .ppEnabledLayerNames = desc.required_layers.data(),
-                .enabledExtensionCount = 0,
-                .ppEnabledExtensionNames = nullptr,
-                .pEnabledFeatures = &deviceFeatures
-            };
-
-            _device = std::make_shared<vk::raii::Device>(*chosenPhysicalDevice, deviceInfo);
-
-            _graphicsQueue = std::make_shared<vk::raii::Queue>(*_device, *queueFamilies.direct_graphics, 0);
-            _computeQueue = std::make_shared<vk::raii::Queue>(*_device, *queueFamilies.compute, 0);
-            _copyQueue = std::make_shared<vk::raii::Queue>(*_device, *queueFamilies.copy, 0);
-
-        }
-        else
-        {
-            // create 3 queues from the same family
-
-            vk::DeviceQueueCreateInfo queueCreateInfo{
-                .flags = vk::DeviceQueueCreateFlags(),
-                .queueFamilyIndex = *queueFamilies.direct_graphics,
-                .queueCount = 3,
-                .pQueuePriorities = queuePriorities.data()
-            };
-
-            vk::PhysicalDeviceFeatures deviceFeatures = vk::PhysicalDeviceFeatures();
- 
-            vk::DeviceCreateInfo deviceInfo{
-                .flags = vk::DeviceCreateFlags(),
-                .queueCreateInfoCount = 1,
-                .pQueueCreateInfos = &queueCreateInfo,
-                .enabledLayerCount = static_cast<uint32_t>(desc.required_layers.size()),
-                .ppEnabledLayerNames = desc.required_layers.data(),
-                .enabledExtensionCount = 0,
-                .ppEnabledExtensionNames = nullptr,
-                .pEnabledFeatures = &deviceFeatures
-            };
-
-            _device = std::make_shared<vk::raii::Device>(*chosenPhysicalDevice, deviceInfo);
-            _graphicsQueue = std::make_shared<vk::raii::Queue>(*_device, *queueFamilies.direct_graphics, 0);
-            _computeQueue = std::make_shared<vk::raii::Queue>(*_device, *queueFamilies.direct_graphics, 1);
-            _copyQueue = std::make_shared<vk::raii::Queue>(*_device, *queueFamilies.direct_graphics, 2);
-
-
-
-            DEBUGGER_TRACE("warning: created 3 queues from the same family");
-        }
     }
+
+
 
 }

@@ -11,35 +11,50 @@ https://vulkan-tutorial.com/Drawing_a_triangle/Setup/Instance
 namespace eureka
 {
     inline constexpr char VK_LAYER_VALIDATION[] = "VK_LAYER_KHRONOS_validation";
-    inline constexpr char VK_EXT_DEBUG_UTILS[] = "VK_EXT_debug_utils";
-
 
     struct VkRuntimeDesc
     {
         std::vector<const char*> required_instance_extentions;
         std::vector<const char*> required_layers;
-
     };
 
     class VkRuntime
     {
-    public:
+    private:
         vk::raii::Context _context;
         vk::raii::Instance _instance;
         vk::raii::DebugUtilsMessengerEXT _debugMessenger;
 
 
+
+    public:
+        VkRuntime(const VkRuntimeDesc& desc);
+        ~VkRuntime();
+        const vk::raii::Instance& Instance() const { return _instance; }
+
+    };
+
+    struct VkDeviceContextDesc
+    {
+        std::vector<const char*> required_layers;
+        vk::SurfaceKHR           presentation_surface;
+    };
+
+    class VkDeviceContext
+    {
+
         std::shared_ptr<vk::raii::Device> _device;
         std::shared_ptr<vk::raii::Queue>  _graphicsQueue;
         std::shared_ptr<vk::raii::Queue>  _computeQueue;
         std::shared_ptr<vk::raii::Queue>  _copyQueue;
+        std::shared_ptr<vk::raii::Queue>  _presentQueue;
     public:
-        
-        VkRuntime(const VkRuntimeDesc& desc);
-        ~VkRuntime();
+        VkDeviceContext(const vk::raii::Instance& instance, const VkDeviceContextDesc& desc);
+        ~VkDeviceContext();
     private:
-        void InitDeviceAndQueues(const VkRuntimeDesc& desc);
+        void InitDeviceAndQueues(const vk::raii::Instance& instance, const VkDeviceContextDesc& desc);
     };
+
 }
 
 /*

@@ -1,5 +1,5 @@
 #pragma once
-#include <vulkan/vulkan.hpp>
+#include <vulkan/vulkan_raii.hpp>
 #include <GLFW/glfw3.h>
 #include <vector>
 #include <string_view>
@@ -18,7 +18,7 @@ namespace eureka
         ~GLFWRuntime();
 
         std::vector<const char*> QueryRequiredVulkanExtentions() const;
-        vk::SurfaceKHR CreateVulkanSurface(const vk::Instance& instance);
+        vk::raii::SurfaceKHR CreateVulkanSurface(const vk::raii::Instance& instance);
 
     };
 }
