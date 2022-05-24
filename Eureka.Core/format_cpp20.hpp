@@ -10,6 +10,15 @@
 
 namespace eureka
 {
+    template <typename Iterable>
+    struct iterable_value
+    {
+        using type = std::decay_t<decltype(*std::begin(std::declval<Iterable>()))>;
+    };
+    
+    template <typename Iterable>
+    using iterable_value_t = iterable_value<Iterable>::type;
+
     //
     // has_eureka_to_string : a type that has eureka::to_string overloaded
     //
@@ -45,17 +54,25 @@ namespace eureka
     // - is not streamable itself (like std::string)
     // 
     template<typename Iterable>
-    concept iterable_of_streamable = (iterable<std::decay_t<Iterable>> && !streamable<std::decay_t<Iterable>> && streamable<typename std::decay_t<Iterable>::value_type>);
+    concept iterable_of_streamable = (
+        iterable<std::decay_t<Iterable>> && 
+        !streamable<std::decay_t<Iterable>> && 
+        streamable<iterable_value_t<Iterable>>
+        );
 
     template<typename Object>
-    concept streamable_not_fundmental_or_string = (streamable<Object> && !std::is_same_v<std::decay_t<Object>, std::string> && !std::is_fundamental_v<std::decay_t<Object>>);
+    concept streamable_not_fundmental_or_string = (
+        streamable<Object> &&
+        !std::is_same_v<std::decay_t<Object>, std::string> &&
+        !std::is_fundamental_v<std::decay_t<Object>>
+        );
 
     template<typename Iterable>
     concept iterable_of_to_stringable = (
         iterable<std::decay_t<Iterable>> && 
         !streamable<std::decay_t<Iterable>> && 
-        !streamable<typename std::decay_t<Iterable>::value_type> && 
-        has_eureka_to_string<typename std::decay_t<Iterable>::value_type>
+        !streamable<iterable_value_t<Iterable>> &&
+        has_eureka_to_string<iterable_value_t<Iterable>>
         );
 
 

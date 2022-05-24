@@ -40,10 +40,12 @@ target_precompile_headers(Eureka.Precompiled
     <algorithm>
     <array>
 	<atomic>
+    <bit>
     <bitset>
 	<cassert>
     <chrono>
     <cmath>
+    <concepts>
 	<cstdint>
     <exception>
     <iostream>
@@ -54,6 +56,7 @@ target_precompile_headers(Eureka.Precompiled
     <memory>
 	<mutex>
     <optional>
+    <ranges>
     <regex>
     <sstream>
     <stdexcept>

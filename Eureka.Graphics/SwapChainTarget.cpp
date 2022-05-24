@@ -33,22 +33,9 @@ namespace eureka
 	{
 		SwapChainSupportDetails support;
 
-		/*
-		* typedef struct VkSurfaceCapabilitiesKHR {
-			uint32_t                         minImageCount;
-			uint32_t                         maxImageCount;
-			VkExtent2D                       currentExtent;
-			VkExtent2D                       minImageExtent;
-			VkExtent2D                       maxImageExtent;
-			uint32_t                         maxImageArrayLayers;
-			VkSurfaceTransformFlagsKHR       supportedTransforms;
-			VkSurfaceTransformFlagBitsKHR    currentTransform;
-			VkCompositeAlphaFlagsKHR         supportedCompositeAlpha;
-			VkImageUsageFlags                supportedUsageFlags;
-		} VkSurfaceCapabilitiesKHR;
-		*/
-
 		support.capabilities = device->getSurfaceCapabilitiesKHR(surface);
+		support.formats = device->getSurfaceFormatsKHR(surface);
+		support.present_modes = device->getSurfacePresentModesKHR(surface);
 
 		DEBUGGER_TRACE(
 			R"(
@@ -60,6 +47,13 @@ namespace eureka
 			max extent = ({}, {})
 			maximum image array layers = {}
 			supported transforms = {}
+			current transform = {}
+			supported composite alpha = {}
+			supported usage flags = {}
+			supported formats = {}
+			supported color spaces = {}
+			supported present modes = {}
+
 			)", 
 			support.capabilities.minImageCount,
 			support.capabilities.maxImageCount,
@@ -67,78 +61,14 @@ namespace eureka
 			support.capabilities.minImageExtent.width, support.capabilities.minImageExtent.height,
             support.capabilities.maxImageExtent.width, support.capabilities.maxImageExtent.height,
 			support.capabilities.maxImageArrayLayers,
-			support.capabilities.supportedTransforms
+			support.capabilities.supportedTransforms,
+			support.capabilities.currentTransform,
+			support.capabilities.supportedCompositeAlpha,
+			support.capabilities.supportedUsageFlags,
+			support.formats | std::views::transform([](const auto& v) {return v.format; }),
+            support.formats | std::views::transform([](const auto& v) {return v.colorSpace; }),
+			support.present_modes
 		);
-
-		std::vector< vk::SurfaceTransformFlagBitsKHR> val;
-
-
-        
-		//auto tmp = ;
-
-
-
-
-
-		//support.capabilities.supportedTransforms
-		//	std::cout << "\tsupported transforms:\n";
-		//	std::vector<std::string> stringList = log_transform_bits();
-		//	for (std::string line : stringList) {
-		//		std::cout << "\t\t" << line << '\n';
-		//	}
-
-
-		//if (debug) {
-
-
-		//	std::cout << "\tcurrent extent: \n";
-		//	/*typedef struct VkExtent2D {
-		//		uint32_t    width;
-		//		uint32_t    height;
-		//	} VkExtent2D;
-		//	*/
-
-		//	std::cout << "\tcurrent transform:\n";
-		//	stringList = log_transform_bits(support.capabilities.currentTransform);
-		//	for (std::string line : stringList) {
-		//		std::cout << "\t\t" << line << '\n';
-		//	}
-
-		//	std::cout << "\tsupported alpha operations:\n";
-		//	stringList = log_alpha_composite_bits(support.capabilities.supportedCompositeAlpha);
-		//	for (std::string line : stringList) {
-		//		std::cout << "\t\t" << line << '\n';
-		//	}
-
-		//	std::cout << "\tsupported image usage:\n";
-		//	stringList = log_image_usage_bits(support.capabilities.supportedUsageFlags);
-		//	for (std::string line : stringList) {
-		//		std::cout << "\t\t" << line << '\n';
-		//	}
-		//}
-
-		//support.formats = device.getSurfaceFormatsKHR(surface);
-
-		//if (debug) {
-
-		//	for (vk::SurfaceFormatKHR supportedFormat : support.formats) {
-		//		/*
-		//		* typedef struct VkSurfaceFormatKHR {
-		//			VkFormat           format;
-		//			VkColorSpaceKHR    colorSpace;
-		//		} VkSurfaceFormatKHR;
-		//		*/
-
-		//		std::cout << "supported pixel format: " << vk::to_string(supportedFormat.format) << '\n';
-		//		std::cout << "supported color space: " << vk::to_string(supportedFormat.colorSpace) << '\n';
-		//	}
-		//}
-
-		//support.presentModes = device.getSurfacePresentModesKHR(surface);
-
-		//for (vk::PresentModeKHR presentMode : support.presentModes) {
-		//	std::cout << '\t' << log_present_mode(presentMode) << '\n';
-		//}
 		return support;
 	}
 
