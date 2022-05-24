@@ -1,6 +1,4 @@
 #include "glfw_runtime.hpp"
-#include <cassert>
-#include <stdexcept>
 #include "vk_error_handling.hpp"
 
 namespace eureka

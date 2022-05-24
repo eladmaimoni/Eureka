@@ -3,10 +3,13 @@
 # Add source to this project's executable.
 add_library(
     Eureka.Core 
+    "cpp17_cpp20.hpp"
+    "format_cpp17.hpp"
+    "format_cpp20.hpp"
     "debugger_trace.hpp"
     "debugger_trace_impl.hpp"
     "debugger_trace_impl.cpp"
-)
+ "format_cpp17.hpp" "cpp17_cpp20.hpp")
 
 set_compiler_flags(Eureka.Core) 
 

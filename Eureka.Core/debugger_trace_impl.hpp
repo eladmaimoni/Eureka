@@ -1,64 +1,24 @@
 #pragma once
 #include <string_view>
 
-#ifdef __cpp_lib_format
-#include <format>
-namespace format_ns = std;
+#if (__cpp_lib_format && __cpp_lib_concepts)
+
 #else
-#include <fmt/format.h>
-namespace format_ns = fmt;
+
 #endif
+
+#include "format_cpp20.hpp"
+#include "format_cpp17.hpp"
+
 
 namespace eureka
 {
-    template<class ...Ts>
-    struct voider {
-        using type = void;
-    };
-
-    template<class T, class = void>
-    struct has_to_string : std::false_type {};
-
-    template<class T>
-    struct has_to_string<T, typename voider<decltype(std::declval<T>().to_string())>::type> : std::true_type {};
-
-    template<class T, class = void>
-    struct is_ostream_overload_available : std::false_type {};
-
-    template<class T>
-    struct is_ostream_overload_available<T, typename voider<decltype(std::declval<std::ostream&>() << std::declval<T const&>())>::type> : std::true_type {};
-
-    template <
-        typename Printable,
-        std::enable_if_t<is_ostream_overload_available<Printable>::value, bool> = true
-    >
-        std::string as_format_acceptable(Printable&& printable)
+    template <typename First, typename... Args>
+    auto format(First&& first, Args&&... args) -> decltype(format_ns::format(first, std::forward<Args>(args)...))
     {
-        std::ostringstream out;
-        out << printable;
-        return out.str();
+        return std::format(std::forward<First>(first), as_format_acceptable2(args)...);
+        
     }
-
-    template <
-        typename Printable,
-        std::enable_if_t<has_to_string<Printable>::value, bool> = true
-    >
-        std::string as_format_acceptable(Printable&& printable)
-    {
-        return printable.to_string();
-    }
-
-    template <
-        typename Printable,
-        typename... Ignored
-    >
-        auto as_format_acceptable(Printable&& printable, Ignored const&...) -> decltype(std::forward<Printable>(printable))
-    {
-        static_assert(sizeof...(Ignored) == 0, "only one parameter allowed");
-        return std::forward<Printable>(printable);
-    }
-
-
 
     inline constexpr char LOG_FORMAT[] = "{}({}): ";
     inline constexpr char LOG_FORMAT_LINE_NUM[] = "({}): ";
@@ -67,13 +27,6 @@ namespace eureka
     void VSOutputDebugString(const char* str);
 
 
-
-    template <typename First, typename... Args>
-    auto format(First&& first, Args&&... args) -> decltype(format_ns::format(first, std::forward<Args>(args)...))
-    {
-        return format_ns::format(std::forward<First>(first), as_format_acceptable(args)...);
-        //return format_ns::format(std::forward<Args>(args)...);
-    }
 
     std::true_type constexpr return_true()
     {

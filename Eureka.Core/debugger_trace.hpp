@@ -11,9 +11,7 @@
 #define DEBUGGER_TRACE(user_format, ...) eureka::debug_output(eureka::append_debugger_format<__LINE__>(__FILE__, user_format, ##__VA_ARGS__))
 
 namespace eureka
-{
-    
-    
+{    
     /// 
     /// creates a formatted debugger line
     /// can be used together with eureka::debug_output() to generate a clickable debugger trace

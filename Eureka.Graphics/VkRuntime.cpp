@@ -10,7 +10,7 @@ https://vulkan-tutorial.com/Drawing_a_triangle/Setup/Base_code
 */
 namespace eureka
 {
-    void ValidateRequiredExtentionsExists(const vk::raii::Context& context, const VkRuntimeDesc& desc)
+    void ValidateRequiredExtentionsExists(const vk::raii::Context& context, const GPURuntimeDesc& desc)
     {
         auto supported_extentions = context.enumerateInstanceExtensionProperties();
 
@@ -34,7 +34,7 @@ namespace eureka
         }
     }
 
-    void ValidateRequiredLayersExists(const vk::raii::Context& context, const VkRuntimeDesc& desc)
+    void ValidateRequiredLayersExists(const vk::raii::Context& context, const GPURuntimeDesc& desc)
     {
         auto supported_layers = context.enumerateInstanceLayerProperties();
 
@@ -58,7 +58,7 @@ namespace eureka
         }
     }
 
-    vk::raii::Instance InitInstance(const vk::raii::Context& context, const VkRuntimeDesc& desc)
+    vk::raii::Instance InitInstance(const vk::raii::Context& context, const GPURuntimeDesc& desc)
     {
         uint32_t version = context.enumerateInstanceVersion();
 
@@ -403,7 +403,7 @@ namespace eureka
     }
 
 
-    VkRuntime::VkRuntime(const VkRuntimeDesc& desc)
+    GPURuntime::GPURuntime(const GPURuntimeDesc& desc)
         :
         _instance(InitInstance(_context, desc)),
         _debugMessenger(InitDebugMessenger(_instance))
@@ -411,7 +411,7 @@ namespace eureka
       
     }
 
-    VkRuntime::~VkRuntime()
+    GPURuntime::~GPURuntime()
     {
         
     }
@@ -470,12 +470,13 @@ namespace eureka
 
         _device = std::make_shared<vk::raii::Device>(*chosenPhysicalDevice, deviceInfo);
 
-
+        
+        _physicalDevice = std::make_shared<vk::raii::PhysicalDevice>(std::move(*chosenPhysicalDevice));
+        
         _graphicsQueue = std::make_shared<vk::raii::Queue>(*_device, deviceCreationDesc.queue_families.direct_graphics_family_index, deviceCreationDesc.direct_graphics_create_index);
         _computeQueue = std::make_shared<vk::raii::Queue>(*_device, deviceCreationDesc.queue_families.compute_family_index, deviceCreationDesc.compute_create_index);
         _copyQueue = std::make_shared<vk::raii::Queue>(*_device, deviceCreationDesc.queue_families.copy_family_index, deviceCreationDesc.copy_create_index);
         _presentQueue = std::make_shared<vk::raii::Queue>(*_device, deviceCreationDesc.queue_families.present_family_index, deviceCreationDesc.present_create_index);
-
         _families = deviceCreationDesc.queue_families;
     }
 
