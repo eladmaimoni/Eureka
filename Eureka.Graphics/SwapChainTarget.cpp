@@ -53,7 +53,6 @@ namespace eureka
 			supported formats = {}
 			supported color spaces = {}
 			supported present modes = {}
-
 			)", 
 			support.capabilities.minImageCount,
 			support.capabilities.maxImageCount,

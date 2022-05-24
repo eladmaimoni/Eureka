@@ -3,10 +3,7 @@
 #include <concepts>
 #include <format>
 #include <sstream>
-#include <algorithm>
 #include <type_traits>
-
-//namespace format_ns = std;
 
 namespace eureka
 {
@@ -43,8 +40,11 @@ namespace eureka
     template<typename Iterable>
     concept iterable = requires(const Iterable & obj)
     {
+        std::begin(obj);
+        std::end(obj);
+
         // not sure this is the best way
-        std::for_each(std::begin(obj), std::end(obj), [](const auto&) {});
+        //std::for_each(std::begin(obj), std::end(obj), [](const auto&) {});
     };
 
     //
@@ -76,19 +76,19 @@ namespace eureka
         );
 
 
-    std::string as_format_acceptable2(has_eureka_to_string auto&& obj)
+    std::string to_format_acceptable(has_eureka_to_string auto&& obj)
     {
         return to_string(obj);
     }
 
-    std::string as_format_acceptable2(streamable_not_fundmental_or_string auto&& obj)
+    std::string to_format_acceptable(streamable_not_fundmental_or_string auto&& obj)
     {
         std::ostringstream out;
         out << obj;
         return out.str();
     }
 
-    std::string as_format_acceptable2(iterable_of_streamable auto&& obj)
+    std::string to_format_acceptable(iterable_of_streamable auto&& obj)
     {
         std::ostringstream out;
         out << '{';
@@ -101,7 +101,7 @@ namespace eureka
     }
 
 
-    std::string as_format_acceptable2(iterable_of_to_stringable auto&& obj)
+    std::string to_format_acceptable(iterable_of_to_stringable auto&& obj)
     {
         //static_assert<decltype(obj)> 
         std::ostringstream out;
@@ -116,7 +116,7 @@ namespace eureka
 
 
     template<typename T>
-    auto as_format_acceptable2(T&& obj) -> decltype(std::forward<T>(obj))
+    auto to_format_acceptable(T&& obj) -> decltype(std::forward<T>(obj))
     {
         //using type = std::decay_t<T>;
         //return type{};

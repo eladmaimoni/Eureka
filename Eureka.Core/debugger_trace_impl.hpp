@@ -1,22 +1,13 @@
 #pragma once
 #include <string_view>
-
-#if (__cpp_lib_format && __cpp_lib_concepts)
-
-#else
-
-#endif
-
 #include "format_cpp20.hpp"
-#include "format_cpp17.hpp"
-
 
 namespace eureka
 {
     template <typename First, typename... Args>
-    auto format(First&& first, Args&&... args) -> decltype(format_ns::format(first, std::forward<Args>(args)...))
+    auto format(First&& first, Args&&... args) -> decltype(std::format(first, std::forward<Args>(args)...))
     {
-        return std::format(std::forward<First>(first), as_format_acceptable2(args)...);
+        return std::format(std::forward<First>(first), to_format_acceptable(args)...);
         
     }
 
@@ -33,8 +24,7 @@ namespace eureka
         return std::true_type();
     }
 
-    template<typename T>
-    std::size_t /*consteval*/ constexpr CountDigits(/*std::integral auto */ T n)
+    std::size_t consteval CountDigits(std::integral auto n)
     {
         // counts the decimal digits in a number
         int count = 0;
