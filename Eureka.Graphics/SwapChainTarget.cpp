@@ -27,6 +27,24 @@ namespace eureka
         std::vector<vk::PresentModeKHR>   present_modes;
     };
 
+	vk::Extent2D CalcMaxExtent(uint32_t width, uint32_t height, const vk::SurfaceCapabilitiesKHR& capabilities)
+	{   
+        if (capabilities.currentExtent.width == UINT32_MAX)
+        {
+			return vk::Extent2D
+			{ 
+				.width = std::clamp(width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width),
+				.height = std::clamp(height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height)
+			};
+        }
+		else
+		{
+			assert(capabilities.currentExtent.width == width);
+            assert(capabilities.currentExtent.height == height);
+			return capabilities.currentExtent;
+		}
+	}
+
 	SwapChainSupportDetails QuerySwapchainSupport(
 		const vk::raii::PhysicalDevice* device, 
 		vk::SurfaceKHR surface) 
@@ -71,10 +89,59 @@ namespace eureka
 		return support;
 	}
 
-    SwapChainTarget::SwapChainTarget(const GPURuntime& /*runtime*/, SwapChainTargetDesc desc) : _surface(std::move(desc.surface))
+    SwapChainTarget::SwapChainTarget(const GPURuntime& /*runtime*/, SwapChainTargetDesc desc) 
+		: _surface(std::move(desc.surface))
     {
-		auto supportDetails = QuerySwapchainSupport(desc.physical_device, desc.surface);
+		auto [capabilities, formats, presentModes] = QuerySwapchainSupport(desc.physical_device, *_surface);
 
+		auto fitr = std::ranges::find_if(
+            formats,
+			[](const vk::SurfaceFormatKHR& sf) { return sf.format == vk::Format::eB8G8R8A8Unorm && sf.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear; }
+		);
+
+
+        auto pitr = std::ranges::find_if(
+			presentModes,
+			[](const vk::PresentModeKHR& pm) { return pm == vk::PresentModeKHR::eMailbox; }
+        );
+
+		vk::SurfaceFormatKHR selectedFormat = (fitr != formats.end()) ? *fitr : formats.at(0);
+        vk::PresentModeKHR selectedPresentMode = (pitr != presentModes.end()) ? vk::PresentModeKHR::eMailbox : vk::PresentModeKHR::eFifo;
+		vk::Extent2D selectedExtent = CalcMaxExtent(desc.width, desc.height, capabilities);
+
+
+		uint32_t minImageCount = std::max(2u, capabilities.minImageCount);
+
+
+		vk::SwapchainCreateInfoKHR createInfo
+		{
+			.flags = vk::SwapchainCreateFlagsKHR(),
+			.surface = *_surface,
+			.minImageCount = minImageCount,
+			.imageFormat = selectedFormat.format,
+			.imageColorSpace = selectedFormat.colorSpace,
+			.imageExtent = selectedExtent,
+			.imageArrayLayers = 1,
+			.imageUsage = vk::ImageUsageFlagBits::eColorAttachment,
+			.preTransform = capabilities.currentTransform,
+			.compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque,
+			.presentMode = selectedPresentMode,
+			.clipped = VK_TRUE
+		};
+		std::array<uint32_t, 2> queueFamiliyIndices{ desc.graphics_queue_family, desc.present_queue_family };
+		if (desc.graphics_queue_family != desc.present_queue_family)
+		{
+			createInfo.imageSharingMode = vk::SharingMode::eConcurrent;
+			createInfo.queueFamilyIndexCount = 2;
+			createInfo.pQueueFamilyIndices = queueFamiliyIndices.data();
+		}
+		else
+		{
+			createInfo.imageSharingMode = vk::SharingMode::eExclusive;
+		}
+
+		_swapchain = desc.logical_device->createSwapchainKHR(createInfo);
+		_images = _swapchain.getImages();
     }
 
 }

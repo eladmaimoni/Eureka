@@ -463,8 +463,8 @@ namespace eureka
             .pQueueCreateInfos = deviceCreationDesc.create_info.data(),
             .enabledLayerCount = static_cast<uint32_t>(desc.required_layers.size()),
             .ppEnabledLayerNames = desc.required_layers.data(),
-            .enabledExtensionCount = 0,
-            .ppEnabledExtensionNames = nullptr,
+            .enabledExtensionCount = static_cast<uint32_t>(desc.required_extentions.size()),
+            .ppEnabledExtensionNames = desc.required_extentions.data(),
             .pEnabledFeatures = &deviceFeatures
         };
 

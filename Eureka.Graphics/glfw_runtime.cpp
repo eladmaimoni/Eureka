@@ -13,7 +13,7 @@ namespace eureka
 
          
         _window = glfwCreateWindow(1200, 800, "Eureka Engine", nullptr, nullptr);
-
+        
         if (!_window)
         {
             throw std::runtime_error("failed creating window");
@@ -32,11 +32,20 @@ namespace eureka
         return std::vector<const char*>(extentions, extentions + extentions_count);
     }
 
-    vk::raii::SurfaceKHR GLFWRuntime::CreateVulkanSurface(const vk::raii::Instance& instance)
+    GLFWVulkanSurface GLFWRuntime::CreateVulkanSurface(const vk::raii::Instance& instance)
     {
         VkSurfaceKHR c_style_surface;
+        int win_width, win_height;
         VK_CHECK(glfwCreateWindowSurface(*instance, _window, nullptr, &c_style_surface));
-        return vk::raii::SurfaceKHR(instance, c_style_surface);
+        glfwGetWindowSize(_window, &win_width, &win_height);
+        return GLFWVulkanSurface
+        {
+            .size = {static_cast<uint32_t>(win_width), static_cast<uint32_t>(win_height)},
+            .surface = vk::raii::SurfaceKHR(instance, c_style_surface)
+        };
+            
     }
+
+    
 
 }

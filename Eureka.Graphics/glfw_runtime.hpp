@@ -6,6 +6,12 @@
 
 namespace eureka
 {
+    struct GLFWVulkanSurface
+    {
+        vk::Extent2D size;
+        vk::raii::SurfaceKHR surface;
+    };
+
     class GLFWRuntime
     {
     private:
@@ -17,7 +23,7 @@ namespace eureka
         ~GLFWRuntime();
 
         std::vector<const char*> QueryRequiredVulkanExtentions() const;
-        vk::raii::SurfaceKHR CreateVulkanSurface(const vk::raii::Instance& instance);
+        GLFWVulkanSurface CreateVulkanSurface(const vk::raii::Instance& instance);
 
     };
 }

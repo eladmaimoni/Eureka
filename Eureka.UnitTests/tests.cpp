@@ -22,17 +22,23 @@ TEST_CASE("vk init", "[vulkan]")
   
         
         eureka::VkDeviceContextDesc device_context_desc{};
-        device_context_desc.presentation_surface = *presentationSurface;
+        device_context_desc.presentation_surface = *presentationSurface.surface;
         device_context_desc.required_layers.emplace_back(eureka::VK_LAYER_VALIDATION);
+        device_context_desc.required_extentions.emplace_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
         eureka::VkDeviceContext device_context(runtime.Instance(), device_context_desc);
    
 
         eureka::SwapChainTargetDesc swapChainDesc{};
-        swapChainDesc.surface = *presentationSurface;
+        swapChainDesc.width = presentationSurface.size.width;
+        swapChainDesc.height = presentationSurface.size.height;
+        swapChainDesc.surface = std::move(presentationSurface.surface);
         swapChainDesc.physical_device = device_context.PhysicalDevice().get();
+        swapChainDesc.logical_device = device_context.Device().get();
+        swapChainDesc.present_queue_family = device_context.Families().present_family_index;
+        swapChainDesc.graphics_queue_family = device_context.Families().direct_graphics_family_index;
 
 
-        eureka::SwapChainTarget target(runtime, swapChainDesc);
+        eureka::SwapChainTarget target(runtime, std::move(swapChainDesc));
 
         vk::CommandPoolCreateInfo graphicsThreadCommandPoolCreateInfo{ .flags = {}, .queueFamilyIndex = device_context.Families().direct_graphics_family_index };
         vk::raii::CommandPool     graphicsThreadCommandPool(*device_context.Device(), graphicsThreadCommandPoolCreateInfo);

@@ -43,6 +43,7 @@ namespace eureka
     struct VkDeviceContextDesc
     {
         std::vector<const char*> required_layers;
+        std::vector<const char*> required_extentions;
         vk::SurfaceKHR           presentation_surface;
     };
 
