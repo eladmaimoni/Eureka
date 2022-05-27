@@ -128,6 +128,7 @@ namespace eureka
 			.presentMode = selectedPresentMode,
 			.clipped = VK_TRUE
 		};
+
 		std::array<uint32_t, 2> queueFamiliyIndices{ desc.graphics_queue_family, desc.present_queue_family };
 		if (desc.graphics_queue_family != desc.present_queue_family)
 		{
@@ -142,6 +143,40 @@ namespace eureka
 
 		_swapchain = desc.logical_device->createSwapchainKHR(createInfo);
 		_images = _swapchain.getImages();
-    }
+    
+		std::vector<vk::raii::ImageView> _imageViews; 
+		
+		_imageViews.reserve(_images.size());
+		
+		for (auto& image : _images)
+		{
+			vk::ImageSubresourceRange subResourceRange
+			{
+				.aspectMask = vk::ImageAspectFlagBits::eColor,
+				.baseMipLevel = 0,
+				.levelCount = 1, // no mip map for now
+				.baseArrayLayer = 0,
+				.layerCount = 1
+			};
+
+			vk::ImageViewCreateInfo imageViewCreateInfo
+			{
+                .flags = vk::ImageViewCreateFlags(),
+                .image = image,
+                .viewType = vk::ImageViewType::e2D,
+                .format = selectedFormat.format,
+                .components = vk::ComponentMapping(),
+                .subresourceRange = subResourceRange
+			};
+
+			_imageViews.emplace_back(
+				desc.logical_device->createImageView(imageViewCreateInfo)
+			);
+		}
+		
+
+
+		//desc.logical_device->createImageView()
+	}
 
 }

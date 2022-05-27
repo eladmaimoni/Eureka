@@ -27,8 +27,7 @@ project ("Eureka")
 
 # global packages that are used system wide
 find_package(Eigen3 CONFIG REQUIRED)
-find_package(fmt CONFIG REQUIRED)
-find_package(glfw3 CONFIG REQUIRED)
+find_package(glfw3 "3.3.7" CONFIG REQUIRED)
 #find_path(VULKAN_HPP_INCLUDE_DIRS "vulkan/vulkan.hpp")
 find_package(Vulkan REQUIRED FATAL_ERROR) 
 

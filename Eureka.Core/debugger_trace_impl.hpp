@@ -5,10 +5,9 @@
 namespace eureka
 {
     template <typename First, typename... Args>
-    auto format(First&& first, Args&&... args) -> decltype(std::format(first, std::forward<Args>(args)...))
+    inline auto format(const First& first, Args&&... args) -> decltype(std::format(first, std::forward<Args>(args)...))
     {
-        return std::format(std::forward<First>(first), to_format_acceptable(args)...);
-        
+        return std::vformat(first, std::make_format_args(to_format_acceptable(args)...));
     }
 
     inline constexpr char LOG_FORMAT[] = "{}({}): ";

@@ -61,8 +61,9 @@ namespace eureka
         void* /*userData*/
     )
     {
-
+#if !EUREKA_VULKAN_VERBOSE
         if (messageSeverity & (VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT))
+#endif        
         {
             DEBUGGER_TRACE("validation layer: {}", pCallbackData->pMessage);
         }

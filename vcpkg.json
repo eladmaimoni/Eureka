@@ -6,7 +6,6 @@
         "vulkan",
         "vulkan-headers",
         "glfw3",
-        "fmt",
         "eigen3",
         "catch2"
     ]

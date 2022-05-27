@@ -20,5 +20,4 @@ target_include_directories(
 target_link_libraries(
     Eureka.Core 
     PUBLIC 
-    fmt::fmt
 )
