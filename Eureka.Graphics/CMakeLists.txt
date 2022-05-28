@@ -38,8 +38,7 @@ target_link_libraries(
     PRIVATE 
     Eureka.Precompiled
     Eureka.Core 
-    Eigen3::Eigen
-    Vulkan::Vulkan
     glfw
+    
 )
 

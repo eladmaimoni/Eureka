@@ -5,6 +5,7 @@
 #include <vk_error_handling.hpp>
 #include <SwapChainTarget.hpp>
 #include <glfw_runtime.hpp>
+#include <ShadersCache.hpp>
 
 TEST_CASE("vk init", "[vulkan]")
 {
@@ -45,6 +46,9 @@ TEST_CASE("vk init", "[vulkan]")
 
         vk::CommandBufferAllocateInfo graphicsCommandBufferAllocateInfo{ .commandPool = *graphicsThreadCommandPool, .level = vk::CommandBufferLevel::ePrimary, .commandBufferCount = 1 };
         vk::raii::CommandBuffer       commandBuffer = std::move(vk::raii::CommandBuffers(*device_context.Device(), graphicsCommandBufferAllocateInfo).front());
+
+
+        eureka::ShaderCache shaderCache(device_context.Device());
 
         DEBUGGER_TRACE("hi");
   

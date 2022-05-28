@@ -27,5 +27,6 @@ namespace eureka
         vk::Extent2D                     _swapchainExtent;
         vk::raii::SwapchainKHR           _swapchain{ nullptr };
         std::vector<VkImage>             _images;
+        std::vector<vk::raii::ImageView> _imageViews;
     };
 }

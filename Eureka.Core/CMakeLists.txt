@@ -7,6 +7,7 @@ add_library(
     "debugger_trace.hpp"
     "debugger_trace_impl.hpp"
     "debugger_trace_impl.cpp"
+    "macros.hpp"
 )
 
 set_compiler_flags(Eureka.Core) 

@@ -77,7 +77,6 @@ function (configure_cuda_for_target target_name)
     #"-gencode=arch=compute_80,code=sm_80"
     >
     )
-
 endfunction()
 
 function(add_static_library library_name)
@@ -198,3 +197,16 @@ function(target_shared_precompiled_headers target_name precompiled_target)
     #
     #endif()
 endfunction()
+
+macro(configure_default_output_directories)
+    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+    set(EUREKA_COMPILED_SHADERS_DIRECTORY ${CMAKE_BINARY_DIR}/compiled_shaders)
+    #message("===================================================================")
+    #message("CMAKE_ARCHIVE_OUTPUT_DIRECTORY = ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}")
+    #message("CMAKE_LIBRARY_OUTPUT_DIRECTORY = ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}")
+    #message("CMAKE_RUNTIME_OUTPUT_DIRECTORY = ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
+    #message("===================================================================")
+
+endmacro()

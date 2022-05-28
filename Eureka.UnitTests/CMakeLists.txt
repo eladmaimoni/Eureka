@@ -1,5 +1,4 @@
-cmake_minimum_required (VERSION 3.21)
-find_package(Catch2 CONFIG REQUIRED)
+
 
 add_executable(
     Eureka.UnitTests
@@ -20,10 +19,9 @@ target_link_libraries(
     Eureka.Precompiled
     Eureka.Core
     Eureka.Graphics
+    Eureka.Shaders
     Catch2::Catch2 
     Catch2::Catch2WithMain
-    Eigen3::Eigen
-    Vulkan::Vulkan
     glfw
 )
 #Magnum::GLContext Magnum::Application

@@ -19,6 +19,8 @@ Generated Files/
 
 # hlsl compiled files
 *.hlslhpp
+*.spvhpp
+*.spv
 
 # User-specific files
 *.suo

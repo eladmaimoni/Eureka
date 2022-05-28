@@ -144,7 +144,7 @@ namespace eureka
 		_swapchain = desc.logical_device->createSwapchainKHR(createInfo);
 		_images = _swapchain.getImages();
     
-		std::vector<vk::raii::ImageView> _imageViews; 
+		
 		
 		_imageViews.reserve(_images.size());
 		
