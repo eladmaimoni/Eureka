@@ -1,22 +1,14 @@
 #pragma once
 #include <string_view>
-#include "format_cpp20.hpp"
+#include "formatter_specializations.hpp"
 
 namespace eureka
 {
-    template <typename First, typename... Args>
-    inline auto format(const First& first, Args&&... args) -> decltype(std::format(first, std::forward<Args>(args)...))
-    {
-        return std::vformat(first, std::make_format_args(to_format_acceptable(args)...));
-    }
-
     inline constexpr char LOG_FORMAT[] = "{}({}): ";
     inline constexpr char LOG_FORMAT_LINE_NUM[] = "({}): ";
     inline const std::string LOG_FORMAT_S(LOG_FORMAT);
 
     void VSOutputDebugString(const char* str);
-
-
 
     std::true_type constexpr return_true()
     {
@@ -107,7 +99,7 @@ namespace eureka
     {
         const auto formatted_arr = append_debugger_format_internal<LINE_NUM>(line_str, user_str, return_true()); // compiler bug when making this variable constexpr?
         std::string_view formatted_string{ formatted_arr.data(), formatted_arr.size() };
-        return eureka::format(formatted_string, std::forward<Args>(args) ...);
+        return std::vformat(formatted_string, std::make_format_args(std::forward<Args>(args) ...));
     }
 
     template <
@@ -124,7 +116,7 @@ namespace eureka
     {
         // log format and user str can't be formatted at compile time because user_str is not a string literal 
         // still could probably be optimized
-        return eureka::format(LOG_FORMAT_S + user_str + '\n', line_str, LINE_STR_N, std::forward<Args>(args) ...);
+        return std::vformat(LOG_FORMAT_S + user_str + '\n', line_str, LINE_STR_N, std::make_format_args(std::forward<Args>(args) ...));
     }
 
 
@@ -157,7 +149,7 @@ namespace eureka
     inline void debug_output([[maybe_unused]] const std::array<char, N>& arr, [[maybe_unused]] Args&& ... args)
     {
         std::string_view str{ arr.data(), arr.size() };
-        VSOutputDebugString(eureka::format(str, std::forward<Args>(args) ...).c_str());
+        VSOutputDebugString(std::vformat(str, std::make_format_args(std::forward<Args>(args) ...)).c_str());
     }
 
     template <std::size_t N, typename ... Args>
@@ -165,6 +157,6 @@ namespace eureka
     {
         std::string_view str{ arr.data(), arr.size() };
 
-        return eureka::format(str, std::forward<Args>(args) ...);
+        return std::vformat(str, std::make_format_args(std::forward<Args>(args) ...));
     }
 }

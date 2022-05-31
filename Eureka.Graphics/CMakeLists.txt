@@ -2,7 +2,8 @@
 
 # Add source to this project's executable.
 add_library(
-    Eureka.Graphics 
+    Eureka.Graphics
+    "VkHelpers.hpp"
     "VkRuntime.hpp"
     "VkRuntime.cpp"
     "vk_error_handling.hpp"

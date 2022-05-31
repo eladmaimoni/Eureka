@@ -3,6 +3,7 @@
 #include <debugger_trace.hpp>
 #include <VkRuntime.hpp>
 #include <vk_error_handling.hpp>
+#include <VkHelpers.hpp>
 #include <SwapChainTarget.hpp>
 #include <glfw_runtime.hpp>
 #include <ShadersCache.hpp>
@@ -58,3 +59,4 @@ TEST_CASE("vk init", "[vulkan]")
     DEBUGGER_TRACE("hi");
 
 }
+

@@ -1,8 +1,7 @@
 #include "VkRuntime.hpp"
-#include <string_view>
+#include "VkHelpers.hpp"
 #include <debugger_trace.hpp>
 #include "vk_error_handling.hpp"
-#include <optional>
 
 /*
 https://vulkan-tutorial.com/Drawing_a_triangle/Setup/Base_code
@@ -126,7 +125,7 @@ namespace eureka
         //default: device_type = "Other"; break;
         //}
 
-        DEBUGGER_TRACE("Device name: {} type: {}", properties.deviceName, vk::to_string(properties.deviceType));
+        DEBUGGER_TRACE("Device name: {} type: {}", properties.deviceName, properties.deviceType);
     }
 
     bool IsDeviceSuitableForDisplay(const vk::raii::PhysicalDevice& device)

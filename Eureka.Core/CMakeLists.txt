@@ -1,13 +1,17 @@
 ﻿cmake_minimum_required (VERSION 3.21)
 
-# Add source to this project's executable.
+set_source_group(debugging "debugger_trace.hpp" "debugger_trace_impl.hpp" "debugger_trace_impl.cpp")
+set_source_group(formatting "formatter_specializations.hpp")
+set_source_group(compiler "compiler.hpp")
+set_source_group(concepts "basic_concepts.hpp")
+
+
+
 add_library(
     Eureka.Core     
-    "format_cpp20.hpp"
-    "debugger_trace.hpp"
-    "debugger_trace_impl.hpp"
-    "debugger_trace_impl.cpp"
-    "macros.hpp"
+    ${debugging}
+    ${formatting}
+    ${compiler}
 )
 
 set_compiler_flags(Eureka.Core) 
