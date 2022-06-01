@@ -11,7 +11,7 @@ namespace eureka
         return nullptr;
     }
 
-    ShaderCache::ShaderCache(std::shared_ptr<vk::raii::Device> device) 
+    ShaderCache::ShaderCache(std::shared_ptr<vkr::Device> device) 
         :
         _device(std::move(device))
     {
@@ -23,6 +23,7 @@ namespace eureka
             .pCode = reinterpret_cast<const uint32_t*>(ShadedMeshVS.ptr)
         };
         _shaders.emplace(ShadedMeshVS, _device->createShaderModule(createInfo));
+    
     }
 
     ShaderCache::~ShaderCache()

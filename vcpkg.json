@@ -6,8 +6,10 @@
         "boost-program-options",
         "catch2",
         "eigen3",
+        "glm",
         "glfw3",
         "vulkan",
-        "vulkan-headers"
+        "vulkan-headers",
+        "vulkan-memory-allocator"
     ]
 }

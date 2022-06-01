@@ -10,9 +10,9 @@ namespace eureka
 
     class CommandPool
     {
-        vk::raii::CommandPool _commandPool;
+        vkr::CommandPool _commandPool;
     public:
-        CommandPool(const CommandPoolDesc& desc, const vk::raii::Device& device)
+        CommandPool(const CommandPoolDesc& desc, const vkr::Device& device)
             : _commandPool(device, vk::CommandPoolCreateInfo{ .flags = {},.queueFamilyIndex = desc.queue_family })
         {
 
@@ -26,7 +26,7 @@ namespace eureka
 
     class CommandBuffer
     {
-        CommandBuffer(std::shared_ptr<vk::raii::Queue> queue)
+        CommandBuffer(std::shared_ptr<vkr::Queue> queue)
         {
 
         }

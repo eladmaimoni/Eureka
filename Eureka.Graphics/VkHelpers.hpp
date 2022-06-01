@@ -1,5 +1,5 @@
 #pragma once
-
+#include <debugger_trace.hpp>
 
 namespace eureka
 {

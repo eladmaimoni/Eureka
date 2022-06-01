@@ -1,0 +1,10 @@
+
+
+
+namespace eureka
+{
+    class Pipeline
+    {
+
+    };
+}

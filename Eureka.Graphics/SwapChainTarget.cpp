@@ -2,25 +2,10 @@
 #include "VkHelpers.hpp"
 #include <debugger_trace.hpp>
 
+
+
 namespace eureka
 {
-    //template<typename Object>
-    //concept has_vk_to_string = requires(const Object & obj)
-    //{
-    //    vk::to_string(obj);
-    //};
-
-	//inline std::string to_string(const has_vk_to_string auto& value)
-	//{
-	//	return vk::to_string(value);
-	//}
-
-	//static_assert(!has_eureka_to_string<std::string>);
-	//static_assert(has_vk_to_string<vk::PhysicalDeviceType>);
-	//static_assert(has_eureka_to_string<vk::PhysicalDeviceType>);
-    //static_assert(iterable_of_to_stringable<std::vector< vk::SurfaceTransformFlagBitsKHR>>);
-    //static_assert(!iterable_of_streamable_not_formattable<std::vector< vk::SurfaceTransformFlagBitsKHR>>);
-
     struct SwapChainSupportDetails 
     {
         vk::SurfaceCapabilitiesKHR        capabilities;
@@ -47,7 +32,7 @@ namespace eureka
 	}
 
 	SwapChainSupportDetails QuerySwapchainSupport(
-		const vk::raii::PhysicalDevice* device, 
+		const vkr::PhysicalDevice* device, 
 		vk::SurfaceKHR surface) 
 	{
 		SwapChainSupportDetails support;
@@ -90,10 +75,12 @@ namespace eureka
 		return support;
 	}
 
-    SwapChainTarget::SwapChainTarget(const GPURuntime& /*runtime*/, SwapChainTargetDesc desc) 
-		: _surface(std::move(desc.surface))
+    SwapChainTarget::SwapChainTarget(DeviceContext& deviceContext, SwapChainTargetDesc desc)
+		: 
+		_deviceContext(deviceContext),
+		_desc(std::move(desc))
     {
-		auto [capabilities, formats, presentModes] = QuerySwapchainSupport(desc.physical_device, *_surface);
+		auto [capabilities, formats, presentModes] = QuerySwapchainSupport(_deviceContext.PhysicalDevice().get(), *_desc.surface);
 
 		auto fitr = std::ranges::find_if(
             formats,
@@ -106,78 +93,117 @@ namespace eureka
 			[](const vk::PresentModeKHR& pm) { return pm == vk::PresentModeKHR::eMailbox; }
         );
 
-		vk::SurfaceFormatKHR selectedFormat = (fitr != formats.end()) ? *fitr : formats.at(0);
-        vk::PresentModeKHR selectedPresentMode = (pitr != presentModes.end()) ? vk::PresentModeKHR::eMailbox : vk::PresentModeKHR::eFifo;
-		vk::Extent2D selectedExtent = CalcMaxExtent(desc.width, desc.height, capabilities);
+
+        _capabilities = capabilities;
+		_surfaceFormat = (fitr != formats.end()) ? *fitr : formats.at(0);
+        _selectedPresentMode = (pitr != presentModes.end()) ? vk::PresentModeKHR::eMailbox : vk::PresentModeKHR::eFifo;
 
 
-		uint32_t minImageCount = std::max(2u, capabilities.minImageCount);
 
+		CreateSwapChain();
+        CreateDepthBuffer();
+        CreateFrameBuffer();
 
-		vk::SwapchainCreateInfoKHR createInfo
-		{
-			.flags = vk::SwapchainCreateFlagsKHR(),
-			.surface = *_surface,
-			.minImageCount = minImageCount,
-			.imageFormat = selectedFormat.format,
-			.imageColorSpace = selectedFormat.colorSpace,
-			.imageExtent = selectedExtent,
-			.imageArrayLayers = 1,
-			.imageUsage = vk::ImageUsageFlagBits::eColorAttachment,
-			.preTransform = capabilities.currentTransform,
-			.compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque,
-			.presentMode = selectedPresentMode,
-			.clipped = VK_TRUE
-		};
+	}
 
-		std::array<uint32_t, 2> queueFamiliyIndices{ desc.graphics_queue_family, desc.present_queue_family };
-		if (desc.graphics_queue_family != desc.present_queue_family)
-		{
-			createInfo.imageSharingMode = vk::SharingMode::eConcurrent;
-			createInfo.queueFamilyIndexCount = 2;
-			createInfo.pQueueFamilyIndices = queueFamiliyIndices.data();
-		}
-		else
-		{
-			createInfo.imageSharingMode = vk::SharingMode::eExclusive;
-		}
+    void SwapChainTarget::Resize(uint32_t width, uint32_t height)
+    {
+        _desc.width = width;
+        _desc.height = height;
+        _capabilities = _deviceContext.PhysicalDevice()->getSurfaceCapabilitiesKHR(*_desc.surface);
 
-		_swapchain = desc.logical_device->createSwapchainKHR(createInfo);
-		_images = _swapchain.getImages();
-    
-		
-		
-		_imageViews.reserve(_images.size());
-		
-		for (auto& image : _images)
-		{
-			vk::ImageSubresourceRange subResourceRange
-			{
-				.aspectMask = vk::ImageAspectFlagBits::eColor,
-				.baseMipLevel = 0,
-				.levelCount = 1, // no mip map for now
-				.baseArrayLayer = 0,
-				.layerCount = 1
-			};
+        CreateSwapChain();
+        CreateDepthBuffer();
+        CreateFrameBuffer();
+    }
 
-			vk::ImageViewCreateInfo imageViewCreateInfo
-			{
+    void SwapChainTarget::CreateSwapChain()
+    {
+        vk::Extent2D selectedExtent = CalcMaxExtent(_desc.width, _desc.height, _capabilities);
+        uint32_t minImageCount = std::max(2u, _capabilities.minImageCount);
+        vk::SwapchainCreateInfoKHR createInfo
+        {
+            .flags = vk::SwapchainCreateFlagsKHR(),
+            .surface = *_desc.surface,
+            .minImageCount = minImageCount,
+            .imageFormat = _surfaceFormat.format,
+            .imageColorSpace = _surfaceFormat.colorSpace,
+            .imageExtent = selectedExtent,
+            .imageArrayLayers = 1,
+            .imageUsage = vk::ImageUsageFlagBits::eColorAttachment,
+            .preTransform = _capabilities.currentTransform,
+            .compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque,
+            .presentMode = _selectedPresentMode,
+            .clipped = VK_TRUE
+        };
+
+        std::array<uint32_t, 2> queueFamiliyIndices{ _desc.graphics_queue_family, _desc.present_queue_family };
+        if (_desc.graphics_queue_family != _desc.present_queue_family)
+        {
+            createInfo.imageSharingMode = vk::SharingMode::eConcurrent;
+            createInfo.queueFamilyIndexCount = 2;
+            createInfo.pQueueFamilyIndices = queueFamiliyIndices.data();
+        }
+        else
+        {
+            createInfo.imageSharingMode = vk::SharingMode::eExclusive;
+        }
+        _swapchain = nullptr; // first release then create
+        _swapchain = _deviceContext.LogicalDevice()->createSwapchainKHR(createInfo);
+        _images = _swapchain.getImages();
+
+        _imageViews.reserve(_images.size());
+
+        for (auto& image : _images)
+        {
+            vk::ImageSubresourceRange subResourceRange
+            {
+                .aspectMask = vk::ImageAspectFlagBits::eColor,
+                .baseMipLevel = 0,
+                .levelCount = 1, // no mip map for now
+                .baseArrayLayer = 0,
+                .layerCount = 1
+            };
+
+            vk::ImageViewCreateInfo imageViewCreateInfo
+            {
                 .flags = vk::ImageViewCreateFlags(),
                 .image = image,
                 .viewType = vk::ImageViewType::e2D,
-                .format = selectedFormat.format,
+                .format = _surfaceFormat.format,
                 .components = vk::ComponentMapping(),
                 .subresourceRange = subResourceRange
-			};
+            };
 
-			_imageViews.emplace_back(
-				desc.logical_device->createImageView(imageViewCreateInfo)
-			);
-		}
-		
+            _imageViews.emplace_back(
+                _deviceContext.LogicalDevice()->createImageView(imageViewCreateInfo)
+            );
+        }
+    }
 
+    void SwapChainTarget::CreateDepthBuffer()
+    {
+        _depthImage = Image2D(
+            _deviceContext,
+            Image2DProperties
+            { 
+                .width = _desc.width,
+                .height = _desc.height,
+                .format = vk::Format::eD24UnormS8Uint,
+                .usage_flags = vk::ImageUsageFlagBits::eDepthStencilAttachment,
+                .aspect_flags = vk::ImageAspectFlagBits::eDepth
+            }
+        );
+    }
 
-		//desc.logical_device->createImageView()
-	}
+    void SwapChainTarget::CreateFrameBuffer()
+    {
+
+    }
+
+    uint32_t SwapChainTarget::ImageCount() const
+    {
+        return static_cast<uint32_t>(_images.size());
+    }
 
 }

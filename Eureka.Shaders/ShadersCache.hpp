@@ -19,10 +19,11 @@ namespace eureka
 
     class ShaderCache
     {
-        std::shared_ptr<vk::raii::Device> _device;
-        std::unordered_map<ShaderId, vk::raii::ShaderModule> _shaders;
+        std::shared_ptr<vkr::Device> _device;
+        std::unordered_map<ShaderId, vkr::ShaderModule> _shaders;
     public:
-        ShaderCache(std::shared_ptr<vk::raii::Device> device);
+
+        ShaderCache(std::shared_ptr<vkr::Device> device);
         ~ShaderCache();
 
     };

@@ -1,6 +1,6 @@
-add_library(Eureka.Precompiled STATIC "precompiled.cpp")
+add_library(Eureka.Precompiled STATIC "precompiled.cpp" "global_definitions.hpp")
 set_target_properties(Eureka.Precompiled PROPERTIES OPTIMIZE_DEPENDENCIES ON LINKER_LANGUAGE CXX)
-target_include_directories(Eureka.Precompiled PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} PUBLIC "${PROJECT_BINARY_DIR}")
+target_include_directories(Eureka.Precompiled PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} "${PROJECT_BINARY_DIR}")
 set_compiler_flags(Eureka.Precompiled)    
 
 target_compile_definitions(
@@ -8,6 +8,9 @@ target_compile_definitions(
     PUBLIC
     VULKAN_HPP_NO_CONSTRUCTORS
 )
+
+
+
 
 target_link_libraries(
   Eureka.Precompiled
@@ -35,7 +38,8 @@ set_strict_msvc_flags(my_target)
 target_shared_precompiled_headers(my_target Eureka.Precompiled)
 
 ]]
-target_precompile_headers(Eureka.Precompiled 
+target_precompile_headers(
+    Eureka.Precompiled 
     PRIVATE
     <algorithm>
     <array>
@@ -58,6 +62,7 @@ target_precompile_headers(Eureka.Precompiled
     <optional>
     <ranges>
     <regex>
+    <span>
     <sstream>
     <stdexcept>
     <string>
@@ -66,6 +71,7 @@ target_precompile_headers(Eureka.Precompiled
     <vector> 
     <vulkan/vulkan_raii.hpp>
     <Eigen/Core>
+    <global_definitions.hpp>
  )
 
 set_target_properties(Eureka.Precompiled PROPERTIES PRECOMPILED_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}")

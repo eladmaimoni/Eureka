@@ -7,8 +7,6 @@ include(utility.cmake)
 ############################################################################
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
-set(CMAKE_CUDA_STANDARD 14) # https://stackoverflow.com/questions/61540127/set-cxx-standard-to-c17-when-combining-c-and-cuda-in-cmakelists
-set(CMAKE_CUDA_STANDARD_REQUIRED TRUE)
 
 if (MSVC)
     # https://stackoverflow.com/questions/58708772/cmake-project-in-visual-studio-gives-flag-override-warnings-command-line-warnin
@@ -23,6 +21,7 @@ project ("Eureka")
 ############################################################################
 find_package(Catch2 CONFIG REQUIRED)
 find_package(Boost REQUIRED COMPONENTS program_options)
+find_package(glm CONFIG REQUIRED)
 find_package(Eigen3 CONFIG REQUIRED)
 find_package(glfw3 CONFIG REQUIRED)
 #find_package(glslang CONFIG REQUIRED)
@@ -33,6 +32,7 @@ find_package(Vulkan REQUIRED FATAL_ERROR COMPONENTS glslc)
 #find_package(unofficial-shaderc_util CONFIG REQUIRED)
 #find_package(unofficial-shaderc CONFIG REQUIRED)
 find_program(glslc_executable NAMES glslc HINTS Vulkan::glslc)
+find_package(unofficial-vulkan-memory-allocator CONFIG REQUIRED)
 
 
 
@@ -56,19 +56,15 @@ add_subdirectory (Eureka.Tools)
 add_subdirectory (Eureka.Core)
 add_subdirectory (Eureka.Graphics)
 add_subdirectory (Eureka.Shaders)
+add_subdirectory (Eureka.App)
 add_subdirectory (Eureka.UnitTests)
+add_subdirectory (ZZZ_SAMPLE)
 
 
 
-option(WITH_CUDA "include Cuda module" OFF)
 
 
 
 
-if (WITH_CUDA)
-  configure_cuda()
-  #add_subdirectory (RGo.Cuda.Core)
-  #add_subdirectory (RGo.Stereo.Cuda)
-endif()
 
 

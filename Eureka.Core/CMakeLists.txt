@@ -1,6 +1,8 @@
 ﻿cmake_minimum_required (VERSION 3.21)
 
 set_source_group(debugging "debugger_trace.hpp" "debugger_trace_impl.hpp" "debugger_trace_impl.cpp")
+set_source_group(logging "logging.hpp" "logging_impl.hpp" "logging_impl.cpp")
+
 set_source_group(formatting "formatter_specializations.hpp")
 set_source_group(compiler "compiler.hpp")
 set_source_group(concepts "basic_concepts.hpp")

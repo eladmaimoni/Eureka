@@ -1,20 +1,55 @@
 ﻿cmake_minimum_required (VERSION 3.21)
 
-# Add source to this project's executable.
-add_library(
-    Eureka.Graphics
+set_source_group(
+    core 
     "VkHelpers.hpp"
-    "VkRuntime.hpp"
-    "VkRuntime.cpp"
     "vk_error_handling.hpp"
     "vk_error_handling.cpp"
-    "glfw_runtime.hpp"
-    "glfw_runtime.cpp"
-    "SwapChainTarget.hpp"
-    "SwapChainTarget.cpp"
-    "CommandBuffer.hpp"
-    "CommandBuffer.cpp"
+)
 
+set_source_group(
+    infrastructure 
+    "VkMemAllocator.cpp"
+)
+
+set_source_group(
+    wrappers 
+    "Instance.hpp" 
+    "Instance.cpp"
+    "CommandBuffer.hpp" 
+    "CommandBuffer.cpp" 
+    "SwapChainTarget.hpp" 
+    "SwapChainTarget.cpp" 
+    "Pipeline.hpp" 
+    "Pipeline.cpp"
+    "DeviceContext.hpp" 
+    "DeviceContext.cpp"
+    "Images.hpp"
+    "Images.cpp"
+    "RenderPass.hpp"
+    "RenderPass.cpp"
+)
+
+set_source_group(
+    rendering 
+    "RenderingSystem.hpp" 
+    "RenderingSystem.cpp" 
+
+)
+
+set_source_group(
+    windowing 
+    "GLFWRuntime.hpp" 
+    "GLFWRuntime.cpp" 
+
+)
+add_library(
+    Eureka.Graphics
+    ${core}
+    ${infrastructure}
+    ${rendering}
+    ${wrappers}
+    ${windowing}
 )
 
 set_compiler_flags(Eureka.Graphics)
@@ -40,6 +75,7 @@ target_link_libraries(
     Eureka.Precompiled
     Eureka.Core 
     glfw
+    unofficial::vulkan-memory-allocator::vulkan-memory-allocator
     
 )
 

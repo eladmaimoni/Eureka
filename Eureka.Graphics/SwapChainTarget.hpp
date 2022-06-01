@@ -1,32 +1,52 @@
-
-
-#include <VkRuntime.hpp>
+#include <DeviceContext.hpp>
+#include <Images.hpp>
 
 namespace eureka
 {
     struct SwapChainTargetDesc
     {
-        vk::raii::SurfaceKHR                      surface{nullptr};
-        vk::raii::PhysicalDevice*                 physical_device;
-        vk::raii::Device*                         logical_device;
-
+        vkr::SurfaceKHR                      surface{nullptr};
         uint32_t                                  width;
         uint32_t                                  height;
         uint32_t                                  present_queue_family;
         uint32_t                                  graphics_queue_family;
-
-
     };
 
     class SwapChainTarget
     {
     public:
-        SwapChainTarget(const GPURuntime& runtime, SwapChainTargetDesc desc);
-        vk::raii::SurfaceKHR             _surface;
+        SwapChainTarget(
+            DeviceContext& deviceContext, 
+            SwapChainTargetDesc desc
+        );
+
+        void Resize(uint32_t width, uint32_t height);
+
+
+
+    private:
+
+        SwapChainTargetDesc              _desc;
+        DeviceContext&                   _deviceContext;
+
         vk::Format                       _swapchainFormat;
         vk::Extent2D                     _swapchainExtent;
-        vk::raii::SwapchainKHR           _swapchain{ nullptr };
+        vkr::SwapchainKHR                _swapchain{ nullptr };
         std::vector<VkImage>             _images;
-        std::vector<vk::raii::ImageView> _imageViews;
+        std::vector<vkr::ImageView>      _imageViews;
+        vk::SurfaceFormatKHR             _surfaceFormat;
+        vk::PresentModeKHR               _selectedPresentMode;
+        Image2D                          _depthImage;
+
+
+        
+        void CreateSwapChain();
+        void CreateDepthBuffer();
+        void CreateFrameBuffer();
+
+
+        vk::SurfaceCapabilitiesKHR _capabilities;
+    public:
+        uint32_t ImageCount() const;
     };
 }
