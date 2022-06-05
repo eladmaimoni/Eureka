@@ -1,4 +1,4 @@
-#include "SwapChainTarget.hpp"
+#include "SwapChain.hpp"
 #include "VkHelpers.hpp"
 #include <debugger_trace.hpp>
 
@@ -33,7 +33,8 @@ namespace eureka
 
 	SwapChainSupportDetails QuerySwapchainSupport(
 		const vkr::PhysicalDevice* device, 
-		vk::SurfaceKHR surface) 
+		vk::SurfaceKHR surface
+    ) 
 	{
 		SwapChainSupportDetails support;
 
@@ -75,9 +76,10 @@ namespace eureka
 		return support;
 	}
 
-    SwapChainTarget::SwapChainTarget(DeviceContext& deviceContext, SwapChainTargetDesc desc)
+    SwapChain::SwapChain(DeviceContext& deviceContext, std::shared_ptr<vkr::Queue> presentationQueue, SwapChainTargetConfig desc)
 		: 
 		_deviceContext(deviceContext),
+        _presentationQueue(std::move(presentationQueue)),
 		_desc(std::move(desc))
     {
 		auto [capabilities, formats, presentModes] = QuerySwapchainSupport(_deviceContext.PhysicalDevice().get(), *_desc.surface);
@@ -98,26 +100,79 @@ namespace eureka
 		_surfaceFormat = (fitr != formats.end()) ? *fitr : formats.at(0);
         _selectedPresentMode = (pitr != presentModes.end()) ? vk::PresentModeKHR::eMailbox : vk::PresentModeKHR::eFifo;
 
-
-
 		CreateSwapChain();
-        CreateDepthBuffer();
-        CreateFrameBuffer();
 
-	}
+        //
+        // sync objects
+        //
+        vk::SemaphoreCreateInfo semaphoreCreateInfo{};
+        //vk::FenceCreateInfo fenceCreateInfo{ .flags = vk::FenceCreateFlagBits::eSignaled };
+        for (auto i = 0u; i < _surfaceImages.size(); ++i)
+        {
+            _imageReadySemapores.emplace_back(deviceContext.LogicalDevice()->createSemaphore(semaphoreCreateInfo));
 
-    void SwapChainTarget::Resize(uint32_t width, uint32_t height)
+        }
+      
+    }
+
+    void SwapChain::Resize(uint32_t width, uint32_t height)
     {
         _desc.width = width;
         _desc.height = height;
         _capabilities = _deviceContext.PhysicalDevice()->getSurfaceCapabilitiesKHR(*_desc.surface);
+        _currentSemaphore = 0;
 
         CreateSwapChain();
-        CreateDepthBuffer();
-        CreateFrameBuffer();
     }
 
-    void SwapChainTarget::CreateSwapChain()
+    SwapChainImageReference SwapChain::AcquireNextAvailableImageAsync()
+    {
+        // https://stackoverflow.com/questions/65054157/do-i-need-dedicated-fences-semaphores-per-swap-chain-image-per-frame-or-per-com
+        _currentSemaphore = (_currentSemaphore + 1) % _imageReadySemapores.size();
+
+        auto semaphoreHandle = *_imageReadySemapores[_currentSemaphore];
+
+        auto [result, index] = _swapchain.acquireNextImage(UINT64_MAX, semaphoreHandle);
+
+        _lastAquiredImage = index;
+        VK_CHECK(result);
+
+        return SwapChainImageReference
+        {
+            .image_index = index,
+            .image_ready = semaphoreHandle
+        };
+    }
+
+    vk::Result SwapChain::PresentLastAcquiredImageAsync(vk::Semaphore renderingDoneSemaphore)
+    {
+        VkSemaphore sem = renderingDoneSemaphore;
+        vk::PresentInfoKHR presentInfo
+        {
+             .waitSemaphoreCount = 1,
+             .pWaitSemaphores = &renderingDoneSemaphore,
+             .swapchainCount = 1,
+             .pSwapchains = &*_swapchain,
+             .pImageIndices = &_lastAquiredImage
+        };
+        return _presentationQueue->presentKHR(presentInfo);
+    }
+
+    vk::Rect2D SwapChain::RenderArea() const
+    {
+        return vk::Rect2D
+        {
+            {0u, 0u},
+            {_desc.width, _desc.height}
+        };
+    }
+
+    std::vector<std::shared_ptr<Image>> SwapChain::Images() const
+    {
+        return _surfaceImages;
+    }
+
+    void SwapChain::CreateSwapChain()
     {
         vk::Extent2D selectedExtent = CalcMaxExtent(_desc.width, _desc.height, _capabilities);
         uint32_t minImageCount = std::max(2u, _capabilities.minImageCount);
@@ -150,11 +205,11 @@ namespace eureka
         }
         _swapchain = nullptr; // first release then create
         _swapchain = _deviceContext.LogicalDevice()->createSwapchainKHR(createInfo);
-        _images = _swapchain.getImages();
+        auto images = _swapchain.getImages();
 
-        _imageViews.reserve(_images.size());
+        _surfaceImages.resize(images.size(), nullptr);
 
-        for (auto& image : _images)
+        for (auto i = 0u; i < images.size(); ++i)
         {
             vk::ImageSubresourceRange subResourceRange
             {
@@ -168,42 +223,22 @@ namespace eureka
             vk::ImageViewCreateInfo imageViewCreateInfo
             {
                 .flags = vk::ImageViewCreateFlags(),
-                .image = image,
+                .image = images[i],
                 .viewType = vk::ImageViewType::e2D,
                 .format = _surfaceFormat.format,
                 .components = vk::ComponentMapping(),
                 .subresourceRange = subResourceRange
             };
 
-            _imageViews.emplace_back(
-                _deviceContext.LogicalDevice()->createImageView(imageViewCreateInfo)
-            );
+            auto view = _deviceContext.LogicalDevice()->createImageView(imageViewCreateInfo);
+            _surfaceImages[i] = std::make_shared<Image>(images[i], std::move(view));
         }
     }
 
-    void SwapChainTarget::CreateDepthBuffer()
+    uint32_t SwapChain::ImageCount() const
     {
-        _depthImage = Image2D(
-            _deviceContext,
-            Image2DProperties
-            { 
-                .width = _desc.width,
-                .height = _desc.height,
-                .format = vk::Format::eD24UnormS8Uint,
-                .usage_flags = vk::ImageUsageFlagBits::eDepthStencilAttachment,
-                .aspect_flags = vk::ImageAspectFlagBits::eDepth
-            }
-        );
+        return static_cast<uint32_t>(_surfaceImages.size());
     }
 
-    void SwapChainTarget::CreateFrameBuffer()
-    {
-
-    }
-
-    uint32_t SwapChainTarget::ImageCount() const
-    {
-        return static_cast<uint32_t>(_images.size());
-    }
 
 }

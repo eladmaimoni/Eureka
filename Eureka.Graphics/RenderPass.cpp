@@ -2,10 +2,16 @@
 
 namespace eureka
 {
+    //////////////////////////////////////////////////////////////////////////
+    //
+    //                      DepthColorRenderPass
+    //
+    //////////////////////////////////////////////////////////////////////////
 
-    ForwardRenderPass::ForwardRenderPass(
+
+    DepthColorRenderPass::DepthColorRenderPass(
         const DeviceContext& deviceContext,
-        const ForwardRenderPassConfig& config
+        const DepthColorRenderPassConfig& config
     )
     {
         std::array<vk::AttachmentDescription, 2> colorAndDepthAttachments;
@@ -36,7 +42,7 @@ namespace eureka
             .stencilLoadOp = vk::AttachmentLoadOp::eDontCare,
             .stencilStoreOp = vk::AttachmentStoreOp::eDontCare,
             .initialLayout = vk::ImageLayout::eUndefined,
-            .finalLayout = vk::ImageLayout::eDepthAttachmentOptimal
+            .finalLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal
         };
 
         //
@@ -45,14 +51,14 @@ namespace eureka
 
         vk::AttachmentReference colorAttachmentRefrence
         {
-            .attachment = 1,
+            .attachment = 0,
             .layout = vk::ImageLayout::eColorAttachmentOptimal
         };
 
         vk::AttachmentReference depthAttachmentRefrence
         {
             .attachment = 1,
-            .layout = vk::ImageLayout::eDepthAttachmentOptimal
+            .layout = vk::ImageLayout::eDepthStencilAttachmentOptimal
         };
 
         //

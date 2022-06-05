@@ -1,10 +1,11 @@
 #include <Instance.hpp>
 #include <DeviceContext.hpp>
 #include <GLFWRuntime.hpp>
+#include "RenderTarget.hpp"
 
 namespace eureka
 {
-    class SwapChainTarget;
+    class SwapChain;
     
     struct RenderingSystemConfig
     {
@@ -34,20 +35,24 @@ namespace eureka
         DeviceContext& _deviceContext;
         GLFWRuntime&   _glfw;
 
-        GLFWWindowPtr                    _window; // TODO should remove
-        std::unique_ptr<SwapChainTarget> _primaryTarget;
-
-        std::shared_ptr<vkr::Queue> _presentationQueue;
-        std::shared_ptr<vkr::Queue> _graphicsQueue;
+        GLFWWindowPtr                         _window; // TODO should remove
+        std::unique_ptr<SwapChain>            _swapChain;
+        std::shared_ptr<DepthColorRenderPass> _renderPass;
+        std::vector<DepthColorRenderTarget>   _renderTargets;
+        std::shared_ptr<vkr::Queue>           _presentationQueue;
+        std::shared_ptr<vkr::Queue>           _graphicsQueue;
 
         // some object - maybe synchronized command buffer
-        vkr::CommandPool                _mainGraphicsCommandPool{nullptr};
-        std::vector<vkr::CommandBuffer> _mainGraphicsCommandBuffers;
-        vkr::Fence                      _mainCommandBuffersFence{nullptr}; // should be a vector?
 
-        std::vector<vkr::Fence>         _inFlightFences;
-        std::vector<vkr::Semaphore>     _imageAvailableSemaphore;
-        std::vector<vkr::Semaphore>     _renderFinishedSemaphore;
+
+        // this section should be a ring buffer of some sort
+        uint32_t                              _maxFramesInFlight{};
+        //uint32_t                              _currentFrame{ 0 };
+
+        std::vector<vkr::CommandPool>         _mainGraphicsCommandPools;
+        std::vector<vkr::CommandBuffer>       _mainGraphicsCommandBuffers;
+        std::vector<vkr::Fence>               _renderingDoneFence;
+        std::vector<vkr::Semaphore>           _renderingDoneSemaphore;
 
 
 

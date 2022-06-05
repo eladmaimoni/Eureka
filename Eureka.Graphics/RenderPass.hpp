@@ -1,18 +1,34 @@
+#pragma once
 #include "DeviceContext.hpp"
 
 namespace eureka
 {
-    struct ForwardRenderPassConfig
+
+
+    class RenderPass
+    {
+    public:
+        virtual ~RenderPass()
+        {
+
+        }
+
+        vk::RenderPass Get() const { return *_renderPass; }
+
+    protected:
+        vkr::RenderPass _renderPass{ nullptr };
+    };
+
+    struct DepthColorRenderPassConfig
     {
         vk::Format color_output_format;
         vk::Format depth_output_format;
     };
 
-    class ForwardRenderPass
+    class DepthColorRenderPass : public RenderPass
     {
-        ForwardRenderPass(const DeviceContext& deviceContext, const ForwardRenderPassConfig& config);
+    public:
+        DepthColorRenderPass(const DeviceContext& deviceContext, const DepthColorRenderPassConfig& config);
 
-
-        vkr::RenderPass _renderPass{ nullptr };
     };
 }

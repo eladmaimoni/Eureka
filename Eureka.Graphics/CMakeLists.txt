@@ -10,6 +10,7 @@ set_source_group(
 set_source_group(
     infrastructure 
     "VkMemAllocator.cpp"
+    "GraphicsDefaults.hpp"
 )
 
 set_source_group(
@@ -18,16 +19,18 @@ set_source_group(
     "Instance.cpp"
     "CommandBuffer.hpp" 
     "CommandBuffer.cpp" 
-    "SwapChainTarget.hpp" 
-    "SwapChainTarget.cpp" 
+    "SwapChain.hpp" 
+    "SwapChain.cpp" 
     "Pipeline.hpp" 
     "Pipeline.cpp"
     "DeviceContext.hpp" 
     "DeviceContext.cpp"
-    "Images.hpp"
-    "Images.cpp"
+    "Image.hpp"
+    "Image.cpp"
     "RenderPass.hpp"
     "RenderPass.cpp"
+    "RenderTarget.hpp"
+    "RenderTarget.cpp"
 )
 
 set_source_group(

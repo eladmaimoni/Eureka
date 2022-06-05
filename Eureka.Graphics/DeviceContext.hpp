@@ -42,7 +42,7 @@ namespace eureka
         //
         // Accessors
         //
-        const std::shared_ptr<vkr::Device>& Device() const { assert(_device); return _device; };
+
         const std::vector<std::shared_ptr<vkr::Queue>>& GraphicsQueue() const { assert(_device); return _graphicsQueue; };
         const std::vector<std::shared_ptr<vkr::Queue>>& ComputeQueue() const { assert(_device); return _computeQueue; };
         const std::vector<std::shared_ptr<vkr::Queue>>& CopyQueue() const { assert(_device); return _copyQueue; };

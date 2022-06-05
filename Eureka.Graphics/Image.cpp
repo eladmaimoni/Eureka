@@ -1,4 +1,4 @@
-#include "Images.hpp"
+#include "Image.hpp"
 
 namespace eureka
 {
@@ -106,38 +106,78 @@ namespace eureka
         return deviceContext.LogicalDevice()->createImageView(imageViewCreateInfo);
     }
 
+
+
+
+
     //////////////////////////////////////////////////////////////////////////
     //
     //                         Image
     //
     //////////////////////////////////////////////////////////////////////////
-
-    Image::Image(const DeviceContext& deviceContext) : _allocator(deviceContext.Allocator())
+    
+    Image::~Image()
     {
 
     }
-
+    
     Image::Image(Image&& that) :
         _image(that._image),
-        _allocation(that._allocation),
-        _view(std::move(that._view)),
-        _allocationInfo(that._allocationInfo),
-        _allocator(that._allocator)
+        _view(std::move(that._view))
     {
         that._image = nullptr;
-        that._allocation = nullptr;
-        that._allocator = nullptr;
+
+    }
+
+
+
+    Image::Image(vk::Image image, vkr::ImageView view)
+        : _image(image), _view(std::move(view))
+    {
+
     }
 
     Image& Image::operator=(Image&& rhs)
     {
         _image = rhs._image;
-        _allocation = rhs._allocation;
         _view = std::move(rhs._view);
+        rhs._image = nullptr;
+
+
+
+        return *this;
+    }
+
+    //////////////////////////////////////////////////////////////////////////
+    //
+    //                        AllocatedImage
+    //
+    //////////////////////////////////////////////////////////////////////////
+
+    AllocatedImage::AllocatedImage(const DeviceContext& deviceContext) 
+        : _allocator(deviceContext.Allocator())
+    {
+
+    }
+
+    AllocatedImage::AllocatedImage(AllocatedImage&& that)
+        : 
+        Image(std::move(that)),
+        _allocation(that._allocation),
+        _allocationInfo(that._allocationInfo),
+        _allocator(that._allocator)
+    {
+        that._allocation = nullptr;
+        that._allocator = nullptr;
+    }
+
+    AllocatedImage& AllocatedImage::operator=(AllocatedImage&& rhs)
+    {
+        Image::operator=(std::move(rhs));
+        _allocation = rhs._allocation;
         _allocationInfo = rhs._allocationInfo;
         _allocator = rhs._allocator;
 
-        rhs._image = nullptr;
         rhs._allocation = nullptr;
 
         return *this;
@@ -149,7 +189,10 @@ namespace eureka
     //
     //////////////////////////////////////////////////////////////////////////
 
-    Image2D::Image2D(const DeviceContext& deviceContext, const Image2DProperties& props) : Image(deviceContext)
+    Image2D::Image2D(
+        const DeviceContext& deviceContext,
+        const Image2DProperties& props) 
+        : AllocatedImage(deviceContext)
     {
         vk::ImageCreateInfo createInfo
         {
@@ -204,6 +247,25 @@ namespace eureka
         return *this;
     }
 
+    //////////////////////////////////////////////////////////////////////////
+    //
+    //                        Image2D
+    //
+    //////////////////////////////////////////////////////////////////////////
 
+    Image2D CreateDepthImage(const DeviceContext& deviceContext, uint32_t width, uint32_t height)
+    {
+        return Image2D(
+            deviceContext,
+            Image2DProperties
+            {
+                .width = width,
+                .height = height,
+                .format = vk::Format::eD24UnormS8Uint,
+                .usage_flags = vk::ImageUsageFlagBits::eDepthStencilAttachment,
+                .aspect_flags = vk::ImageAspectFlagBits::eDepth
+            }
+        );
+    }
 
 }

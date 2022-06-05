@@ -24,8 +24,13 @@ namespace eureka
         {
             glfwPollEvents();
             _renderingSystem->RunOne();
-            std::this_thread::sleep_for(100ms);
-            DEBUGGER_TRACE("app loop {}", i);
+            //std::this_thread::sleep_for(100ms);
+            if (0 == (i % 100))
+            {
+                DEBUGGER_TRACE("app loop {}", i);
+            }
+
+   
             ++i;
         }
     }
