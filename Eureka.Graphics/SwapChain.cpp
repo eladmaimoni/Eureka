@@ -146,7 +146,7 @@ namespace eureka
 
     vk::Result SwapChain::PresentLastAcquiredImageAsync(vk::Semaphore renderingDoneSemaphore)
     {
-        VkSemaphore sem = renderingDoneSemaphore;
+        //VkSemaphore sem = renderingDoneSemaphore;
         vk::PresentInfoKHR presentInfo
         {
              .waitSemaphoreCount = 1,
