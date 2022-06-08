@@ -15,8 +15,9 @@ add_executable(
 set_compiler_flags(Eureka.App)  
 
 
-target_shared_precompiled_headers(
+target_precompile_headers(
     Eureka.App 
+    REUSE_FROM
     Eureka.Precompiled
 )
 

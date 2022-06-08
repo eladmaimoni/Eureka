@@ -58,7 +58,7 @@ add_subdirectory (Eureka.Graphics)
 add_subdirectory (Eureka.Shaders)
 add_subdirectory (Eureka.App)
 add_subdirectory (Eureka.UnitTests)
-add_subdirectory (ZZZ_SAMPLE)
+#add_subdirectory (ZZZ_SAMPLE)
 
 
 

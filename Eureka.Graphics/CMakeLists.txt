@@ -57,8 +57,9 @@ add_library(
 
 set_compiler_flags(Eureka.Graphics)
 
-target_shared_precompiled_headers(
+target_precompile_headers(
     Eureka.Graphics 
+    REUSE_FROM
     Eureka.Precompiled
 )
 

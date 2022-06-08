@@ -1,5 +1,6 @@
 
 #include "ShadersDeclare.hpp"
+#include <vulkan/vulkan_raii.hpp>
 
 namespace std 
 {

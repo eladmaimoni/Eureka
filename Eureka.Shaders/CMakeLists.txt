@@ -104,8 +104,9 @@ target_include_directories(
 add_dependencies(Eureka.Shaders Eureka.ShadersTarget)
 
 
-target_shared_precompiled_headers(
+target_precompile_headers(
     Eureka.Shaders 
+    REUSE_FROM
     Eureka.Precompiled
 )
 

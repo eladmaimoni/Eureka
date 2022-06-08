@@ -11,8 +11,9 @@ add_executable(
 set_compiler_flags(ZZZ_SAMPLE)  
 
 
-target_shared_precompiled_headers(
+target_precompile_headers(
     ZZZ_SAMPLE
+    REUSE_FROM
     Eureka.Precompiled
 )
 
