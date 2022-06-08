@@ -16,6 +16,7 @@ target_link_libraries(
     PRIVATE 
     Eureka.Precompiled
     Eureka.Core
+    Eureka.Graphics
     Catch2::Catch2 
     Catch2::Catch2WithMain
 )

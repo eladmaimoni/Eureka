@@ -54,8 +54,8 @@ namespace eureka
         std::vector<vkr::Fence>               _renderingDoneFence;
         std::vector<vkr::Semaphore>           _renderingDoneSemaphore;
 
-
-
+        std::chrono::high_resolution_clock::time_point _lastFrameTime;
+     
 
         void InitializeSwapChain(GLFWVulkanSurface& windowSurface);
         void InitializeCommandPoolsAndBuffers();

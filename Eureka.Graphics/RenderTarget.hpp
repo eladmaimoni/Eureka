@@ -18,8 +18,6 @@ namespace eureka
         }
         RenderTarget(RenderTarget&& that) = default;
         RenderTarget& operator=(RenderTarget&& rhs) = default;
-        void RecordBegin(vkr::CommandBuffer& commandBuffer);
-        void RecordEnd(vkr::CommandBuffer& commandBuffer);
 
     protected:
         vk::Rect2D                   _area;

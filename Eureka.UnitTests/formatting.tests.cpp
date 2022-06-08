@@ -1,7 +1,7 @@
 #include <catch2/catch.hpp>
 #include <debugger_trace.hpp>
-//#include <VkHelpers.hpp>
-//#include <vulkan/vulkan.hpp>
+#include <VkHelpers.hpp>
+
 
 
 namespace eureka
@@ -33,8 +33,8 @@ namespace eureka
     static_assert(iterable<std::vector<int>>);
     static_assert(iterable<std::vector<int>&>);
     static_assert(iterable<std::string>);
-    //static_assert(!has_vk_to_string<std::string>);
-    //static_assert(has_vk_to_string<vk::FormatFeatureFlags2KHR>);
+    static_assert(!has_vk_to_string<std::string>);
+    static_assert(has_vk_to_string<vk::FormatFeatureFlags2KHR>);
 }
 
 TEST_CASE("formating string", "[formatting]")
@@ -67,20 +67,20 @@ TEST_CASE("formatting iterable of streamable that is not formattable", "[formatt
     CHECK(result == "{StreamableNotFormattable{1},StreamableNotFormattable{2}}");
 }
 
-//TEST_CASE("formatting vulkan object", "[formatting]")
-//{
-//    vk::FormatFeatureFlags2KHR format =
-//        vk::FormatFeatureFlagBits2KHR::eSampledImage |
-//        vk::FormatFeatureFlagBits2KHR::eStorageImage
-//        ;
-//
-//    auto expected = vk::to_string(format);
-//
-//    auto result = std::format("{}", format);
-//
-//    CHECK(result == expected);
-//}
-//
+TEST_CASE("formatting vulkan object", "[formatting]")
+{
+    vk::FormatFeatureFlags2KHR format =
+        vk::FormatFeatureFlagBits2KHR::eSampledImage |
+        vk::FormatFeatureFlagBits2KHR::eStorageImage
+        ;
+
+    auto expected = vk::to_string(format);
+
+    auto result = std::format("{}", format);
+
+    CHECK(result == expected);
+}
+
 TEST_CASE("formatting eigen matrix", "[formatting]")
 {
     auto mat = Eigen::Matrix3d::Identity();

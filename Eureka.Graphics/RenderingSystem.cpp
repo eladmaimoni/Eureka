@@ -84,7 +84,6 @@ namespace eureka
     {
         auto [currentFrame, imageReadySemaphore] = _swapChain->AcquireNextAvailableImageAsync();
 
-
         //
         // wait for current frame to finish execution before we reset its command buffer (other frames can be in flight)
         //
@@ -96,6 +95,12 @@ namespace eureka
             VK_TRUE,
             UINT64_MAX
         ));
+
+        auto now = std::chrono::high_resolution_clock::now();
+
+        //DEBUGGER_TRACE("current frame = {}, interval = {}ms", currentFrame, std::chrono::duration_cast<std::chrono::milliseconds>(now - _lastFrameTime).count());
+
+        _lastFrameTime = now;
 
         _deviceContext.LogicalDevice()->resetFences(
             { currentFrameFence }
@@ -217,7 +222,7 @@ namespace eureka
             *_swapChain,
             _renderPass
         );
-
+        _lastFrameTime = std::chrono::high_resolution_clock::now();
     }
 
     void RenderingSystem::InitializeSwapChain(GLFWVulkanSurface& windowSurface)

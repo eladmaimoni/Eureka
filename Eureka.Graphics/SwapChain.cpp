@@ -92,13 +92,13 @@ namespace eureka
 
         auto pitr = std::ranges::find_if(
 			presentModes,
-			[](const vk::PresentModeKHR& pm) { return pm == vk::PresentModeKHR::eMailbox; }
+			[](const vk::PresentModeKHR& pm) { return pm == vk::PresentModeKHR::eFifo; }
         );
 
 
         _capabilities = capabilities;
 		_surfaceFormat = (fitr != formats.end()) ? *fitr : formats.at(0);
-        _selectedPresentMode = (pitr != presentModes.end()) ? vk::PresentModeKHR::eMailbox : vk::PresentModeKHR::eFifo;
+        _selectedPresentMode = (pitr != presentModes.end()) ? vk::PresentModeKHR::eFifo : vk::PresentModeKHR::eFifo; // currently we don't use mailbox
 
 		CreateSwapChain();
 
