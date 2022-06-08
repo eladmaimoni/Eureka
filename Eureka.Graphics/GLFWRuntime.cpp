@@ -6,7 +6,8 @@ namespace eureka
 
     GLFWRuntime::GLFWRuntime()
     {
-        assert(glfwInit() == GLFW_TRUE);
+        [[maybe_unused]] auto result = glfwInit();
+        assert(result == GLFW_TRUE);
     }
 
     GLFWRuntime::~GLFWRuntime()

@@ -27,7 +27,7 @@ namespace eureka
             //std::this_thread::sleep_for(100ms);
             if (0 == (i % 100))
             {
-                DEBUGGER_TRACE("app loop {}", i);
+                //DEBUGGER_TRACE("app loop {}", i);
             }
 
    
