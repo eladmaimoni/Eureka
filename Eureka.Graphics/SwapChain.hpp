@@ -27,8 +27,7 @@ namespace eureka
     {
     public:
         SwapChain(
-            DeviceContext& deviceContext, 
-            std::shared_ptr<vkr::Queue> presentationQueue,
+            DeviceContext& deviceContext,
             SwapChainTargetConfig desc
         );
 
@@ -45,7 +44,7 @@ namespace eureka
     private:
         DeviceContext& _deviceContext;
         SwapChainTargetConfig                _desc;
-        std::shared_ptr<vkr::Queue>          _presentationQueue;
+        vk::Queue                            _presentationQueue;
         vk::Extent2D                         _swapchainExtent;
         vkr::SwapchainKHR                    _swapchain{ nullptr };
         vk::SurfaceFormatKHR                 _surfaceFormat;

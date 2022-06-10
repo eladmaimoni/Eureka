@@ -28,13 +28,14 @@ namespace eureka
     class AllocatedImage : public Image
     {
     public:
+        virtual ~AllocatedImage();
         AllocatedImage(AllocatedImage&& that);
         AllocatedImage& operator=(AllocatedImage&& rhs);        
         AllocatedImage(const DeviceContext& deviceContext);
     protected:
         VmaAllocator      _allocator{ nullptr };
         VmaAllocation     _allocation{ nullptr };
-        VmaAllocationInfo _allocationInfo{  };
+        //VmaAllocationInfo _allocationInfo{  };
     };
 
     struct Image2DProperties
@@ -44,6 +45,7 @@ namespace eureka
         vk::Format           format;
         vk::ImageUsageFlags  usage_flags;
         vk::ImageAspectFlags aspect_flags;
+        bool                 use_dedicated_memory_allocation{false};
     };
 
     vkr::ImageView CreateImage2DView(const DeviceContext& deviceContext, vk::Image image, const Image2DProperties& props);

@@ -148,6 +148,14 @@ namespace eureka
         return *this;
     }
 
+    AllocatedImage::~AllocatedImage()
+    {
+        if (_image)
+        {
+            vmaDestroyImage(_allocator, _image, _allocation);
+        }
+    }
+
     //////////////////////////////////////////////////////////////////////////
     //
     //                        AllocatedImage
@@ -164,7 +172,6 @@ namespace eureka
         : 
         Image(std::move(that)),
         _allocation(that._allocation),
-        _allocationInfo(that._allocationInfo),
         _allocator(that._allocator)
     {
         that._allocation = nullptr;
@@ -173,12 +180,16 @@ namespace eureka
 
     AllocatedImage& AllocatedImage::operator=(AllocatedImage&& rhs)
     {
-        Image::operator=(std::move(rhs));
+        if (_image)
+        {
+            vmaDestroyImage(_allocator, _image, _allocation);
+        }
+
         _allocation = rhs._allocation;
-        _allocationInfo = rhs._allocationInfo;
         _allocator = rhs._allocator;
 
         rhs._allocation = nullptr;
+        Image::operator=(std::move(rhs));
 
         return *this;
     }
@@ -213,6 +224,10 @@ namespace eureka
             .usage = VMA_MEMORY_USAGE_GPU_ONLY
         };
 
+        if (props.use_dedicated_memory_allocation)
+        {
+            allocationCreateInfo.flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
+        }
         VmaAllocationInfo allocationInfo{};
 
         VK_CHECK(vmaCreateImage(
@@ -229,20 +244,12 @@ namespace eureka
 
     Image2D::~Image2D()
     {
-        if (_image)
-        {
-            vmaDestroyImage(_allocator, _image, _allocation);
-        }
+
     }
 
     Image2D& Image2D::operator=(Image2D&& rhs)
     {
-        if (_image)
-        {
-            vmaDestroyImage(_allocator, _image, _allocation);
-        }
-
-        Image::operator=(std::move(rhs));
+        AllocatedImage::operator=(std::move(rhs));
 
         return *this;
     }
@@ -263,7 +270,8 @@ namespace eureka
                 .height = height,
                 .format = vk::Format::eD24UnormS8Uint,
                 .usage_flags = vk::ImageUsageFlagBits::eDepthStencilAttachment,
-                .aspect_flags = vk::ImageAspectFlagBits::eDepth
+                .aspect_flags = vk::ImageAspectFlagBits::eDepth,
+                .use_dedicated_memory_allocation = true // likely to be resized, likely large
             }
         );
     }

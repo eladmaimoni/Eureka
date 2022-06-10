@@ -1,6 +1,7 @@
 #pragma once
 #include "Instance.hpp"
 #include "vk_mem_alloc.h"
+#include <ShadersCache.hpp>
 
 namespace eureka
 {
@@ -43,26 +44,28 @@ namespace eureka
         // Accessors
         //
 
-        const std::vector<std::shared_ptr<vkr::Queue>>& GraphicsQueue() const { assert(_device); return _graphicsQueue; };
-        const std::vector<std::shared_ptr<vkr::Queue>>& ComputeQueue() const { assert(_device); return _computeQueue; };
-        const std::vector<std::shared_ptr<vkr::Queue>>& CopyQueue() const { assert(_device); return _copyQueue; };
-        const std::shared_ptr<vkr::Queue>& PresentQueue() const;
+        const std::vector<vk::Queue>& GraphicsQueue() const { assert(_device); return _graphicsQueue; };
+        const std::vector<vk::Queue>& ComputeQueue() const { assert(_device); return _computeQueue; };
+        const std::vector<vk::Queue>& CopyQueue() const { assert(_device); return _copyQueue; };
+        vk::Queue PresentQueue() const;
         const QueueFamilies& Families() const { assert(_device); return _families; }
         const std::shared_ptr<vkr::PhysicalDevice> PhysicalDevice() const { assert(_device); return _physicalDevice; }
         const std::shared_ptr<vkr::Device> LogicalDevice() const { assert(_device); return _device; }
         VmaAllocator Allocator() const { return _vmaAllocator; }
+        const ShaderCache& Shaders() { return _shaderCache; }
     private:
         void InitDeviceAndQueues(const vkr::Instance& instance, const DeviceContextConfig& desc);
 
     private:
         std::shared_ptr<vkr::PhysicalDevice>           _physicalDevice{ nullptr };
         std::shared_ptr<vkr::Device>                   _device;
-        std::vector<std::shared_ptr<vkr::Queue>>       _graphicsQueue;
-        std::vector<std::shared_ptr<vkr::Queue>>       _computeQueue;
-        std::vector<std::shared_ptr<vkr::Queue>>       _copyQueue;
-        std::shared_ptr<vkr::Queue>                    _presentQueue;
+        std::vector<vk::Queue>                         _graphicsQueue;
+        std::vector<vk::Queue>                         _computeQueue;
+        std::vector<vk::Queue>                         _copyQueue;
+        vk::Queue                                      _presentQueue;
         QueueFamilies                                  _families;
 
         VmaAllocator                                   _vmaAllocator;
+        ShaderCache                                    _shaderCache;
     };
 }

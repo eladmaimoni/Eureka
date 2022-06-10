@@ -33,6 +33,8 @@ namespace eureka
    
             ++i;
         }
+
+        _renderingSystem->Deinitialize();
     }
 
     void App::Initialize()

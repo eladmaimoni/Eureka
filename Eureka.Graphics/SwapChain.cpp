@@ -76,10 +76,13 @@ namespace eureka
 		return support;
 	}
 
-    SwapChain::SwapChain(DeviceContext& deviceContext, std::shared_ptr<vkr::Queue> presentationQueue, SwapChainTargetConfig desc)
+    SwapChain::SwapChain(
+        DeviceContext& deviceContext,
+        SwapChainTargetConfig desc
+    )
 		: 
 		_deviceContext(deviceContext),
-        _presentationQueue(std::move(presentationQueue)),
+        _presentationQueue(deviceContext.PresentQueue()),
 		_desc(std::move(desc))
     {
 		auto [capabilities, formats, presentModes] = QuerySwapchainSupport(_deviceContext.PhysicalDevice().get(), *_desc.surface);
@@ -155,7 +158,7 @@ namespace eureka
              .pSwapchains = &*_swapchain,
              .pImageIndices = &_lastAquiredImage
         };
-        return _presentationQueue->presentKHR(presentInfo);
+        return _presentationQueue.presentKHR(presentInfo);
     }
 
     vk::Rect2D SwapChain::RenderArea() const

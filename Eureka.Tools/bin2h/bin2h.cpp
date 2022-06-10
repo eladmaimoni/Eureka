@@ -1,5 +1,5 @@
 #include "bin2h.hpp"
-
+//#include <iostream>
 
 namespace eureka
 {
@@ -7,7 +7,7 @@ namespace eureka
     void bin2h(const std::filesystem::path& path, const std::string& variable_name, std::ostream& output)
     {
         static constexpr long long CHUNK_SIZE = 30;
-        std::ifstream file(path, std::ifstream::binary);
+        std::ifstream file(path, std::ifstream::binary | std::ios::in | std::ios::ate);
         file.seekg(0, std::ifstream::end);
         auto bytes = file.tellg();
         file.seekg(0, std::ifstream::beg);
@@ -16,6 +16,7 @@ namespace eureka
         {
             throw std::invalid_argument("empty file");
         }
+        //std::cout << std::format("bin2h: compiling shader {} total bytes = {}\n", path.string(), static_cast<std::size_t>(bytes));
 
         output << std::format("const uint8_t {}[] = \n{{ \n", variable_name);
 

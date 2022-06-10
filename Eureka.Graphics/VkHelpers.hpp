@@ -11,11 +11,33 @@ namespace eureka
     {
         vk::to_string(obj);
     };
+
+    template<typename Object>
+    concept has_vk_to_string_not_streamable = has_vk_to_string<Object> && !streamable<Object>;
+
+
+    template <typename VulkanHppT>
+    const typename VulkanHppT::NativeType& Vk(const VulkanHppT& cppHandle)
+    {
+        return reinterpret_cast<const typename VulkanHppT::NativeType&>(cppHandle);
+    }
+
+    template <typename VulkanHppT>
+    typename VulkanHppT::NativeType& Vk(VulkanHppT& cppHandle)
+    {
+        return reinterpret_cast<typename VulkanHppT::NativeType&>(cppHandle);
+    }
+
+    //template <typename VulkanHppT>
+    //typename VulkanHppT::NativeType& Vk(VulkanHppT& cppHandle)
+    //{
+    //    return reinterpret_cast<typename VulkanHppT::NativeType&>(cppHandle);
+    //}
 }
 
 namespace std
 {
-    template<eureka::has_vk_to_string T, class CharT>
+    template<eureka::has_vk_to_string_not_streamable T, class CharT>
     struct formatter<T, CharT>
     {
         template <typename FormatParseContext>

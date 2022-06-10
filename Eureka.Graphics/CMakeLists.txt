@@ -1,4 +1,4 @@
-﻿cmake_minimum_required (VERSION 3.21)
+﻿
 
 set_source_group(
     core 
@@ -15,6 +15,8 @@ set_source_group(
 
 set_source_group(
     wrappers 
+    "Mesh.hpp"
+    "Mesh.cpp"
     "Instance.hpp" 
     "Instance.cpp"
     "CommandBuffer.hpp" 
@@ -46,6 +48,8 @@ set_source_group(
     "GLFWRuntime.cpp" 
 
 )
+
+
 add_library(
     Eureka.Graphics
     ${core}
@@ -54,6 +58,7 @@ add_library(
     ${wrappers}
     ${windowing}
 )
+
 
 set_compiler_flags(Eureka.Graphics)
 
@@ -78,6 +83,7 @@ target_link_libraries(
     PRIVATE 
     Eureka.Precompiled
     Eureka.Core 
+    Eureka.Shaders 
     glfw
     unofficial::vulkan-memory-allocator::vulkan-memory-allocator
     

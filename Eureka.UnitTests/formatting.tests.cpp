@@ -81,6 +81,17 @@ TEST_CASE("formatting vulkan object", "[formatting]")
     CHECK(result == expected);
 }
 
+TEST_CASE("formatting vk::Result", "[formatting]")
+{
+    auto vkResult = vk::Result::eErrorDeviceLost;
+
+    auto expected = vk::to_string(vkResult);
+
+    auto result = std::format("{}", vkResult);
+
+    CHECK(result == expected);
+}
+
 TEST_CASE("formatting eigen matrix", "[formatting]")
 {
     auto mat = Eigen::Matrix3d::Identity();

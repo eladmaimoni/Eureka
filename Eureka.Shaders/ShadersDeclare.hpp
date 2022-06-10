@@ -28,6 +28,9 @@ extern const eureka::ShaderId IDENTIFIER;
 //////////////////////////////////////////////////////////////////////////
 //                  Shaders Deceleration
 //////////////////////////////////////////////////////////////////////////
-EUREKA_SHADER_IDENTIFIER(ShadedMeshVS);
+EUREKA_SHADER_IDENTIFIER(ColoredVertexVS);
+EUREKA_SHADER_IDENTIFIER(ColoredVertexFS);
+EUREKA_SHADER_IDENTIFIER(TriangleVS);
+EUREKA_SHADER_IDENTIFIER(TriangleFS);
 
 #endif // SHADERS_HEADER

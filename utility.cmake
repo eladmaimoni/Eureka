@@ -3,6 +3,11 @@
 
 
 function(set_compiler_flags target_name)
+    target_compile_features(
+        ${target_name}
+        PRIVATE
+        cxx_std_23
+    )
     if (MSVC)
         target_compile_options(
             ${target_name} 

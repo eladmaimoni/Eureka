@@ -2,6 +2,9 @@
 #include <DeviceContext.hpp>
 #include <GLFWRuntime.hpp>
 #include "RenderTarget.hpp"
+#include "Mesh.hpp"
+#include "CommandBuffer.hpp"
+#include "Pipeline.hpp"
 
 namespace eureka
 {
@@ -12,8 +15,6 @@ namespace eureka
 
     };
 
-
-
     class RenderingSystem
     {
     public:
@@ -22,12 +23,13 @@ namespace eureka
             DeviceContext& deviceContext,
             GLFWRuntime& glfw
         );
+
         ~RenderingSystem();
+
         void RunOne();
         void Initialize();
-
-
-
+        void Deinitialize();
+        
         void HandleResize(uint32_t width, uint32_t height);
         GLFWwindow* WindowHandle() { return _window.get(); }
     private:
@@ -35,24 +37,30 @@ namespace eureka
         DeviceContext& _deviceContext;
         GLFWRuntime&   _glfw;
 
-        GLFWWindowPtr                         _window; // TODO should remove
-        std::unique_ptr<SwapChain>            _swapChain;
-        std::shared_ptr<DepthColorRenderPass> _renderPass;
-        std::vector<DepthColorRenderTarget>   _renderTargets;
-        std::shared_ptr<vkr::Queue>           _presentationQueue;
-        std::shared_ptr<vkr::Queue>           _graphicsQueue;
+        GLFWWindowPtr                                 _window; // TODO should remove
+        std::unique_ptr<SwapChain>                    _swapChain;
+        std::shared_ptr<DepthColorRenderPass>         _renderPass;
+        std::vector<DepthColorRenderTarget>           _renderTargets;
+        vk::Queue _presentationQueue;
+        vk::Queue _graphicsQueue;
+        vk::Queue _uploadQueue;
 
-        // some object - maybe synchronized command buffer
+        vkr::Semaphore                                _uploadDoneSemaphore{nullptr};
+        vkr::Fence                                    _uploadDoneFence{ nullptr };
+
+        CommandPool                                   _uploadPool; // TODO upload thread of some sort
+        vkr::CommandBuffer                            _uploadCommandBuffer{nullptr};
+        HostStageZoneBuffer                           _stageZone;
+        VertexAndIndexTransferableDeviceBuffer        _triangle;
+
+        std::shared_ptr<PerFrameGeneralPurposeDescriptorSet> _perFrameDescriptorSet;
+        ColoredVertexMeshPipeline                            _coloredVertexPipeline;
 
 
         // this section should be a ring buffer of some sort
-        uint32_t                              _maxFramesInFlight{};
-        //uint32_t                              _currentFrame{ 0 };
+        uint32_t                                       _maxFramesInFlight{};
 
-        std::vector<vkr::CommandPool>         _mainGraphicsCommandPools;
-        std::vector<vkr::CommandBuffer>       _mainGraphicsCommandBuffers;
-        std::vector<vkr::Fence>               _renderingDoneFence;
-        std::vector<vkr::Semaphore>           _renderingDoneSemaphore;
+        std::vector<FrameCommands>                     _frameCommandBuffer;
 
         std::chrono::high_resolution_clock::time_point _lastFrameTime;
      

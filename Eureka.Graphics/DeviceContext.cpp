@@ -289,6 +289,8 @@ namespace eureka
         };
         
         VK_CHECK(vmaCreateAllocator(&allocatorCreateInfo, &_vmaAllocator));
+
+        _shaderCache = ShaderCache(_device);
     }
 
     DeviceContext::~DeviceContext()
@@ -319,7 +321,7 @@ namespace eureka
         }
     }
 
-    const std::shared_ptr<vkr::Queue>& DeviceContext::PresentQueue() const
+    vk::Queue DeviceContext::PresentQueue() const
     { 
         assert(_device); 
         if (!_presentQueue)
@@ -370,21 +372,27 @@ namespace eureka
 
         _device = std::make_shared<vkr::Device>(*chosenPhysicalDevice, deviceInfo);
 
+        
 
         _physicalDevice = std::make_shared<vkr::PhysicalDevice>(std::move(*chosenPhysicalDevice));
     
         // TODO TODO TODO this will probably fail in other environments. families might be empty
+        
         for (auto i = 0u; i < deviceCreationDesc.queue_families.direct_graphics_family_max_count; ++i)
-        {
-            _graphicsQueue.emplace_back(std::make_shared<vkr::Queue>(*_device, deviceCreationDesc.queue_families.direct_graphics_family_index, i));
+        {           
+            _graphicsQueue.emplace_back(*_device->getQueue(deviceCreationDesc.queue_families.direct_graphics_family_index, i));
+
         }
+        
         for (auto i = 0u; i < deviceCreationDesc.queue_families.compute_family_max_count; ++i)
         {
-            _computeQueue.emplace_back(std::make_shared<vkr::Queue>(*_device, deviceCreationDesc.queue_families.compute_family_index, i));
+            _computeQueue.emplace_back(*_device->getQueue(deviceCreationDesc.queue_families.compute_family_index, i));
+
         }
+
         for (auto i = 0u; i < deviceCreationDesc.queue_families.copy_family_max_count; ++i)
         {
-            _copyQueue.emplace_back(std::make_shared<vkr::Queue>(*_device, deviceCreationDesc.queue_families.copy_family_index, i));
+            _copyQueue.emplace_back(*_device->getQueue(deviceCreationDesc.queue_families.copy_family_index, i));
         }
 
         _families = deviceCreationDesc.queue_families;

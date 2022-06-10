@@ -1,6 +1,8 @@
 
-#include <ShadedMeshVS.spvhpp>
-
+#include <ColoredVertexVS.spvhpp>
+#include <ColoredVertexFS.spvhpp>
+#include <TriangleVS.spvhpp>
+#include <TriangleFS.spvhpp>
 
 
 #define EUREKA_DEFINE_SHADER_ID(IDENTIFIER, SHADER_FULL_NAME) \

@@ -26,6 +26,16 @@ namespace std
 
 int main(int argc, char* argv[])
 {
+    /*
+    
+    perhaps we can remove this tool usage
+
+    https://stackoverflow.com/questions/47359106/spir-v-shader-causing-validation-errors-at-runtime
+    
+    Alternativelly you can load shaders statically (via #include) as a C++ inline file. You can create such file by 
+    glslc -mfmt=c or glslangValidator -V -x --vn variable_name.
+
+    */
     namespace po = boost::program_options;
 
     try
