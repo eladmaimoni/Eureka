@@ -141,6 +141,7 @@ namespace eureka
         {
             deviceCreationDesc.queue_families.compute_family_index = deviceCreationDesc.queue_families.direct_graphics_family_index;
             computeCreateInfo = graphicsCreateInfo;
+            computeCreateInfo->queueCount += desc.preferred_number_of_compute_queues;
             deviceCreationDesc.queue_families.direct_graphics_family_max_count += desc.preferred_number_of_compute_queues;
             graphicsCreateInfoPriority->insert(graphicsCreateInfoPriority->end(), desc.preferred_number_of_compute_queues, 1.0f);
             computeCreateInfoPriority = graphicsCreateInfoPriority;
@@ -186,7 +187,7 @@ namespace eureka
         {
             deviceCreationDesc.queue_families.copy_family_index = deviceCreationDesc.queue_families.compute_family_index;
             copyCreateInfo = computeCreateInfo;
-
+            copyCreateInfo->queueCount += desc.preferred_number_of_copy_queues;
             deviceCreationDesc.queue_families.compute_family_max_count += desc.preferred_number_of_copy_queues;
             computeCreateInfoPriority->insert(computeCreateInfoPriority->end(), desc.preferred_number_of_copy_queues, 1.0f);
 
@@ -361,7 +362,7 @@ namespace eureka
         vk::PhysicalDeviceFeatures deviceFeatures = vk::PhysicalDeviceFeatures();
         vk::DeviceCreateInfo deviceInfo{
             .flags = vk::DeviceCreateFlags(),
-            .queueCreateInfoCount = 3,
+            .queueCreateInfoCount = static_cast<uint32_t>(deviceCreationDesc.create_info.size()),
             .pQueueCreateInfos = deviceCreationDesc.create_info.data(),
             .enabledLayerCount = static_cast<uint32_t>(desc.required_layers.size()),
             .ppEnabledLayerNames = desc.required_layers.data(),

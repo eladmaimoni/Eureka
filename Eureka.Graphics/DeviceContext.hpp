@@ -27,6 +27,43 @@ namespace eureka
         uint32_t                 preferred_number_of_copy_queues{ 2 }; // read & write 
     };
 
+    class Queue
+    {
+    private:
+        vkr::Device* _device{ nullptr };
+        vkr::Queue _queue{ nullptr };
+        uint32_t   _familyIndex{ 0 };
+    public:
+        Queue() = default;
+        Queue(vkr::Device& device, vkr::Queue q, uint32_t familyIndex)
+            : _device(&device), _queue(std::move(q)), _familyIndex(familyIndex)
+        {
+
+        }
+        Queue& operator=(const Queue& rhs)
+        {
+            _device = rhs._device;
+            _queue = vkr::Queue(*_device, *const_cast<vkr::Queue&>(rhs._queue));
+            _familyIndex = rhs._familyIndex;
+            return *this;
+        }
+        //Queue(const Queue& that)
+        //    : _queue(*that._queue), _familyIndex(that._familyIndex)
+        //{
+
+        //}
+
+        uint32_t Family() const
+        {
+            return _familyIndex;
+        }
+
+        vkr::Queue& operator->()
+        {
+            return _queue;
+        }
+    };
+
     class DeviceContext
     {
     public:
