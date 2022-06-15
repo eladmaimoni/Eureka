@@ -4,6 +4,8 @@
 namespace eureka
 {
 
+    constexpr std::array<float, 4> DEFAULT_CLEAR_COLOR{ 0.79f, 0.65f, 0.93f, 1.0f };
+    
     DepthColorRenderTarget::DepthColorRenderTarget(
         const vk::Rect2D& area,
         std::shared_ptr<RenderPass> renderPass, 
@@ -15,7 +17,7 @@ namespace eureka
         _outputColorImage(std::move(outputColorImage)),
         _depthImage(std::move(depthImage))
     {
-        _clearValues[0].color = vk::ClearColorValue{ std::array<float, 4> {0.0f, 1.0f, 0.2f, 1.0f} };
+        _clearValues[0].color = vk::ClearColorValue{ DEFAULT_CLEAR_COLOR };
         _clearValues[1].depthStencil = vk::ClearDepthStencilValue{ 1.0f, 0 };
 
         _beginInfo = vk::RenderPassBeginInfo 

@@ -3,7 +3,7 @@
 namespace eureka
 {
 
-    PerFrameGeneralPurposeDescriptorSet::PerFrameGeneralPurposeDescriptorSet(DeviceContext& deviceContext)
+    PerFrameGeneralPurposeDescriptorSetLayout::PerFrameGeneralPurposeDescriptorSetLayout(DeviceContext& deviceContext)
     {
         // describe the relation between the shader indices (set 0, binding 0)
         // to the host indices 
@@ -27,7 +27,7 @@ namespace eureka
         _descriptorSetLayout = deviceContext.LogicalDevice()->createDescriptorSetLayout(descriptorSetLayoutCreateInfo);
     }
 
-    ColoredVertexMeshPipeline::ColoredVertexMeshPipeline(DeviceContext& deviceContext, std::shared_ptr<DepthColorRenderPass> renderPass, std::shared_ptr<PerFrameGeneralPurposeDescriptorSet> descriptorSetLayout) :
+    ColoredVertexMeshPipeline::ColoredVertexMeshPipeline(DeviceContext& deviceContext, std::shared_ptr<DepthColorRenderPass> renderPass, std::shared_ptr<PerFrameGeneralPurposeDescriptorSetLayout> descriptorSetLayout) :
         _descriptorSetLayout(descriptorSetLayout),
         _renderPass(renderPass)
     {
@@ -41,6 +41,16 @@ namespace eureka
         _pipelineLayout = deviceContext.LogicalDevice()->createPipelineLayout(pipelineLayoutCreateInfo);
 
         Setup(deviceContext);
+    }
+
+    vk::PipelineLayout ColoredVertexMeshPipeline::Layout() const
+    {
+        return *_pipelineLayout;
+    }
+
+    vk::Pipeline ColoredVertexMeshPipeline::Get() const
+    {
+        return *_pipeline;
     }
 
     void ColoredVertexMeshPipeline::Setup(DeviceContext& deviceContext)
@@ -197,6 +207,31 @@ namespace eureka
             deviceContext.Shaders().Cache(),
             pipelineCreateInfo
         );
+    }
+
+
+
+    DescriptorPool::DescriptorPool(DeviceContext& deviceContext)
+        : _device(deviceContext.LogicalDevice())
+    {
+        // We need to tell the API the number of max. requested descriptors per type
+        std::array<vk::DescriptorPoolSize, 1> perTypeMaxCount{};
+        perTypeMaxCount[0] = vk::DescriptorPoolSize{ .type = vk::DescriptorType::eUniformBuffer, .descriptorCount = 1 };
+
+        // For additional types you need to add new entries in the type count list
+        // E.g. for two combined image samplers :
+        // typeCounts[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        // typeCounts[1].descriptorCount = 2;
+
+        // Create the global descriptor pool
+        // All descriptors used in this example are allocated from this pool
+        vk::DescriptorPoolCreateInfo descriptorPoolCreateInfo
+        {
+            .maxSets = 1,
+            .poolSizeCount = static_cast<uint32_t>(perTypeMaxCount.size()),
+            .pPoolSizes = perTypeMaxCount.data()
+        };
+        _pool = _device->createDescriptorPool(descriptorPoolCreateInfo);
     }
 
 }

@@ -5,6 +5,7 @@
 #include "Mesh.hpp"
 #include "CommandBuffer.hpp"
 #include "Pipeline.hpp"
+#include "Camera.hpp"
 
 namespace eureka
 {
@@ -28,6 +29,9 @@ namespace eureka
 
         void RunOne();
         void Initialize();
+
+        void HandleSwapChainResize();
+
         void Deinitialize();
         
         void HandleResize(uint32_t width, uint32_t height);
@@ -37,23 +41,34 @@ namespace eureka
         DeviceContext& _deviceContext;
         GLFWRuntime&   _glfw;
 
-        GLFWWindowPtr                                 _window; // TODO should remove
-        std::unique_ptr<SwapChain>                    _swapChain;
-        std::shared_ptr<DepthColorRenderPass>         _renderPass;
-        std::vector<DepthColorRenderTarget>           _renderTargets;
-        vk::Queue _presentationQueue;
-        vk::Queue _graphicsQueue;
-        vk::Queue _uploadQueue;
+        std::shared_ptr<RenderingThreadUpdateQueue>          _updateQueue;
 
-        vkr::Semaphore                                _uploadDoneSemaphore{nullptr};
-        vkr::Fence                                    _uploadDoneFence{ nullptr };
+        GLFWWindowPtr                                        _window; // TODO should remove
+        std::unique_ptr<SwapChain>                           _swapChain;
+        std::shared_ptr<DepthColorRenderPass>                _renderPass;
+        std::vector<DepthColorRenderTarget>                  _renderTargets;
+        vk::Queue                                            _presentationQueue;
+        vk::Queue                                            _graphicsQueue;
+        vk::Queue                                            _uploadQueue;
 
-        CommandPool                                   _uploadPool; // TODO upload thread of some sort
-        vkr::CommandBuffer                            _uploadCommandBuffer{nullptr};
-        HostStageZoneBuffer                           _stageZone;
-        VertexAndIndexTransferableDeviceBuffer        _triangle;
+        //
+        // upload
+        //
+        vkr::Semaphore                                       _uploadDoneSemaphore{ nullptr };
+        vkr::Fence                                           _uploadDoneFence{ nullptr };
+        CommandPool                                          _uploadPool; // TODO upload thread of some sort
+        vkr::CommandBuffer                                   _uploadCommandBuffer{ nullptr };
+        HostStageZoneBuffer                                  _stageZone;
+        
 
-        std::shared_ptr<PerFrameGeneralPurposeDescriptorSet> _perFrameDescriptorSet;
+        DescriptorPool                                       _descPool;
+        DescriptorSet                                        _constantBufferSet;
+
+        // triangle stuff
+        PerspectiveCamera                                    _camera;
+        VertexAndIndexTransferableDeviceBuffer               _triangle;
+
+        std::shared_ptr<PerFrameGeneralPurposeDescriptorSetLayout> _perFrameDescriptorSet;
         ColoredVertexMeshPipeline                            _coloredVertexPipeline;
 
 

@@ -1,49 +1,25 @@
 #pragma once
 #include "DeviceContext.hpp"
 #include "vk_error_handling.hpp"
+#include "PipelineTypes.hpp"
 
-namespace eureka
-{
-    struct vector3
-    {
-        float x;
-        float y;
-        float z;
-    };
 
-    struct ModelViewProjection
-    {
-        Eigen::Matrix4f projection;
-        Eigen::Matrix4f view;
-        Eigen::Matrix4f model;
-    };
-
-    struct PositionColorVertex
-    {
-        Eigen::Vector3f position;
-        Eigen::Vector3f color;
-    };
-}
 
 namespace eureka::mesh
 {
-    //struct vector3
-    //{
-    //    float x;
-    //    float y; 
-    //    float z;
-
-    //    
-    //};
-
-
 
     static const std::array<PositionColorVertex, 3> COLORED_TRIANGLE_VERTEX_DATA
     {
-        PositionColorVertex{ Eigen::Vector3f{  1.0f,  1.0f, 0.0f }, Eigen::Vector3f{ 1.0f, 0.0f, 0.0f } },
-        PositionColorVertex{ Eigen::Vector3f{ -1.0f,  1.0f, 0.0f }, Eigen::Vector3f{ 0.0f, 1.0f, 0.0f } },
-        PositionColorVertex{ Eigen::Vector3f{  0.0f, -1.0f, 0.0f }, Eigen::Vector3f{ 0.0f, 0.0f, 1.0f } }
+        PositionColorVertex{ Eigen::Vector3f{  1.0f,  1.0f, 0.0f }, Eigen::Vector3f{ 1.0f, 0.6f, 0.4f } },
+        PositionColorVertex{ Eigen::Vector3f{ -1.0f,  1.0f, 0.0f }, Eigen::Vector3f{ 0.7f, 1.0f, 0.7f } },
+        PositionColorVertex{ Eigen::Vector3f{  0.0f, -1.0f, 0.0f }, Eigen::Vector3f{ 0.96f, 0.72f, 0.96f } }
     };
+    //static const std::array<PositionColorVertex, 3> COLORED_TRIANGLE_VERTEX_DATA
+    //{
+    //    PositionColorVertex{ Eigen::Vector3f{  1.0f,  1.0f, 0.0f }, Eigen::Vector3f{ 1.0f, 0.0f, 0.0f } },
+    //    PositionColorVertex{ Eigen::Vector3f{ -1.0f,  1.0f, 0.0f }, Eigen::Vector3f{ 0.0f, 1.0f, 0.0f } },
+    //    PositionColorVertex{ Eigen::Vector3f{  0.0f, -1.0f, 0.0f }, Eigen::Vector3f{ 0.0f, 0.0f, 1.0f } }
+    //};
 
     static constexpr std::array<uint32_t, 3> COLORED_TRIANGLE_INDEX_DATA = { 0, 1, 2 };
 
@@ -72,6 +48,16 @@ namespace eureka
         AllocatedBuffer(const AllocatedBuffer& that) = delete;
         uint64_t ByteSize() const;
         vk::Buffer Buffer() const { return _buffer;}
+
+        vk::DescriptorBufferInfo DescriptorInfo() const
+        {
+            return vk::DescriptorBufferInfo
+            {
+                .buffer = _buffer,
+                .offset = 0,
+                .range = _byteSize
+            };
+        }
     };
 
 
@@ -117,7 +103,17 @@ namespace eureka
                 s.data(),
                 s.size_bytes()
             );
+        }
 
+        template<typename T>
+        void Assign(const T& data, uint32_t byte_offset = 0)
+        {
+            assert((sizeof(T) + byte_offset) <= _byteSize);
+            std::memcpy(
+                Ptr<uint8_t>() + byte_offset,
+                &data,
+                sizeof(T)
+            );
         }
 
         void InvalidateCachesBeforeHostRead()
@@ -143,14 +139,7 @@ namespace eureka
     public:
         HostVisibleDeviceConstantBuffer() = default;
         HostVisibleDeviceConstantBuffer(DeviceContext& deviceContext, const BufferConfig& config);
-
-        //template<typename T>
-        //void Update(const T& value)
-        //{
-
-        //}
     };
-
 
     class VertexAndIndexTransferableDeviceBuffer : public AllocatedBuffer
     {

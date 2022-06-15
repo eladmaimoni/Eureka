@@ -144,7 +144,7 @@ namespace eureka
             deviceCreationDesc.queue_families.direct_graphics_family_max_count += desc.preferred_number_of_compute_queues;
             graphicsCreateInfoPriority->insert(graphicsCreateInfoPriority->end(), desc.preferred_number_of_compute_queues, 1.0f);
             computeCreateInfoPriority = graphicsCreateInfoPriority;
-            computeCreateInfo->setPQueuePriorities(computeCreateInfoPriority->data()); // reset pointer because insert might change it
+            computeCreateInfo->pQueuePriorities = computeCreateInfoPriority->data(); // reset pointer because insert might change it
         }
 
 
@@ -191,7 +191,8 @@ namespace eureka
             computeCreateInfoPriority->insert(computeCreateInfoPriority->end(), desc.preferred_number_of_copy_queues, 1.0f);
 
             copyCreateInfoPriority = computeCreateInfoPriority;
-            copyCreateInfo->setPQueuePriorities(copyCreateInfoPriority->data()); // reset pointer because insert might change it
+            copyCreateInfo->pQueuePriorities = copyCreateInfoPriority->data(); // reset pointer because insert might change it
+
         }
 
         if (!copyCreateInfo)
@@ -204,7 +205,7 @@ namespace eureka
 
    
             copyCreateInfoPriority = graphicsCreateInfoPriority;
-            copyCreateInfo->setPQueuePriorities(copyCreateInfoPriority->data()); // reset pointer because insert might change it
+            copyCreateInfo->pQueuePriorities = copyCreateInfoPriority->data(); // reset pointer because insert might change it
         }
 
         //

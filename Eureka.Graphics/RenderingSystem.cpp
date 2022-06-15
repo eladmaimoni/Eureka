@@ -70,6 +70,9 @@ namespace eureka
         _glfw(glfw),
         _instance(instance),
         _deviceContext(deviceContext),
+        _descPool(deviceContext),
+        _camera(deviceContext),
+        _updateQueue(deviceContext.UpdateQueue()),
         _uploadPool(deviceContext.LogicalDevice())
     {
 
@@ -88,6 +91,7 @@ namespace eureka
 
     void RenderingSystem::Initialize()
     {
+
         //
         // this section should be moved to some sort of window class
         //
@@ -126,11 +130,11 @@ namespace eureka
 
         _renderPass = std::make_shared<DepthColorRenderPass>(_deviceContext, depthColorConfig);
 
-        _renderTargets = CreateDepthColorTargetForSwapChain(
-            _deviceContext,
-            *_swapChain,
-            _renderPass
-        );
+        {
+            HandleSwapChainResize();
+
+        }
+
      
         _stageZone = HostStageZoneBuffer(
             _deviceContext, 
@@ -148,9 +152,31 @@ namespace eureka
         _uploadDoneFence = _deviceContext.LogicalDevice()->createFence(vk::FenceCreateInfo{ .flags = vk::FenceCreateFlagBits::eSignaled });
         _lastFrameTime = std::chrono::high_resolution_clock::now();
 
-        _perFrameDescriptorSet = std::make_shared<PerFrameGeneralPurposeDescriptorSet>(_deviceContext);
+        _perFrameDescriptorSet = std::make_shared<PerFrameGeneralPurposeDescriptorSetLayout>(_deviceContext);
         _coloredVertexPipeline = ColoredVertexMeshPipeline(_deviceContext, _renderPass, _perFrameDescriptorSet);
 
+
+        _camera.SetPosition(Eigen::Vector3f(0.0f, 0.0f, 2.5f));
+        _camera.SetLookDirection(Eigen::Vector3f(0.0f, 0.0f, -1.0f));
+        _camera.SetVerticalFov(3.14f / 4.0f);
+
+        _constantBufferSet = _descPool.AllocateSet(_perFrameDescriptorSet->Get());
+
+        auto [descType, descInfo] = _camera.DescriptorInfo();
+
+        _constantBufferSet.SetBinding(0, descType, descInfo);
+
+    }
+
+    void RenderingSystem::HandleSwapChainResize()
+    {
+        _renderTargets = CreateDepthColorTargetForSwapChain(
+            _deviceContext,
+            *_swapChain,
+            _renderPass
+        );
+        auto renderArea = _swapChain->RenderArea();
+        _camera.SetFullViewport(renderArea.offset.x, renderArea.offset.y, renderArea.extent.width, renderArea.extent.height);
     }
 
     void RenderingSystem::Deinitialize()
@@ -166,6 +192,8 @@ namespace eureka
 
     void RenderingSystem::RunOne()
     {
+        _updateQueue->UpdatePreRender();
+
         auto [currentFrame, imageReadySemaphore] = _swapChain->AcquireNextAvailableImageAsync();
         
 
@@ -194,6 +222,7 @@ namespace eureka
 
             _stageZone.Assign(std::span(mesh::COLORED_TRIANGLE_INDEX_DATA), 0);
             _stageZone.Assign(std::span(mesh::COLORED_TRIANGLE_VERTEX_DATA), sizeof(mesh::COLORED_TRIANGLE_INDEX_DATA));
+
 
             {
                 ScopedCommands commands(_uploadCommandBuffer);
@@ -236,15 +265,47 @@ namespace eureka
         // record frame
         //
 
-        auto& commandBuffer = currentFrameCommandRecord.CommandBuffer();
+        auto& renderingCommandBuffer = currentFrameCommandRecord.CommandBuffer();
 
-        commandBuffer.begin(vk::CommandBufferBeginInfo());
+        {
+            ScopedCommands sc(renderingCommandBuffer);
 
-        commandBuffer.beginRenderPass(_renderTargets[currentFrame].BeginInfo(), vk::SubpassContents::eInline);
+            renderingCommandBuffer.beginRenderPass(_renderTargets[currentFrame].BeginInfo(), vk::SubpassContents::eInline);
 
-        commandBuffer.endRenderPass();
 
-        commandBuffer.end();
+            renderingCommandBuffer.setViewport(0, { _camera.Viewport() });
+            renderingCommandBuffer.setScissor(0, { _swapChain->RenderArea() });
+
+            renderingCommandBuffer.bindDescriptorSets(
+                vk::PipelineBindPoint::eGraphics,
+                _coloredVertexPipeline.Layout(),
+                0,
+                { _constantBufferSet.Get() },
+                nullptr
+            );
+
+
+            renderingCommandBuffer.bindPipeline(
+                vk::PipelineBindPoint::eGraphics,
+                _coloredVertexPipeline.Get()
+            );
+
+            renderingCommandBuffer.bindVertexBuffers(
+                0,
+                {_triangle.Buffer()},
+                {sizeof(mesh::COLORED_TRIANGLE_INDEX_DATA)}
+            );
+            renderingCommandBuffer.bindIndexBuffer(
+                _triangle.Buffer(),
+                0, 
+                vk::IndexType::eUint32
+            );
+
+            renderingCommandBuffer.drawIndexed(3, 1, 0, 0, 1);
+
+            renderingCommandBuffer.endRenderPass();
+        }
+
 
         //
         // submit rendering
@@ -270,7 +331,7 @@ namespace eureka
             .pWaitSemaphores = waitSemaphores.data(),
             .pWaitDstStageMask = waitStageMasks.data(),
             .commandBufferCount = 1,
-            .pCommandBuffers = &*commandBuffer,
+            .pCommandBuffers = &*renderingCommandBuffer,
             .signalSemaphoreCount = 1,
             .pSignalSemaphores = &renderingDoneSemaphore
         };
@@ -320,11 +381,7 @@ namespace eureka
         _swapChain->Resize(width, height);
 
         // recreate all resizeable stuff
-        _renderTargets = CreateDepthColorTargetForSwapChain(
-            _deviceContext,
-            *_swapChain,
-            _renderPass
-            );
+        HandleSwapChainResize();
 
         RunOne();
     }
