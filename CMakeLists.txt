@@ -5,9 +5,6 @@ include(utility.cmake)
 ############################################################################
 #                          CCOMPILER STANDARDS
 ############################################################################
-#set(CMAKE_CXX_STANDARD 23)
-#set(CMAKE_CXX_STANDARD_REQUIRED True)
-
 
 
 project ("Eureka")
@@ -53,13 +50,11 @@ message("Eureka: glslc_executable = ${glslc_executable}")
 
 # include sub-projects.
 
-#set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-#set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-#set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 if (MSVC)
     # https://stackoverflow.com/questions/58708772/cmake-project-in-visual-studio-gives-flag-override-warnings-command-line-warnin
-    string(REGEX REPLACE "/W[3|4]" "/w" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}") 
+    #string(REGEX REPLACE "/W[3|4]" "/w" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}") 
 endif()
+
 configure_default_output_directories()
 
 add_subdirectory (Eureka.Precompiled)
@@ -69,7 +64,7 @@ add_subdirectory (Eureka.Graphics)
 add_subdirectory (Eureka.Shaders)
 add_subdirectory (Eureka.App)
 add_subdirectory (Eureka.UnitTests)
-#add_subdirectory (ZZZ_SAMPLE)
+
 
 message("======================================================================================")
 message("======================================================================================")
