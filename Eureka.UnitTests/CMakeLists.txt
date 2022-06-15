@@ -5,6 +5,7 @@ add_executable(
     "main.cpp"
     "tests.cpp"
     "formatting.tests.cpp"
+    "transform.tests.cpp"
 ) 
 
 set_compiler_flags(Eureka.UnitTests)   
