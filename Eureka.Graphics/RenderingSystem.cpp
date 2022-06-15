@@ -236,15 +236,40 @@ namespace eureka
         // record frame
         //
 
-        auto& commandBuffer = currentFrameCommandRecord.CommandBuffer();
+        auto& renderingCommandBuffer = currentFrameCommandRecord.CommandBuffer();
 
-        commandBuffer.begin(vk::CommandBufferBeginInfo());
+        {
+            ScopedCommands sc(renderingCommandBuffer);
+            
+            renderingCommandBuffer.beginRenderPass(_renderTargets[currentFrame].BeginInfo(), vk::SubpassContents::eInline);
 
-        commandBuffer.beginRenderPass(_renderTargets[currentFrame].BeginInfo(), vk::SubpassContents::eInline);
 
-        commandBuffer.endRenderPass();
 
-        commandBuffer.end();
+            // Update dynamic viewport state
+            //vk::Viewport viewport = {};
+            //viewport.height = (float)height;
+            //viewport.width = (float)width;
+            //viewport.minDepth = (float)0.0f;
+            //viewport.maxDepth = (float)1.0f;
+            //renderingCommandBuffer.setViewport(viewport)
+
+
+
+            //vkCmdSetViewport(drawCmdBuffers[i], 0, 1, &viewport);
+
+            // Update dynamic scissor state
+            //vk::Rect2D scissor = {};
+            //scissor.extent.width = width;
+            //scissor.extent.height = height;
+            //scissor.offset.x = 0;
+            //scissor.offset.y = 0;
+            //vkCmdSetScissor(drawCmdBuffers[i], 0, 1, &scissor)
+
+
+
+            renderingCommandBuffer.endRenderPass();
+        }
+
 
         //
         // submit rendering
@@ -270,7 +295,7 @@ namespace eureka
             .pWaitSemaphores = waitSemaphores.data(),
             .pWaitDstStageMask = waitStageMasks.data(),
             .commandBufferCount = 1,
-            .pCommandBuffers = &*commandBuffer,
+            .pCommandBuffers = &*renderingCommandBuffer,
             .signalSemaphoreCount = 1,
             .pSignalSemaphores = &renderingDoneSemaphore
         };

@@ -7,6 +7,8 @@ target_link_libraries(
   PUBLIC
   Vulkan::Vulkan
   Eigen3::Eigen
+  glm::glm
+  function2::function2
   )
 
 target_include_directories(Eureka.Precompiled PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} "${PROJECT_BINARY_DIR}")
@@ -30,6 +32,7 @@ target_precompile_headers(
     <cmath>
     <concepts>
 	<cstdint>
+    <deque>
     <exception>
     #<iostream>
     <filesystem>
@@ -51,6 +54,8 @@ target_precompile_headers(
     <vulkan/vulkan.hpp>
     #<vulkan/vulkan_raii.hpp> # this messes up the pdb files !!!
     <Eigen/Core>
+    <glm/glm.hpp>
+    <function2/function2.hpp>
     <global_definitions.hpp>
  )
 

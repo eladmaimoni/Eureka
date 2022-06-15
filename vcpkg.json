@@ -9,6 +9,7 @@
         "glm",
         "glfw3",
         "vulkan",
+        "function2",
         "vulkan-headers",
         "vulkan-memory-allocator"
     ]

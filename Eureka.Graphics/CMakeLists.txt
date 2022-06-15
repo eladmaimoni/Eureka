@@ -49,6 +49,14 @@ set_source_group(
 
 )
 
+set_source_group(
+    objects 
+     "Camera.hpp"
+     "Camera.cpp"      
+     "UpdateQueue.hpp"
+     "UpdateQueue.cpp" 
+)
+
 
 add_library(
     Eureka.Graphics
@@ -57,6 +65,7 @@ add_library(
     ${rendering}
     ${wrappers}
     ${windowing}
+    ${objects}
 )
 
 
@@ -85,6 +94,7 @@ target_link_libraries(
     Eureka.Core 
     Eureka.Shaders 
     glfw
+
     unofficial::vulkan-memory-allocator::vulkan-memory-allocator
     
 )
