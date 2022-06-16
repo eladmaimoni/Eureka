@@ -34,6 +34,8 @@ set_source_group(
     "RenderPass.cpp"
     "RenderTarget.hpp"
     "RenderTarget.cpp"
+    "Buffer.hpp"
+    "Buffer.cpp"
 )
 
 set_source_group(
