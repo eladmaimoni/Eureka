@@ -70,6 +70,7 @@ namespace eureka
         _glfw(glfw),
         _instance(instance),
         _deviceContext(deviceContext),
+        _descPool(deviceContext),
         _camera(deviceContext),
         _updateQueue(deviceContext.UpdateQueue()),
         _uploadPool(deviceContext.LogicalDevice())
@@ -151,13 +152,16 @@ namespace eureka
         _uploadDoneFence = _deviceContext.LogicalDevice()->createFence(vk::FenceCreateInfo{ .flags = vk::FenceCreateFlagBits::eSignaled });
         _lastFrameTime = std::chrono::high_resolution_clock::now();
 
-        _perFrameDescriptorSet = std::make_shared<PerFrameGeneralPurposeDescriptorSet>(_deviceContext);
+        _perFrameDescriptorSet = std::make_shared<PerFrameGeneralPurposeDescriptorSetLayout>(_deviceContext);
         _coloredVertexPipeline = ColoredVertexMeshPipeline(_deviceContext, _renderPass, _perFrameDescriptorSet);
 
 
-        _camera.SetPosition(Eigen::Vector3f(0.0f, 0.0f, -2.5f));
-        _camera.SetLookDirection(Eigen::Vector3f(0.0f, 0.0f, 1.0f));
-        _camera.SetVerticalFov(60.0f);
+        _camera.SetPosition(Eigen::Vector3f(0.0f, 0.0f, 2.5f));
+        _camera.SetLookDirection(Eigen::Vector3f(0.0f, 0.0f, -1.0f));
+        _camera.SetVerticalFov(3.14f / 4.0f);
+
+        _constantBufferSet = _descPool.AllocateSet(_perFrameDescriptorSet->Get());
+
 
     }
 
@@ -264,7 +268,17 @@ namespace eureka
             
             renderingCommandBuffer.beginRenderPass(_renderTargets[currentFrame].BeginInfo(), vk::SubpassContents::eInline);
 
+            
+            renderingCommandBuffer.setViewport(0, { _camera.Viewport() });
+            renderingCommandBuffer.setScissor(0, { _swapChain->RenderArea() });
 
+            renderingCommandBuffer.bindDescriptorSets(
+                vk::PipelineBindPoint::eGraphics,
+                _coloredVertexPipeline.Layout(),
+                0,
+                {_constantBufferSet.Get()},
+                nullptr
+            );
 
             // Update dynamic viewport state
             //vk::Viewport viewport = {};

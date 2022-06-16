@@ -89,6 +89,11 @@ namespace eureka
         SyncTransforms();
     }
 
+    const vk::Viewport& PerspectiveCamera::Viewport() const
+    {
+        return _viewport;
+    }
+
     void PerspectiveCamera::SyncTransforms()
     {
         _updateQueue->EnqueueUpdate(

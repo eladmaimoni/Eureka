@@ -60,11 +60,15 @@ namespace eureka
         vkr::CommandBuffer                                   _uploadCommandBuffer{ nullptr };
         HostStageZoneBuffer                                  _stageZone;
         
+
+        DescriptorPool                                       _descPool;
+        DescriptorSet                                        _constantBufferSet;
+
         // triangle stuff
         PerspectiveCamera                                    _camera;
         VertexAndIndexTransferableDeviceBuffer               _triangle;
 
-        std::shared_ptr<PerFrameGeneralPurposeDescriptorSet> _perFrameDescriptorSet;
+        std::shared_ptr<PerFrameGeneralPurposeDescriptorSetLayout> _perFrameDescriptorSet;
         ColoredVertexMeshPipeline                            _coloredVertexPipeline;
 
 

@@ -19,7 +19,7 @@ namespace eureka
         Eigen::Vector3f _direction{0.0f, 0.0f, -1.0f};
 
         ViewProjection  _viewProjection;
-        vk::Viewport    _viewport{.x = 0.0f, .y = 0.0f, .width = 100.0f, .height = 100.0f};
+        vk::Viewport    _viewport{.x = 0.0f, .y = 0.0f, .width = 100.0f, .height = 100.0f, .minDepth = 0.0f, .maxDepth = 1.0f };
 
         HostVisibleDeviceConstantBuffer             _constantBuffer;
         std::shared_ptr<RenderingThreadUpdateQueue> _updateQueue;
@@ -32,6 +32,12 @@ namespace eureka
         void SetFullViewport(uint32_t topLeftX, uint32_t topLeftY, uint32_t width, uint32_t height);
         void SetNearFar(float zNear, float zFar);
         void SetVerticalFov(float verticalFovRadians);
+
+        auto DescriptorInfo() const
+        {
+            return _constantBuffer.DescriptorInfo();
+        }
+        const vk::Viewport& Viewport() const;
     private:
         void SyncTransforms();
     };

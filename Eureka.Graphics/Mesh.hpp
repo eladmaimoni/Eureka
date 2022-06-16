@@ -42,6 +42,16 @@ namespace eureka
         AllocatedBuffer(const AllocatedBuffer& that) = delete;
         uint64_t ByteSize() const;
         vk::Buffer Buffer() const { return _buffer;}
+
+        vk::DescriptorBufferInfo DescriptorInfo() const
+        {
+            return vk::DescriptorBufferInfo
+            {
+                .buffer = _buffer,
+                .offset = 0,
+                .range = _byteSize
+            };
+        }
     };
 
 
