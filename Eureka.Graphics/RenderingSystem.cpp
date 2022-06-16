@@ -357,8 +357,8 @@ namespace eureka
         swapChainDesc.height = windowSurface.size.height;
         swapChainDesc.surface = std::move(windowSurface.surface);
 
-        swapChainDesc.present_queue_family = _deviceContext.Families().present_family_index;
-        swapChainDesc.graphics_queue_family = _deviceContext.Families().direct_graphics_family_index;
+        swapChainDesc.present_queue_family = _presentationQueue.Family();
+        swapChainDesc.graphics_queue_family = _graphicsQueue.Family();
 
         _swapChain = std::make_unique<SwapChain>(_deviceContext, _presentationQueue, std::move(swapChainDesc));
 

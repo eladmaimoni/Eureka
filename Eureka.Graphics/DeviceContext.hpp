@@ -21,7 +21,16 @@ namespace eureka
         }
 
         Queue() = default;
-    //private:
+
+        vk::Queue Get() const
+        {
+            return _queue;
+        }
+        uint32_t Family() const
+        {
+            return _family;
+        }
+    private:
         uint32_t  _family;
         vk::Queue _queue;
 
@@ -34,17 +43,6 @@ namespace eureka
         bool is_taken = false;
     };
 
-    struct QueueFamilies
-    {
-        uint32_t                               direct_graphics_family_index;
-        uint32_t                               direct_graphics_family_max_count;
-        uint32_t                               copy_family_index;
-        uint32_t                               copy_family_max_count;
-        uint32_t                               compute_family_index;
-        uint32_t                               compute_family_max_count;
-
-        uint32_t                               present_family_index; // probably refers to one of the existing families
-    };
 
     struct DeviceContextConfig
     {
@@ -67,7 +65,6 @@ namespace eureka
         // Initialization
         //
         void Init(const Instance& instance, const DeviceContextConfig& desc);
-        void InitializePresentationQueueFromExistingQueues(vk::SurfaceKHR presentationSurface);
 
         //
         // Accessors
@@ -78,11 +75,6 @@ namespace eureka
         Queue CreateCopyQueue();
         Queue CreatePresentQueue(vk::SurfaceKHR presentationSurface);
 
-        //const std::vector<vk::Queue>& GraphicsQueue() const { assert(_device); return _graphicsQueue; };
-        //const std::vector<vk::Queue>& ComputeQueue() const { assert(_device); return _computeQueue; };
-        //const std::vector<vk::Queue>& CopyQueue() const { assert(_device); return _copyQueue; };
-        //vk::Queue PresentQueue() const;
-        const QueueFamilies& Families() const { assert(_device); return _families; }
         const std::shared_ptr<vkr::PhysicalDevice> PhysicalDevice() const { assert(_device); return _physicalDevice; }
         const std::shared_ptr<vkr::Device> LogicalDevice() const { assert(_device); return _device; }
         VmaAllocator Allocator() const { return _vmaAllocator; }
@@ -98,8 +90,6 @@ namespace eureka
         std::vector<vk::Queue>                         _computeQueue;
         std::vector<vk::Queue>                         _copyQueue;
         vk::Queue                                      _presentQueue;
-        QueueFamilies                                  _families;
-
 
         //
         //

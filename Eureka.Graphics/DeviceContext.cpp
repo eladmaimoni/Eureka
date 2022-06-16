@@ -48,35 +48,17 @@ namespace eureka
         Compute,
         Copy
     };
-
-    struct QueueTypeInfo
-    {
-        uint32_t family{ 0 };
-        uint32_t max_count{ 0 };
-        bool is_family_unique = true;
-    };
     
     struct DeviceCreationDesc
     {
-        QueueFamilies                          queue_families;
         std::vector<float>                     queue_priorities;
         std::vector<vk::DeviceQueueCreateInfo> create_info;
-
         std::unordered_map<uint32_t, uint32_t> queues_per_index;
-        std::unordered_map< QueueType, QueueTypeInfo> queue_types_info;
 
-        //uint32_t                               graphics_start;
-        //uint32_t                               compute_start;
-        //uint32_t                               copy_start;
-        //uint32_t                               graphics_end;
-        //uint32_t                               compute_end;
-        //uint32_t                               copy_end;
         uint32_t                               graphics_idx;
         uint32_t                               compute_idx;
         uint32_t                               copy_idx;
     };
-
- 
 
     struct IndexFlagsPair
     {
@@ -247,29 +229,6 @@ namespace eureka
         if (_vmaAllocator)
         {
             vmaDestroyAllocator(_vmaAllocator);
-        }
-    }
-
-    void DeviceContext::InitializePresentationQueueFromExistingQueues(vk::SurfaceKHR presentationSurface)
-    {
-        assert(_device);
-        assert(!_presentQueue);
-
-        if (_physicalDevice->getSurfaceSupportKHR(_families.copy_family_index, presentationSurface))
-        {
-            _families.present_family_index = _families.copy_family_index;
-            _presentQueue = _copyQueue.back();
-        }
-        else if (_physicalDevice->getSurfaceSupportKHR(_families.compute_family_index, presentationSurface))
-        {
-            _families.present_family_index = _families.compute_family_index;
-            _presentQueue = _computeQueue.back();
-
-        }
-        else if (_physicalDevice->getSurfaceSupportKHR(_families.direct_graphics_family_index, presentationSurface))
-        {
-            _families.present_family_index = _families.direct_graphics_family_index;
-            _presentQueue = _graphicsQueue.back();
         }
     }
 
