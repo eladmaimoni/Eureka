@@ -116,6 +116,7 @@ namespace eureka
         ColoredVertexMeshPipeline(ColoredVertexMeshPipeline&& that) = default;
         ColoredVertexMeshPipeline& operator=(ColoredVertexMeshPipeline&& rhs) = default;
         vk::PipelineLayout Layout() const;
+        vk::Pipeline Get() const;
 
     };
 }

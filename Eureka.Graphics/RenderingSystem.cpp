@@ -265,10 +265,10 @@ namespace eureka
 
         {
             ScopedCommands sc(renderingCommandBuffer);
-            
+
             renderingCommandBuffer.beginRenderPass(_renderTargets[currentFrame].BeginInfo(), vk::SubpassContents::eInline);
 
-            
+
             renderingCommandBuffer.setViewport(0, { _camera.Viewport() });
             renderingCommandBuffer.setScissor(0, { _swapChain->RenderArea() });
 
@@ -276,31 +276,28 @@ namespace eureka
                 vk::PipelineBindPoint::eGraphics,
                 _coloredVertexPipeline.Layout(),
                 0,
-                {_constantBufferSet.Get()},
+                { _constantBufferSet.Get() },
                 nullptr
             );
 
-            // Update dynamic viewport state
-            //vk::Viewport viewport = {};
-            //viewport.height = (float)height;
-            //viewport.width = (float)width;
-            //viewport.minDepth = (float)0.0f;
-            //viewport.maxDepth = (float)1.0f;
-            //renderingCommandBuffer.setViewport(viewport)
 
+            renderingCommandBuffer.bindPipeline(
+                vk::PipelineBindPoint::eGraphics,
+                _coloredVertexPipeline.Get()
+            );
 
+            renderingCommandBuffer.bindVertexBuffers(
+                0,
+                {_triangle.Buffer()},
+                {0}
+            );
+            renderingCommandBuffer.bindIndexBuffer(
+                _triangle.Buffer(),
+                sizeof(mesh::COLORED_TRIANGLE_INDEX_DATA), 
+                vk::IndexType::eUint32
+            );
 
-            //vkCmdSetViewport(drawCmdBuffers[i], 0, 1, &viewport);
-
-            // Update dynamic scissor state
-            //vk::Rect2D scissor = {};
-            //scissor.extent.width = width;
-            //scissor.extent.height = height;
-            //scissor.offset.x = 0;
-            //scissor.offset.y = 0;
-            //vkCmdSetScissor(drawCmdBuffers[i], 0, 1, &scissor)
-
-
+            renderingCommandBuffer.drawIndexed(3, 1, 0, 0, 1);
 
             renderingCommandBuffer.endRenderPass();
         }

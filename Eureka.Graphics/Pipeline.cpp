@@ -48,6 +48,11 @@ namespace eureka
         return *_pipelineLayout;
     }
 
+    vk::Pipeline ColoredVertexMeshPipeline::Get() const
+    {
+        return *_pipeline;
+    }
+
     void ColoredVertexMeshPipeline::Setup(DeviceContext& deviceContext)
     {
         //
