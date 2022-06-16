@@ -67,7 +67,7 @@ namespace eureka
         vk::Queue                                      _presentQueue;
         QueueFamilies                                  _families;
 
-        VmaAllocator                                   _vmaAllocator;
+        VmaAllocator                                   _vmaAllocator{nullptr};
         ShaderCache                                    _shaderCache;
         std::shared_ptr<RenderingUpdateQueue>    _updateQueue = std::make_shared<RenderingUpdateQueue>();
     };

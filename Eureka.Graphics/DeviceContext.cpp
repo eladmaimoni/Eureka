@@ -296,7 +296,10 @@ namespace eureka
 
     DeviceContext::~DeviceContext()
     {
-        vmaDestroyAllocator(_vmaAllocator);
+        if (_vmaAllocator)
+        {
+            vmaDestroyAllocator(_vmaAllocator);
+        }
     }
 
     void DeviceContext::InitializePresentationQueueFromExistingQueues(vk::SurfaceKHR presentationSurface)
