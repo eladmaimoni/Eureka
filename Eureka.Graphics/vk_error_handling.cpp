@@ -65,7 +65,33 @@ namespace eureka
         if (messageSeverity & (VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT))
 #endif        
         {
-            DEBUGGER_TRACE("validation layer: {}", pCallbackData->pMessage);
+            static constexpr uint32_t chunksSize = 150;
+            std::string_view all(pCallbackData->pMessage);
+            std::string separated;
+            separated.reserve(all.size() + 2 * (all.size() / chunksSize));
+
+            auto prev = 0;
+            for (auto i = chunksSize; i < all.size(); i += chunksSize)
+            {
+                while (i < all.size() && all[i] != ' ')
+                {
+                    ++i;
+                }
+                separated.append(pCallbackData->pMessage + prev, pCallbackData->pMessage + i);
+                separated.append("\n");
+                prev = i;
+            }
+
+            if (prev < all.size())
+            {
+                separated.append(pCallbackData->pMessage + prev, pCallbackData->pMessage + all.size());
+            }
+
+            DEBUGGER_TRACE("\n{}\n", separated);
+
+            
+
+
         }
        
 

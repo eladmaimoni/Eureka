@@ -9,7 +9,7 @@ namespace eureka
     std::vector<DepthColorRenderTarget> CreateDepthColorTargetForSwapChain(
         const DeviceContext& deviceContext,
         const SwapChain& swapChain,
-        const std::shared_ptr<RenderPass>& renderPass
+        const std::shared_ptr<DepthColorRenderPass>& renderPass
     )
     {
         std::vector<DepthColorRenderTarget> targets;
@@ -17,7 +17,7 @@ namespace eureka
         // create depth image
 
         auto renderArea = swapChain.RenderArea();
-        auto depthImage = std::make_shared<Image2D>(CreateDepthImage(deviceContext, renderArea.extent.width, renderArea.extent.height));
+        auto depthImage = std::make_shared<Image2D>(CreateDepthImage(deviceContext, renderPass->DepthFormat(), renderArea.extent.width, renderArea.extent.height));
 
         // create frame buffer
         auto images = swapChain.Images();
@@ -97,7 +97,7 @@ namespace eureka
         //
 
         auto windowSurface = _glfw.CreateVulkanWindowSurface(DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT, _instance.Get());
-        _deviceContext.InitializePresentationQueueFromExistingQueues(*windowSurface.surface);
+        //_deviceContext.InitializePresentationQueueFromExistingQueues(*windowSurface.surface);
 
        
 
@@ -114,18 +114,34 @@ namespace eureka
 
 
 
-        _presentationQueue = _deviceContext.PresentQueue();
-        _graphicsQueue = _deviceContext.GraphicsQueue().front();
-        _uploadQueue =_deviceContext.CopyQueue().at(0);
+        _graphicsQueue = _deviceContext.CreateGraphicsQueue();
+        _uploadQueue =_deviceContext.CreateCopyQueue();
+        _presentationQueue = _deviceContext.CreatePresentQueue(*windowSurface.surface);
 
         InitializeSwapChain(windowSurface);
 
         InitializeCommandPoolsAndBuffers();
 
+        bool found = false;
+        vk::Format depthFormat = DEFAULT_DEPTH_BUFFER_FORMAT;
+        for (auto format : { vk::Format::eD24UnormS8Uint, vk::Format::eD32Sfloat, vk::Format::eD32SfloatS8Uint })
+        {
+            auto props = _deviceContext.PhysicalDevice()->getFormatProperties(format);
+
+            if (props.optimalTilingFeatures & vk::FormatFeatureFlagBits::eDepthStencilAttachment)
+            {
+                depthFormat = format;
+                found = true;
+                break;
+            }
+        }
+
+        
+
         DepthColorRenderPassConfig depthColorConfig
         {
             .color_output_format = _swapChain->ImageFormat(),
-            .depth_output_format = DEFAULT_DEPTH_BUFFER_FORMAT
+            .depth_output_format = depthFormat
         };
 
         _renderPass = std::make_shared<DepthColorRenderPass>(_deviceContext, depthColorConfig);
@@ -146,7 +162,7 @@ namespace eureka
             BufferConfig{ .byte_size = sizeof(mesh::COLORED_TRIANGLE_INDEX_DATA) + sizeof(mesh::COLORED_TRIANGLE_VERTEX_DATA) }
         );
 
-        _uploadPool = CommandPool(_deviceContext.LogicalDevice(), CommandPoolDesc{.queue_family = _deviceContext.Families().copy_family_index});
+        _uploadPool = CommandPool(_deviceContext.LogicalDevice(), CommandPoolDesc{.queue_family = _uploadQueue.Family()});
         _uploadDoneSemaphore = _deviceContext.LogicalDevice()->createSemaphore(vk::SemaphoreCreateInfo());
         _uploadCommandBuffer = _uploadPool.AllocatePrimaryCommandBuffer();
         _uploadDoneFence = _deviceContext.LogicalDevice()->createFence(vk::FenceCreateInfo{ .flags = vk::FenceCreateFlagBits::eSignaled });
@@ -171,7 +187,7 @@ namespace eureka
     void RenderingSystem::HandleSwapChainResize()
     {
         _renderTargets = CreateDepthColorTargetForSwapChain(
-            _deviceContext,
+            _deviceContext, 
             *_swapChain,
             _renderPass
         );
@@ -246,7 +262,7 @@ namespace eureka
             };
 
 
-            _uploadQueue.submit(uploadsSubmitInfo, *_uploadDoneFence);
+            _uploadQueue->submit(uploadsSubmitInfo, *_uploadDoneFence);
 
 
         }
@@ -336,7 +352,7 @@ namespace eureka
             .pSignalSemaphores = &renderingDoneSemaphore
         };
 
-        _graphicsQueue.submit(
+        _graphicsQueue->submit(
             { submitInfo },
             currentFrameFence
         );
@@ -357,10 +373,10 @@ namespace eureka
         swapChainDesc.height = windowSurface.size.height;
         swapChainDesc.surface = std::move(windowSurface.surface);
 
-        swapChainDesc.present_queue_family = _deviceContext.Families().present_family_index;
-        swapChainDesc.graphics_queue_family = _deviceContext.Families().direct_graphics_family_index;
+        swapChainDesc.present_queue_family = _presentationQueue.Family();
+        swapChainDesc.graphics_queue_family = _graphicsQueue.Family();
 
-        _swapChain = std::make_unique<SwapChain>(_deviceContext, std::move(swapChainDesc));
+        _swapChain = std::make_unique<SwapChain>(_deviceContext, _presentationQueue, std::move(swapChainDesc));
 
         _maxFramesInFlight = _swapChain->ImageCount();
     }
@@ -369,7 +385,7 @@ namespace eureka
     {
         for (auto i = 0u; i < _maxFramesInFlight; ++i)
         {          
-            _frameCommandBuffer.emplace_back(_deviceContext);
+            _frameCommandBuffer.emplace_back(_deviceContext, _graphicsQueue);
         }
     }
 

@@ -12,7 +12,7 @@ namespace eureka
     DepthColorRenderPass::DepthColorRenderPass(
         const DeviceContext& deviceContext,
         const DepthColorRenderPassConfig& config
-    )
+    ) : _depthFormat(config.depth_output_format)
     {
         std::array<vk::AttachmentDescription, 2> colorAndDepthAttachments;
 

@@ -27,8 +27,9 @@ namespace eureka
 
     class DepthColorRenderPass : public RenderPass
     {
+        vk::Format _depthFormat;
     public:
         DepthColorRenderPass(const DeviceContext& deviceContext, const DepthColorRenderPassConfig& config);
-
+        vk::Format DepthFormat() const { return _depthFormat; }
     };
 }

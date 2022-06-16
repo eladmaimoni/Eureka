@@ -28,6 +28,7 @@ namespace eureka
     public:
         SwapChain(
             DeviceContext& deviceContext,
+            Queue presentQueue,
             SwapChainTargetConfig desc
         );
 
@@ -39,12 +40,12 @@ namespace eureka
         vk::Format ImageFormat() const { return _surfaceFormat.format; }
         std::vector<std::shared_ptr<Image>> Images() const;
         uint32_t ImageCount() const;
-
+        
 
     private:
         DeviceContext& _deviceContext;
         SwapChainTargetConfig                _desc;
-        vk::Queue                            _presentationQueue;
+        Queue                                _presentationQueue;
         vk::Extent2D                         _swapchainExtent;
         vkr::SwapchainKHR                    _swapchain{ nullptr };
         vk::SurfaceFormatKHR                 _surfaceFormat;
