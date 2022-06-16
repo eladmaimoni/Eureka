@@ -260,7 +260,7 @@ namespace eureka
     //
     //////////////////////////////////////////////////////////////////////////
 
-    Image2D CreateDepthImage(const DeviceContext& deviceContext, uint32_t width, uint32_t height)
+    Image2D CreateDepthImage(const DeviceContext& deviceContext, vk::Format format, uint32_t width, uint32_t height)
     {
         return Image2D(
             deviceContext,
@@ -268,7 +268,7 @@ namespace eureka
             {
                 .width = width,
                 .height = height,
-                .format = vk::Format::eD24UnormS8Uint,
+                .format = format,
                 .usage_flags = vk::ImageUsageFlagBits::eDepthStencilAttachment,
                 .aspect_flags = vk::ImageAspectFlagBits::eDepth,
                 .use_dedicated_memory_allocation = true // likely to be resized, likely large

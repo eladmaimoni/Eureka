@@ -40,7 +40,7 @@ namespace eureka
         vk::Format ImageFormat() const { return _surfaceFormat.format; }
         std::vector<std::shared_ptr<Image>> Images() const;
         uint32_t ImageCount() const;
-
+        
 
     private:
         DeviceContext& _deviceContext;

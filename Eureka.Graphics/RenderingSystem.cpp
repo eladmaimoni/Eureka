@@ -9,7 +9,7 @@ namespace eureka
     std::vector<DepthColorRenderTarget> CreateDepthColorTargetForSwapChain(
         const DeviceContext& deviceContext,
         const SwapChain& swapChain,
-        const std::shared_ptr<RenderPass>& renderPass
+        const std::shared_ptr<DepthColorRenderPass>& renderPass
     )
     {
         std::vector<DepthColorRenderTarget> targets;
@@ -17,7 +17,7 @@ namespace eureka
         // create depth image
 
         auto renderArea = swapChain.RenderArea();
-        auto depthImage = std::make_shared<Image2D>(CreateDepthImage(deviceContext, renderArea.extent.width, renderArea.extent.height));
+        auto depthImage = std::make_shared<Image2D>(CreateDepthImage(deviceContext, renderPass->DepthFormat(), renderArea.extent.width, renderArea.extent.height));
 
         // create frame buffer
         auto images = swapChain.Images();
@@ -122,10 +122,26 @@ namespace eureka
 
         InitializeCommandPoolsAndBuffers();
 
+        bool found = false;
+        vk::Format depthFormat = DEFAULT_DEPTH_BUFFER_FORMAT;
+        for (auto format : { vk::Format::eD24UnormS8Uint, vk::Format::eD32Sfloat, vk::Format::eD32SfloatS8Uint })
+        {
+            auto props = _deviceContext.PhysicalDevice()->getFormatProperties(format);
+
+            if (props.optimalTilingFeatures & vk::FormatFeatureFlagBits::eDepthStencilAttachment)
+            {
+                depthFormat = format;
+                found = true;
+                break;
+            }
+        }
+
+        
+
         DepthColorRenderPassConfig depthColorConfig
         {
             .color_output_format = _swapChain->ImageFormat(),
-            .depth_output_format = DEFAULT_DEPTH_BUFFER_FORMAT
+            .depth_output_format = depthFormat
         };
 
         _renderPass = std::make_shared<DepthColorRenderPass>(_deviceContext, depthColorConfig);
@@ -171,7 +187,7 @@ namespace eureka
     void RenderingSystem::HandleSwapChainResize()
     {
         _renderTargets = CreateDepthColorTargetForSwapChain(
-            _deviceContext,
+            _deviceContext, 
             *_swapChain,
             _renderPass
         );

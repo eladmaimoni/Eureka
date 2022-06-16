@@ -61,5 +61,5 @@ namespace eureka
     };
 
 
-    Image2D CreateDepthImage(const DeviceContext& deviceContext, uint32_t width, uint32_t height);
+    Image2D CreateDepthImage(const DeviceContext& deviceContext, vk::Format format, uint32_t width, uint32_t height);
 }
