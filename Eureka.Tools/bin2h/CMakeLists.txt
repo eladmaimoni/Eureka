@@ -12,6 +12,4 @@ set_compiler_flags(bin2h)
 target_link_libraries(
     bin2h
     PRIVATE 
-    Boost::boost
-    Boost::program_options
 )

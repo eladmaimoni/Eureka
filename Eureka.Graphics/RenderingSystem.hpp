@@ -41,7 +41,7 @@ namespace eureka
         DeviceContext& _deviceContext;
         GLFWRuntime&   _glfw;
 
-        std::shared_ptr<RenderingThreadUpdateQueue>          _updateQueue;
+        std::shared_ptr<RenderingUpdateQueue>          _updateQueue;
 
         GLFWWindowPtr                                        _window; // TODO should remove
         std::unique_ptr<SwapChain>                           _swapChain;

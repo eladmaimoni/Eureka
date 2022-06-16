@@ -41,7 +41,11 @@ set_source_group(
 set_source_group(
     rendering 
     "RenderingSystem.hpp" 
-    "RenderingSystem.cpp" 
+    "RenderingSystem.cpp"
+    "Camera.hpp"
+    "Camera.cpp"      
+    "UpdateQueue.hpp"
+    "UpdateQueue.cpp"
 
 )
 
@@ -54,10 +58,7 @@ set_source_group(
 
 set_source_group(
     objects 
-     "Camera.hpp"
-     "Camera.cpp"      
-     "UpdateQueue.hpp"
-     "UpdateQueue.cpp" 
+ 
 )
 
 

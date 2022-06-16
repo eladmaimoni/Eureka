@@ -3,14 +3,9 @@ namespace eureka
 {
     inline thread_local bool tls_is_rendering_thread = false;
 
-    class RenderingThreadUpdateQueue
+    class RenderingUpdateQueue
     {
     public:
-
-        RenderingThreadUpdateQueue()
-        {
-
-        }
         void UpdatePreRender();
         void Update();
         void EnqueuePreRenderUpdate(fu::unique_function<void(void)> f);

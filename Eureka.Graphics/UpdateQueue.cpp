@@ -3,28 +3,28 @@
 namespace eureka
 {
 
-    void RenderingThreadUpdateQueue::UpdatePreRender()
+    void RenderingUpdateQueue::UpdatePreRender()
     {
          DoUpdate(_preRenderFuncs);
          DoUpdate(_funcs);
     }
 
-    void RenderingThreadUpdateQueue::Update()
+    void RenderingUpdateQueue::Update()
     {
 
         DoUpdate(_funcs);
     }
 
-    void RenderingThreadUpdateQueue::EnqueuePreRenderUpdate(fu::unique_function<void(void)> f)
+    void RenderingUpdateQueue::EnqueuePreRenderUpdate(fu::unique_function<void(void)> f)
     {
         EnqueueUpdate(std::move(f), _preRenderFuncs);
     }
-    void RenderingThreadUpdateQueue::EnqueueUpdate(fu::unique_function<void(void)> f)
+    void RenderingUpdateQueue::EnqueueUpdate(fu::unique_function<void(void)> f)
     {
         EnqueueUpdate(std::move(f), _funcs);
     }
 
-    void RenderingThreadUpdateQueue::EnqueueUpdate(fu::unique_function<void(void)> f, std::deque<fu::unique_function<void(void)>>& deque)
+    void RenderingUpdateQueue::EnqueueUpdate(fu::unique_function<void(void)> f, std::deque<fu::unique_function<void(void)>>& deque)
     {
         std::unique_lock lk(_mtx);
         if (_updating && tls_is_rendering_thread)
@@ -41,7 +41,7 @@ namespace eureka
 
 
 
-    void RenderingThreadUpdateQueue::DoUpdate(std::deque<fu2::unique_function<void(void)>>& deque)
+    void RenderingUpdateQueue::DoUpdate(std::deque<fu2::unique_function<void(void)>>& deque)
     {
         if (!deque.empty())
         {

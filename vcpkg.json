@@ -3,7 +3,6 @@
     "version-string": "1.0.0",
     "builtin-baseline": "2ac61f87f69f0484b8044f95ab274038fbaf7bdd",
     "dependencies": [
-        "boost-program-options",
         "catch2",
         "eigen3",
         "glm",

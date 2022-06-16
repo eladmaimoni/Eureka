@@ -54,7 +54,7 @@ namespace eureka
         const std::shared_ptr<vkr::Device> LogicalDevice() const { assert(_device); return _device; }
         VmaAllocator Allocator() const { return _vmaAllocator; }
         const ShaderCache& Shaders() { return _shaderCache; }
-        const std::shared_ptr<RenderingThreadUpdateQueue>& UpdateQueue() const { return _updateQueue; }
+        const std::shared_ptr<RenderingUpdateQueue>& UpdateQueue() const { return _updateQueue; }
     private:
         void InitDeviceAndQueues(const vkr::Instance& instance, const DeviceContextConfig& desc);
 
@@ -69,6 +69,6 @@ namespace eureka
 
         VmaAllocator                                   _vmaAllocator;
         ShaderCache                                    _shaderCache;
-        std::shared_ptr<RenderingThreadUpdateQueue>    _updateQueue = std::make_shared<RenderingThreadUpdateQueue>();
+        std::shared_ptr<RenderingUpdateQueue>    _updateQueue = std::make_shared<RenderingUpdateQueue>();
     };
 }

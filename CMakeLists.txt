@@ -17,7 +17,7 @@ project ("Eureka")
 #                            PACKAGES
 ############################################################################
 find_package(Catch2 CONFIG REQUIRED)
-find_package(Boost REQUIRED COMPONENTS program_options)
+#find_package(Boost REQUIRED COMPONENTS program_options)
 find_package(glm CONFIG REQUIRED)
 find_package(Eigen3 CONFIG REQUIRED)
 find_package(glfw3 CONFIG REQUIRED)

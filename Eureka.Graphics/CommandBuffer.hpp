@@ -84,11 +84,8 @@ namespace eureka
             return vkr::CommandBuffer(*_device, commandBuffer, *_pool);
         }
 
-
         vk::CommandPool Get() const {return *_pool;}
     };
-
-
 
     class FrameCommands
     {

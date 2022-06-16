@@ -22,7 +22,7 @@ namespace eureka
         vk::Viewport    _viewport{.x = 0.0f, .y = 0.0f, .width = 100.0f, .height = 100.0f, .minDepth = 0.0f, .maxDepth = 1.0f };
 
         HostVisibleDeviceConstantBuffer             _constantBuffer;
-        std::shared_ptr<RenderingThreadUpdateQueue> _updateQueue;
+        std::shared_ptr<RenderingUpdateQueue> _updateQueue;
     public:
         PerspectiveCamera(DeviceContext& deviceContext);
         void SetPosition(const Eigen::Vector3f& position);
