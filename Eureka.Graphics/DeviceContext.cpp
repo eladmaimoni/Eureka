@@ -2,6 +2,7 @@
 #include "VkHelpers.hpp"
 #include "vk_mem_alloc.h"
 #include "vk_error_handling.hpp"
+#include <unordered_map>
 
 namespace eureka
 {
@@ -45,222 +46,151 @@ namespace eureka
     struct DeviceCreationDesc
     {
         QueueFamilies                          queue_families;
-        std::vector<std::vector<float>>        queue_priorities;
+        std::vector<float>                     queue_priorities;
+        uint32_t                               graphics_start;
+        uint32_t                               compute_start;
+        uint32_t                               copy_start;
+        uint32_t                               graphics_end;
+        uint32_t                               compute_end;
+        uint32_t                               copy_end;
         std::vector<vk::DeviceQueueCreateInfo> create_info;
+    };
+
+    enum class QueueType
+    {
+        Graphics,
+        Compute,
+        Copy
+    };
+
+    struct IndexFlagsPair
+    {
+        uint32_t index;
+        vk::QueueFlags flags;
     };
 
     DeviceCreationDesc EnumerateQueueFamiliesForDeviceCreation(const vkr::PhysicalDevice& device, const DeviceContextConfig& desc)
     {
         // TODO TODO TODO better handling of prioirtes, presentation queues etc
         DeviceCreationDesc deviceCreationDesc;
-        deviceCreationDesc.create_info.reserve(6);
-        deviceCreationDesc.queue_priorities.reserve(6);
+
 
         std::vector<vk::QueueFamilyProperties> queueFamilies = device.getQueueFamilyProperties();
-
-
+     
         //
         // graphics queue
         // 
 
-        uint32_t i = 0u;
+  
         vk::DeviceQueueCreateInfo* graphicsCreateInfo{ nullptr };
         std::vector<float>* graphicsCreateInfoPriority{ nullptr };
 
-
-        for (const auto& queueFamilyProperties : queueFamilies)
-        {
-            auto copy_family_index = queueFamilyProperties.queueFlags & vk::QueueFlagBits::eTransfer;
-            auto compute_family_index = queueFamilyProperties.queueFlags & vk::QueueFlagBits::eCompute;
-            auto graphics = queueFamilyProperties.queueFlags & vk::QueueFlagBits::eGraphics;
-
-            if (graphics && compute_family_index && copy_family_index)
-            {
-                deviceCreationDesc.queue_families.direct_graphics_family_index = i;
-                deviceCreationDesc.queue_families.direct_graphics_family_max_count = desc.preferred_number_of_graphics_queues;
-
-                graphicsCreateInfoPriority = &deviceCreationDesc.queue_priorities.emplace_back();
-                graphicsCreateInfoPriority->resize(desc.preferred_number_of_graphics_queues, 1.0f);    
-                graphicsCreateInfo = &deviceCreationDesc.create_info.emplace_back(
-                    vk::DeviceQueueCreateInfo{
-                        .flags = vk::DeviceQueueCreateFlags{},
-                        .queueFamilyIndex = deviceCreationDesc.queue_families.direct_graphics_family_index,
-                        .queueCount = desc.preferred_number_of_graphics_queues,
-                        .pQueuePriorities = graphicsCreateInfoPriority->data()
-                    }
-                );
-                break;
-            }
-
-            ++i;
-        }
-
-        if (!graphicsCreateInfo)
-        {
-            // no graphics queue
-            throw vk::SystemError(vk::Result::eErrorUnknown);
-        }
-
-        //
-        // compute queue
-        //
-
-        i = 0u;
-        vk::DeviceQueueCreateInfo* computeCreateInfo{ nullptr };
-        std::vector<float>* computeCreateInfoPriority{ nullptr };
-
-
-
-        for (const auto& queueFamilyProperties : queueFamilies)
-        {
-            auto copy_family_index = queueFamilyProperties.queueFlags & vk::QueueFlagBits::eTransfer;
-            auto compute_family_index = queueFamilyProperties.queueFlags & vk::QueueFlagBits::eCompute;
-            auto graphics = queueFamilyProperties.queueFlags & vk::QueueFlagBits::eGraphics;
-
-            if (i != deviceCreationDesc.queue_families.direct_graphics_family_index && queueFamilyProperties.queueFlags & vk::QueueFlagBits::eCompute)
-            {
-                deviceCreationDesc.queue_families.compute_family_index = i;
-                deviceCreationDesc.queue_families.compute_family_max_count = desc.preferred_number_of_compute_queues;
-                computeCreateInfoPriority = &deviceCreationDesc.queue_priorities.emplace_back();
-                computeCreateInfoPriority->resize(desc.preferred_number_of_compute_queues, 1.0f);
-
-                computeCreateInfo = &deviceCreationDesc.create_info.emplace_back(
-                    vk::DeviceQueueCreateInfo{
-                        .flags = vk::DeviceQueueCreateFlags{},
-                        .queueFamilyIndex = deviceCreationDesc.queue_families.compute_family_index,
-                        .queueCount = desc.preferred_number_of_compute_queues,
-                        .pQueuePriorities = computeCreateInfoPriority->data()
-                    }
-                );
-                break;
-            }
-            ++i;
-        }
-
-        if (!computeCreateInfo)
-        {
-            deviceCreationDesc.queue_families.compute_family_index = deviceCreationDesc.queue_families.direct_graphics_family_index;
-            computeCreateInfo = graphicsCreateInfo;
-            deviceCreationDesc.queue_families.direct_graphics_family_max_count += desc.preferred_number_of_compute_queues;
-            graphicsCreateInfoPriority->insert(graphicsCreateInfoPriority->end(), desc.preferred_number_of_compute_queues, 1.0f);
-            computeCreateInfoPriority = graphicsCreateInfoPriority;
-            computeCreateInfo->pQueuePriorities = computeCreateInfoPriority->data(); // reset pointer because insert might change it
-        }
-
-
-        //
-        // copy queue
-        //
-
-        i = 0u;
-        vk::DeviceQueueCreateInfo* copyCreateInfo{ nullptr };
-        std::vector<float>* copyCreateInfoPriority{ nullptr };
-
-        for (const auto& queueFamilyProperties : queueFamilies)
-        {
-            auto copy_family_index = queueFamilyProperties.queueFlags & vk::QueueFlagBits::eTransfer;
-            auto compute_family_index = queueFamilyProperties.queueFlags & vk::QueueFlagBits::eCompute;
-            auto graphics = queueFamilyProperties.queueFlags & vk::QueueFlagBits::eGraphics;
-
-            if (copy_family_index && !compute_family_index && !graphics)
-            {
-                deviceCreationDesc.queue_families.copy_family_index = i;
-                deviceCreationDesc.queue_families.copy_family_max_count = desc.preferred_number_of_copy_queues;
-                copyCreateInfoPriority = &deviceCreationDesc.queue_priorities.emplace_back();
-                copyCreateInfoPriority->resize(desc.preferred_number_of_copy_queues, 1.0f);
-
-                copyCreateInfo = &deviceCreationDesc.create_info.emplace_back(
-                    vk::DeviceQueueCreateInfo{
-                        .flags = vk::DeviceQueueCreateFlags{},
-                        .queueFamilyIndex = deviceCreationDesc.queue_families.copy_family_index,
-                        .queueCount = desc.preferred_number_of_copy_queues,
-                        .pQueuePriorities = copyCreateInfoPriority->data()
-                    }
-                );
-                break;
-            }
-            ++i;
-        }
-
-        if (!copyCreateInfo && (queueFamilies[deviceCreationDesc.queue_families.compute_family_index].queueFlags & vk::QueueFlagBits::eTransfer))
-        {
-            deviceCreationDesc.queue_families.copy_family_index = deviceCreationDesc.queue_families.compute_family_index;
-            copyCreateInfo = computeCreateInfo;
-
-            deviceCreationDesc.queue_families.compute_family_max_count += desc.preferred_number_of_copy_queues;
-            computeCreateInfoPriority->insert(computeCreateInfoPriority->end(), desc.preferred_number_of_copy_queues, 1.0f);
-
-            copyCreateInfoPriority = computeCreateInfoPriority;
-            copyCreateInfo->pQueuePriorities = copyCreateInfoPriority->data(); // reset pointer because insert might change it
-
-        }
-
-        if (!copyCreateInfo)
-        {
-            deviceCreationDesc.queue_families.copy_family_index = deviceCreationDesc.queue_families.direct_graphics_family_index;
-            computeCreateInfo = graphicsCreateInfo;
-
-            deviceCreationDesc.queue_families.direct_graphics_family_max_count += desc.preferred_number_of_copy_queues;
-            graphicsCreateInfoPriority->insert(graphicsCreateInfoPriority->end(), desc.preferred_number_of_copy_queues, 1.0f);
-
-   
-            copyCreateInfoPriority = graphicsCreateInfoPriority;
-            copyCreateInfo->pQueuePriorities = copyCreateInfoPriority->data(); // reset pointer because insert might change it
-        }
-
-        //
-        // present queue
-        //
-
-        //if (desc.presentation_surface)
-        //{
-        //    if (device.getSurfaceSupportKHR(deviceCreationDesc.queue_families.copy_family_index, desc.presentation_surface))
-        //    {
-        //        deviceCreationDesc.queue_families.present_family_index = deviceCreationDesc.queue_families.copy_family_index;
-        //    }
-        //    else if (device.getSurfaceSupportKHR(deviceCreationDesc.queue_families.compute_family_index, desc.presentation_surface))
-        //    {
-        //        deviceCreationDesc.queue_families.present_family_index = deviceCreationDesc.queue_families.compute_family_index;
-
-        //    }
-        //    else if (device.getSurfaceSupportKHR(deviceCreationDesc.queue_families.direct_graphics_family_index, desc.presentation_surface))
-        //    {
-        //        deviceCreationDesc.queue_families.present_family_index = deviceCreationDesc.queue_families.direct_graphics_family_index;
-        //    }
-        //    else
-        //    {
-        //        bool found = false;
-        //        for (i = 0u; i < queueFamilies.size(); ++i)
-        //        {
-        //            auto presentation = device.getSurfaceSupportKHR(i, desc.presentation_surface);
-
-        //            if (presentation)
-        //            {
-        //                deviceCreationDesc.queue_families.present_family_index = i;
-        //            
-        //                auto priority = &deviceCreationDesc.queue_priorities.emplace_back().emplace_back(1.0f);
-        //                deviceCreationDesc.create_info.emplace_back(
-        //                    vk::DeviceQueueCreateInfo{
-        //                        .flags = vk::DeviceQueueCreateFlags{},
-        //                        .queueFamilyIndex = deviceCreationDesc.queue_families.present_family_index,
-        //                        .queueCount = 1,
-        //                        .pQueuePriorities = priority
-        //                    }
-        //                );
-        //                break;
-        //            }
-        //        }
-
-        //        if (!found)
-        //        {
-        //            // no present queue
-        //            throw vk::SystemError(vk::Result::eErrorUnknown);
-        //        }
-        //    }
-
-        //}
-
+        DEBUGGER_TRACE("starting going through queues");
         
+        std::unordered_map<QueueType, std::vector<IndexFlagsPair>> indicesOrderedBySpecificity;
+        
+        for (auto i = 0u; i < queueFamilies.size(); ++i)
+        {
+            const auto& props = queueFamilies[i];
+
+            auto has_copy_flag = static_cast<bool>(props.queueFlags & vk::QueueFlagBits::eTransfer);
+            auto has_compute_flag = static_cast<bool>(props.queueFlags & vk::QueueFlagBits::eCompute);
+            auto has_graphics_flag = static_cast<bool>(props.queueFlags & vk::QueueFlagBits::eGraphics);
+            
+            if (has_graphics_flag)
+            {
+                auto& graphicsIndices = indicesOrderedBySpecificity[QueueType::Graphics];
+
+                graphicsIndices.emplace_back(IndexFlagsPair{ .index = i, .flags = props.queueFlags });
+
+                std::sort(graphicsIndices.begin(), graphicsIndices.end(), [](const IndexFlagsPair& a, const IndexFlagsPair& b)
+                    {
+                        int a_has_copy_flag = static_cast<bool>(a.flags & vk::QueueFlagBits::eTransfer);
+                        int a_has_compute_flag = static_cast<bool>(a.flags & vk::QueueFlagBits::eCompute);
+                        int b_has_copy_flag = static_cast<bool>(b.flags & vk::QueueFlagBits::eTransfer);
+                        int b_has_compute_flag = static_cast<bool>(b.flags & vk::QueueFlagBits::eCompute);                      
+                        return (a_has_copy_flag + a_has_compute_flag) < (b_has_copy_flag + b_has_compute_flag);
+                    }
+                );
+            }
+
+            if (has_compute_flag)
+            {
+                auto& computeIndices = indicesOrderedBySpecificity[QueueType::Compute];
+
+                computeIndices.emplace_back(IndexFlagsPair{ .index = i, .flags = props.queueFlags });
+
+                std::sort(computeIndices.begin(), computeIndices.end(), [](const IndexFlagsPair& a, const IndexFlagsPair& b)
+                    {
+                        int a_has_copy_flag = static_cast<bool>(a.flags & vk::QueueFlagBits::eTransfer);
+                        int a_has_graphics_flag = static_cast<bool>(a.flags & vk::QueueFlagBits::eGraphics);
+                        int b_has_copy_flag = static_cast<bool>(b.flags & vk::QueueFlagBits::eTransfer);
+                        int b_has_graphics_flag = static_cast<bool>(b.flags & vk::QueueFlagBits::eGraphics);
+                        return (a_has_copy_flag + a_has_graphics_flag) < (b_has_copy_flag + b_has_graphics_flag);
+                    }
+                );
+            }
+
+            if (has_copy_flag)
+            {
+                auto& copyIndices = indicesOrderedBySpecificity[QueueType::Copy];
+
+                copyIndices.emplace_back(IndexFlagsPair{ .index = i, .flags = props.queueFlags });
+
+                std::sort(copyIndices.begin(), copyIndices.end(), [](const IndexFlagsPair& a, const IndexFlagsPair& b)
+                    {
+                        int a_has_graphics_flag = static_cast<bool>(a.flags & vk::QueueFlagBits::eGraphics);
+                        int a_has_compute_flag = static_cast<bool>(a.flags & vk::QueueFlagBits::eCompute);
+                        int b_has_copy_flag = static_cast<bool>(b.flags & vk::QueueFlagBits::eTransfer);
+                        int b_has_graphics_flag = static_cast<bool>(b.flags & vk::QueueFlagBits::eGraphics);
+                        return (a_has_graphics_flag + a_has_compute_flag) < (b_has_copy_flag + b_has_graphics_flag);
+                    }
+                );
+            }
+
+        }
+
+        std::unordered_map<uint32_t, uint32_t> queuesPerIndex;
+        
+        auto bestGraphicsIndex = indicesOrderedBySpecificity.at(QueueType::Graphics).at(0).index;
+        auto bestComputeIndex = indicesOrderedBySpecificity.at(QueueType::Compute).at(0).index;
+        auto bestCopyIndex = indicesOrderedBySpecificity.at(QueueType::Copy).at(0).index;
+
+        queuesPerIndex[bestGraphicsIndex] = 0;
+        queuesPerIndex[bestComputeIndex] = 0;
+        queuesPerIndex[bestCopyIndex] = 0;
+        
+        deviceCreationDesc.graphics_start = 0;
+        queuesPerIndex[bestGraphicsIndex] += desc.preferred_number_of_graphics_queues;
+        deviceCreationDesc.graphics_end = desc.preferred_number_of_graphics_queues;
+        deviceCreationDesc.compute_start = queuesPerIndex[bestComputeIndex];
+        queuesPerIndex[bestComputeIndex] += desc.preferred_number_of_compute_queues;
+        deviceCreationDesc.compute_end = queuesPerIndex[bestComputeIndex];
+        deviceCreationDesc.copy_start = queuesPerIndex[bestCopyIndex];
+        queuesPerIndex[bestCopyIndex] += desc.preferred_number_of_copy_queues;
+        deviceCreationDesc.copy_end = queuesPerIndex[bestCopyIndex];
+
+        auto totalQueues = desc.preferred_number_of_graphics_queues + desc.preferred_number_of_compute_queues + desc.preferred_number_of_copy_queues;
+
+        deviceCreationDesc.queue_priorities = std::vector<float>(totalQueues, 1.0f);
+
+        std::vector<vk::DeviceQueueCreateInfo> createInfos;
+        auto priorityPtr = deviceCreationDesc.queue_priorities.data();
+        for (auto [idx, count] : queuesPerIndex)
+        {         
+            deviceCreationDesc.create_info.emplace_back(
+                vk::DeviceQueueCreateInfo
+                {
+                   .flags = vk::DeviceQueueCreateFlags{},
+                   .queueFamilyIndex = idx,
+                   .queueCount = count,
+                   .pQueuePriorities = priorityPtr
+                }
+            );
+
+            priorityPtr += count;
+        }
+
         return deviceCreationDesc;
     }
 
@@ -359,8 +289,6 @@ namespace eureka
         }
 
         auto deviceCreationDesc = EnumerateQueueFamiliesForDeviceCreation(*chosenPhysicalDevice, desc);
-
-
 
         vk::PhysicalDeviceFeatures deviceFeatures = vk::PhysicalDeviceFeatures();
         vk::DeviceCreateInfo deviceInfo{
