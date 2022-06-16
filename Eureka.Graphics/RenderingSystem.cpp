@@ -146,7 +146,7 @@ namespace eureka
             BufferConfig{ .byte_size = sizeof(mesh::COLORED_TRIANGLE_INDEX_DATA) + sizeof(mesh::COLORED_TRIANGLE_VERTEX_DATA) }
         );
 
-        _uploadPool = CommandPool(_deviceContext.LogicalDevice(), CommandPoolDesc{.queue_family = _deviceContext._preferredCopyIdx});
+        _uploadPool = CommandPool(_deviceContext.LogicalDevice(), CommandPoolDesc{.queue_family = _uploadQueue.Family()});
         _uploadDoneSemaphore = _deviceContext.LogicalDevice()->createSemaphore(vk::SemaphoreCreateInfo());
         _uploadCommandBuffer = _uploadPool.AllocatePrimaryCommandBuffer();
         _uploadDoneFence = _deviceContext.LogicalDevice()->createFence(vk::FenceCreateInfo{ .flags = vk::FenceCreateFlagBits::eSignaled });
@@ -369,7 +369,7 @@ namespace eureka
     {
         for (auto i = 0u; i < _maxFramesInFlight; ++i)
         {          
-            _frameCommandBuffer.emplace_back(_deviceContext);
+            _frameCommandBuffer.emplace_back(_deviceContext, _graphicsQueue);
         }
     }
 

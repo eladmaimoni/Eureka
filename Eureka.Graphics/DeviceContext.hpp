@@ -91,10 +91,7 @@ namespace eureka
         std::vector<vk::Queue>                         _copyQueue;
         vk::Queue                                      _presentQueue;
 
-        //
-        //
-        //
-    public:
+
         uint32_t                               _preferredGraphicsIdx;
         uint32_t                               _preferredComputeIdx;
         uint32_t                               _preferredCopyIdx;
