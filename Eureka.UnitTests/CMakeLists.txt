@@ -18,6 +18,7 @@ target_link_libraries(
     Eureka.Precompiled
     Eureka.Core
     Eureka.Graphics
+    Eureka.Shaders
     Catch2::Catch2 
     Catch2::Catch2WithMain
 )

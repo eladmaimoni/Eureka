@@ -15,6 +15,7 @@ set_source_group(
 
 set_source_group(
     wrappers 
+    "PipelineTypes.hpp"
     "Mesh.hpp"
     "Mesh.cpp"
     "Instance.hpp" 

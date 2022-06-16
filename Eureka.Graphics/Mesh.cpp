@@ -177,7 +177,7 @@ namespace eureka
             throw std::runtime_error("failed allocating host accessible constant buffer in BAR or unified memory");
         }
 
-
+        _ptr = allocationInfo.pMappedData;
         _byteSize = bufferCreateInfo.size;
     }
 

@@ -14,7 +14,7 @@ namespace Eigen
     /// @brief Returns a perspective transformation matrix like the one from gluPerspective
     /// @see http://www.opengl.org/sdk/docs/man2/xhtml/gluPerspective.xml
     /// @see glm::perspective
-    template<typename Scalar>
+    template<std::floating_point Scalar>
     Eigen::Matrix<Scalar, 4, 4> perspective(Scalar fovy, Scalar aspect, Scalar zNear, Scalar zFar) 
     {
 
@@ -41,8 +41,9 @@ namespace Eigen
         return tr.matrix();
     }
 
-    template<typename Scalar>
-    Eigen::Matrix<Scalar, 4, 4> scale(Scalar x, Scalar y, Scalar z) {
+    template<std::floating_point Scalar>
+    Eigen::Matrix<Scalar, 4, 4> scale(Scalar x, Scalar y, Scalar z) 
+    {
         Transform<Scalar, 3, Affine> tr;
         tr.matrix().setZero();
         tr(0, 0) = x;
@@ -52,8 +53,9 @@ namespace Eigen
         return tr.matrix();
     }
 
-    template<typename Scalar>
-    Eigen::Matrix<Scalar, 4, 4> translate(Scalar x, Scalar y, Scalar z) {
+    template<std::floating_point Scalar>
+    Eigen::Matrix<Scalar, 4, 4> translate(Scalar x, Scalar y, Scalar z) 
+    {
         Transform<Scalar, 3, Affine> tr;
         tr.matrix().setIdentity();
         tr(0, 3) = x;
@@ -66,7 +68,8 @@ namespace Eigen
     /// @see http://www.opengl.org/sdk/docs/man2/xhtml/gluLookAt.xml
     /// @see glm::lookAt
     template<typename Derived>
-    Eigen::Matrix<typename Derived::Scalar, 4, 4> lookAt(Derived const& eye, Derived const& center, Derived const& up) {
+    Eigen::Matrix<typename Derived::Scalar, 4, 4> lookAt(Derived const& eye, Derived const& center, Derived const& up) 
+    {
         typedef Eigen::Matrix<typename Derived::Scalar, 4, 4> Matrix4;
         typedef Eigen::Matrix<typename Derived::Scalar, 3, 1> Vector3;
         Vector3 f = (center - eye).normalized();
@@ -91,13 +94,14 @@ namespace Eigen
     }
 
     /// @see glm::ortho
-    template<typename Scalar>
+    template<std::floating_point Scalar>
     Eigen::Matrix<Scalar, 4, 4> ortho(Scalar const& left,
         Scalar const& right,
         Scalar const& bottom,
         Scalar const& top,
         Scalar const& zNear,
-        Scalar const& zFar) {
+        Scalar const& zFar) 
+    {
         Eigen::Matrix<Scalar, 4, 4> mat = Eigen::Matrix<Scalar, 4, 4>::Identity();
         mat(0, 0) = Scalar(2) / (right - left);
         mat(1, 1) = Scalar(2) / (top - bottom);

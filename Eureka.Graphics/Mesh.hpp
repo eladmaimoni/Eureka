@@ -1,42 +1,12 @@
 #pragma once
 #include "DeviceContext.hpp"
 #include "vk_error_handling.hpp"
+#include "PipelineTypes.hpp"
 
-namespace eureka
-{
-    struct vector3
-    {
-        float x;
-        float y;
-        float z;
-    };
 
-    struct ModelViewProjection
-    {
-        Eigen::Matrix4f projection;
-        Eigen::Matrix4f view;
-        Eigen::Matrix4f model;
-    };
-
-    struct PositionColorVertex
-    {
-        Eigen::Vector3f position;
-        Eigen::Vector3f color;
-    };
-}
 
 namespace eureka::mesh
 {
-    //struct vector3
-    //{
-    //    float x;
-    //    float y; 
-    //    float z;
-
-    //    
-    //};
-
-
 
     static const std::array<PositionColorVertex, 3> COLORED_TRIANGLE_VERTEX_DATA
     {
@@ -117,7 +87,17 @@ namespace eureka
                 s.data(),
                 s.size_bytes()
             );
+        }
 
+        template<typename T>
+        void Assign(const T& data, uint32_t byte_offset = 0)
+        {
+            assert((sizeof(T) + byte_offset) <= _byteSize);
+            std::memcpy(
+                Ptr<uint8_t>() + byte_offset,
+                &data,
+                sizeof(T)
+            );
         }
 
         void InvalidateCachesBeforeHostRead()
@@ -150,7 +130,6 @@ namespace eureka
 
         //}
     };
-
 
     class VertexAndIndexTransferableDeviceBuffer : public AllocatedBuffer
     {

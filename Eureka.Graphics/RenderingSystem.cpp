@@ -70,6 +70,8 @@ namespace eureka
         _glfw(glfw),
         _instance(instance),
         _deviceContext(deviceContext),
+        _camera(deviceContext),
+        _updateQueue(deviceContext.UpdateQueue()),
         _uploadPool(deviceContext.LogicalDevice())
     {
 
@@ -88,6 +90,7 @@ namespace eureka
 
     void RenderingSystem::Initialize()
     {
+
         //
         // this section should be moved to some sort of window class
         //
@@ -126,11 +129,11 @@ namespace eureka
 
         _renderPass = std::make_shared<DepthColorRenderPass>(_deviceContext, depthColorConfig);
 
-        _renderTargets = CreateDepthColorTargetForSwapChain(
-            _deviceContext,
-            *_swapChain,
-            _renderPass
-        );
+        {
+            HandleSwapChainResize();
+
+        }
+
      
         _stageZone = HostStageZoneBuffer(
             _deviceContext, 
@@ -151,6 +154,22 @@ namespace eureka
         _perFrameDescriptorSet = std::make_shared<PerFrameGeneralPurposeDescriptorSet>(_deviceContext);
         _coloredVertexPipeline = ColoredVertexMeshPipeline(_deviceContext, _renderPass, _perFrameDescriptorSet);
 
+
+        _camera.SetPosition(Eigen::Vector3f(0.0f, 0.0f, -2.5f));
+        _camera.SetLookDirection(Eigen::Vector3f(0.0f, 0.0f, 1.0f));
+        _camera.SetVerticalFov(60.0f);
+
+    }
+
+    void RenderingSystem::HandleSwapChainResize()
+    {
+        _renderTargets = CreateDepthColorTargetForSwapChain(
+            _deviceContext,
+            *_swapChain,
+            _renderPass
+        );
+        auto renderArea = _swapChain->RenderArea();
+        _camera.SetFullViewport(renderArea.offset.x, renderArea.offset.y, renderArea.extent.width, renderArea.extent.height);
     }
 
     void RenderingSystem::Deinitialize()
@@ -166,6 +185,8 @@ namespace eureka
 
     void RenderingSystem::RunOne()
     {
+        _updateQueue->UpdatePreRender();
+
         auto [currentFrame, imageReadySemaphore] = _swapChain->AcquireNextAvailableImageAsync();
         
 
@@ -345,11 +366,7 @@ namespace eureka
         _swapChain->Resize(width, height);
 
         // recreate all resizeable stuff
-        _renderTargets = CreateDepthColorTargetForSwapChain(
-            _deviceContext,
-            *_swapChain,
-            _renderPass
-            );
+        HandleSwapChainResize();
 
         RunOne();
     }

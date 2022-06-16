@@ -17,6 +17,8 @@ target_compile_definitions(
     Eureka.Precompiled
     PUBLIC
     VULKAN_HPP_NO_CONSTRUCTORS
+    VULKAN_HPP_NO_STRUCT_SETTERS
+    VULKAN_HPP_NO_SMART_HANDLE
 )
 
 target_precompile_headers(

@@ -1,6 +1,7 @@
 #pragma once
    
-#include <glm/gtc/matrix_transform.hpp>
+#include "DeviceContext.hpp"
+#include "Mesh.hpp"
 #include <eigen_graphics.hpp>
 
 namespace eureka
@@ -10,19 +11,28 @@ namespace eureka
     class PerspectiveCamera
     {
     private:
-        float        _fov;
-        float        _zNear;
-        float        _zFar;
-        vk::Viewport _viewport;
+        float           _fovY{PERSPECTIVE_CAMERA_DEFAULT_FOV};
+        float           _zNear{0.01f};
+        float           _zFar{1000.0f};
+        Eigen::Vector3f _up{0.0f, 1.0f, 0.0f};
+        Eigen::Vector3f _position{0.0f, 0.0f, 10.0f};
+        Eigen::Vector3f _direction{0.0f, 0.0f, -1.0f};
+
+        ViewProjection  _viewProjection;
+        vk::Viewport    _viewport{.x = 0.0f, .y = 0.0f, .width = 100.0f, .height = 100.0f};
+
+        HostVisibleDeviceConstantBuffer             _constantBuffer;
+        std::shared_ptr<RenderingThreadUpdateQueue> _updateQueue;
     public:
+        PerspectiveCamera(DeviceContext& deviceContext);
         void SetPosition(const Eigen::Vector3f& position);
         void SetLookDirection(const  Eigen::Vector3f& direction);
-        void SetDirectionRelativeToBase(const  Eigen::Vector3f& baseDirection, const  Eigen::Vector3f& xyzRotationDegrees);
+        void SetDirectionRelativeToBase(const  Eigen::Vector3f& baseDirection, const  Eigen::Vector3f& xyzRotationRad);
         void SetFullViewport(float topLeftX, float topLeftY, float width, float height);
-        void SetNearFar(float nearVal, float farVal);
+        void SetFullViewport(uint32_t topLeftX, uint32_t topLeftY, uint32_t width, uint32_t height);
+        void SetNearFar(float zNear, float zFar);
         void SetVerticalFov(float verticalFovRadians);
-        void SetHorizontalFov(float horizontalFovRadians);
-
-
+    private:
+        void SyncTransforms();
     };
 }
