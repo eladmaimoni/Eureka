@@ -97,7 +97,7 @@ namespace eureka
         //
 
         auto windowSurface = _glfw.CreateVulkanWindowSurface(DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT, _instance.Get());
-        _deviceContext.InitializePresentationQueueFromExistingQueues(*windowSurface.surface);
+        //_deviceContext.InitializePresentationQueueFromExistingQueues(*windowSurface.surface);
 
        
 
@@ -114,9 +114,9 @@ namespace eureka
 
 
 
-        _presentationQueue = _deviceContext.PresentQueue();
-        _graphicsQueue = _deviceContext.GraphicsQueue().front();
-        _uploadQueue =_deviceContext.CopyQueue().at(0);
+        _graphicsQueue = _deviceContext.CreateGraphicsQueue();
+        _uploadQueue =_deviceContext.CreateCopyQueue();
+        _presentationQueue = _deviceContext.CreatePresentQueue(*windowSurface.surface);
 
         InitializeSwapChain(windowSurface);
 
@@ -146,7 +146,7 @@ namespace eureka
             BufferConfig{ .byte_size = sizeof(mesh::COLORED_TRIANGLE_INDEX_DATA) + sizeof(mesh::COLORED_TRIANGLE_VERTEX_DATA) }
         );
 
-        _uploadPool = CommandPool(_deviceContext.LogicalDevice(), CommandPoolDesc{.queue_family = _deviceContext.Families().copy_family_index});
+        _uploadPool = CommandPool(_deviceContext.LogicalDevice(), CommandPoolDesc{.queue_family = _deviceContext._preferredCopyIdx});
         _uploadDoneSemaphore = _deviceContext.LogicalDevice()->createSemaphore(vk::SemaphoreCreateInfo());
         _uploadCommandBuffer = _uploadPool.AllocatePrimaryCommandBuffer();
         _uploadDoneFence = _deviceContext.LogicalDevice()->createFence(vk::FenceCreateInfo{ .flags = vk::FenceCreateFlagBits::eSignaled });
@@ -246,7 +246,7 @@ namespace eureka
             };
 
 
-            _uploadQueue.submit(uploadsSubmitInfo, *_uploadDoneFence);
+            _uploadQueue->submit(uploadsSubmitInfo, *_uploadDoneFence);
 
 
         }
@@ -336,7 +336,7 @@ namespace eureka
             .pSignalSemaphores = &renderingDoneSemaphore
         };
 
-        _graphicsQueue.submit(
+        _graphicsQueue->submit(
             { submitInfo },
             currentFrameFence
         );
@@ -360,7 +360,7 @@ namespace eureka
         swapChainDesc.present_queue_family = _deviceContext.Families().present_family_index;
         swapChainDesc.graphics_queue_family = _deviceContext.Families().direct_graphics_family_index;
 
-        _swapChain = std::make_unique<SwapChain>(_deviceContext, std::move(swapChainDesc));
+        _swapChain = std::make_unique<SwapChain>(_deviceContext, _presentationQueue, std::move(swapChainDesc));
 
         _maxFramesInFlight = _swapChain->ImageCount();
     }

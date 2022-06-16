@@ -42,26 +42,41 @@ namespace eureka
     }
 
 
-
-    struct DeviceCreationDesc
-    {
-        QueueFamilies                          queue_families;
-        std::vector<float>                     queue_priorities;
-        uint32_t                               graphics_start;
-        uint32_t                               compute_start;
-        uint32_t                               copy_start;
-        uint32_t                               graphics_end;
-        uint32_t                               compute_end;
-        uint32_t                               copy_end;
-        std::vector<vk::DeviceQueueCreateInfo> create_info;
-    };
-
     enum class QueueType
     {
         Graphics,
         Compute,
         Copy
     };
+
+    struct QueueTypeInfo
+    {
+        uint32_t family{ 0 };
+        uint32_t max_count{ 0 };
+        bool is_family_unique = true;
+    };
+    
+    struct DeviceCreationDesc
+    {
+        QueueFamilies                          queue_families;
+        std::vector<float>                     queue_priorities;
+        std::vector<vk::DeviceQueueCreateInfo> create_info;
+
+        std::unordered_map<uint32_t, uint32_t> queues_per_index;
+        std::unordered_map< QueueType, QueueTypeInfo> queue_types_info;
+
+        //uint32_t                               graphics_start;
+        //uint32_t                               compute_start;
+        //uint32_t                               copy_start;
+        //uint32_t                               graphics_end;
+        //uint32_t                               compute_end;
+        //uint32_t                               copy_end;
+        uint32_t                               graphics_idx;
+        uint32_t                               compute_idx;
+        uint32_t                               copy_idx;
+    };
+
+ 
 
     struct IndexFlagsPair
     {
@@ -71,20 +86,10 @@ namespace eureka
 
     DeviceCreationDesc EnumerateQueueFamiliesForDeviceCreation(const vkr::PhysicalDevice& device, const DeviceContextConfig& desc)
     {
-        // TODO TODO TODO better handling of prioirtes, presentation queues etc
+
         DeviceCreationDesc deviceCreationDesc;
-
-
         std::vector<vk::QueueFamilyProperties> queueFamilies = device.getQueueFamilyProperties();
      
-        //
-        // graphics queue
-        // 
-
-  
-        vk::DeviceQueueCreateInfo* graphicsCreateInfo{ nullptr };
-        std::vector<float>* graphicsCreateInfoPriority{ nullptr };
-
         DEBUGGER_TRACE("starting going through queues");
         
         std::unordered_map<QueueType, std::vector<IndexFlagsPair>> indicesOrderedBySpecificity;
@@ -92,7 +97,7 @@ namespace eureka
         for (auto i = 0u; i < queueFamilies.size(); ++i)
         {
             const auto& props = queueFamilies[i];
-
+          
             auto has_copy_flag = static_cast<bool>(props.queueFlags & vk::QueueFlagBits::eTransfer);
             auto has_compute_flag = static_cast<bool>(props.queueFlags & vk::QueueFlagBits::eCompute);
             auto has_graphics_flag = static_cast<bool>(props.queueFlags & vk::QueueFlagBits::eGraphics);
@@ -150,7 +155,7 @@ namespace eureka
 
         }
 
-        std::unordered_map<uint32_t, uint32_t> queuesPerIndex;
+        auto& queuesPerIndex = deviceCreationDesc.queues_per_index;
         
         auto bestGraphicsIndex = indicesOrderedBySpecificity.at(QueueType::Graphics).at(0).index;
         auto bestComputeIndex = indicesOrderedBySpecificity.at(QueueType::Compute).at(0).index;
@@ -160,17 +165,30 @@ namespace eureka
         queuesPerIndex[bestComputeIndex] = 0;
         queuesPerIndex[bestCopyIndex] = 0;
         
-        deviceCreationDesc.graphics_start = 0;
-        queuesPerIndex[bestGraphicsIndex] += desc.preferred_number_of_graphics_queues;
-        deviceCreationDesc.graphics_end = desc.preferred_number_of_graphics_queues;
-        deviceCreationDesc.compute_start = queuesPerIndex[bestComputeIndex];
-        queuesPerIndex[bestComputeIndex] += desc.preferred_number_of_compute_queues;
-        deviceCreationDesc.compute_end = queuesPerIndex[bestComputeIndex];
-        deviceCreationDesc.copy_start = queuesPerIndex[bestCopyIndex];
-        queuesPerIndex[bestCopyIndex] += desc.preferred_number_of_copy_queues;
-        deviceCreationDesc.copy_end = queuesPerIndex[bestCopyIndex];
+        
 
-        auto totalQueues = desc.preferred_number_of_graphics_queues + desc.preferred_number_of_compute_queues + desc.preferred_number_of_copy_queues;
+        //deviceCreationDesc.graphics_start = 0;
+        queuesPerIndex[bestGraphicsIndex] += desc.preferred_number_of_graphics_queues;
+        queuesPerIndex[bestComputeIndex] += desc.preferred_number_of_compute_queues;
+        queuesPerIndex[bestCopyIndex] += desc.preferred_number_of_copy_queues;
+
+        queuesPerIndex[bestGraphicsIndex] = std::min(queueFamilies[bestGraphicsIndex].queueCount, queuesPerIndex[bestGraphicsIndex]);
+        queuesPerIndex[bestComputeIndex] = std::min(queueFamilies[bestComputeIndex].queueCount, queuesPerIndex[bestComputeIndex]);
+        queuesPerIndex[bestCopyIndex] = std::min(queueFamilies[bestCopyIndex].queueCount, queuesPerIndex[bestCopyIndex]);
+
+        deviceCreationDesc.graphics_idx = bestGraphicsIndex;
+        deviceCreationDesc.compute_idx = bestComputeIndex;
+        deviceCreationDesc.copy_idx = bestCopyIndex;
+
+        //deviceCreationDesc[QueueType::Graphics] = QueueTypeInfo{ .family = bestGraphicsIndex, .max_count = queuesPerIndex[bestGraphicsIndex], .is_family_unique = (bestGraphicsIndex != bestComputeIndex && bestGraphicsIndex != bestCopyIndex) };
+        //deviceCreationDesc[QueueType::Compute] = QueueTypeInfo{ .family = bestComputeIndex, .max_count = queuesPerIndex[bestComputeIndex], .is_family_unique = (bestComputeIndex != bestGraphicsIndex && bestComputeIndex != bestCopyIndex) };
+        //deviceCreationDesc[QueueType::Copy] = QueueTypeInfo{ .family = bestCopyIndex, .max_count = queuesPerIndex[bestCopyIndex], .is_family_unique = (bestCopyIndex != bestGraphicsIndex && bestCopyIndex != bestComputeIndex) };
+
+        auto totalQueues = 0;
+        for (auto [idx, count] : queuesPerIndex)
+        {
+            totalQueues += count;
+        }
 
         deviceCreationDesc.queue_priorities = std::vector<float>(totalQueues, 1.0f);
 
@@ -255,16 +273,49 @@ namespace eureka
         }
     }
 
-    vk::Queue DeviceContext::PresentQueue() const
-    { 
-        assert(_device); 
-        if (!_presentQueue)
-        {
-            throw std::logic_error("present queue not created");
-        }
-
-        return _presentQueue;
+    Queue DeviceContext::CreateGraphicsQueue()
+    {
+        return *TryCreateQueue(_preferredGraphicsIdx);
     }
+
+    Queue DeviceContext::CreateComputeQueue()
+    {
+        return *TryCreateQueue(_preferredComputeIdx);
+    }
+
+    Queue DeviceContext::CreateCopyQueue()
+    {
+        return *TryCreateQueue(_preferredCopyIdx);
+    }
+
+    Queue DeviceContext::CreatePresentQueue(vk::SurfaceKHR presentationSurface)
+    {
+        std::optional<Queue> queue{ std::nullopt };
+        if (_physicalDevice->getSurfaceSupportKHR(_preferredCopyIdx, presentationSurface))
+        {
+            queue = TryCreateQueue(_preferredCopyIdx);
+        }
+        if (!queue && _physicalDevice->getSurfaceSupportKHR(_preferredComputeIdx, presentationSurface))
+        {
+            queue = TryCreateQueue(_preferredComputeIdx);
+        }
+        if (!queue && _physicalDevice->getSurfaceSupportKHR(_preferredGraphicsIdx, presentationSurface))
+        {
+            queue = TryCreateQueue(_preferredGraphicsIdx);
+        }
+        return *queue;
+    }
+
+    //vk::Queue DeviceContext::PresentQueue() const
+    //{ 
+    //    assert(_device); 
+    //    if (!_presentQueue)
+    //    {
+    //        throw std::logic_error("present queue not created");
+    //    }
+
+    //    return _presentQueue;
+    //}
 
     void DeviceContext::InitDeviceAndQueues(const vkr::Instance& instance, const DeviceContextConfig& desc)
     {
@@ -308,32 +359,38 @@ namespace eureka
 
         _physicalDevice = std::make_shared<vkr::PhysicalDevice>(std::move(*chosenPhysicalDevice));
     
-        // TODO TODO TODO this will probably fail in other environments. families might be empty
-        
-        for (auto i = 0u; i < deviceCreationDesc.queue_families.direct_graphics_family_max_count; ++i)
-        {           
-            _graphicsQueue.emplace_back(*_device->getQueue(deviceCreationDesc.queue_families.direct_graphics_family_index, i));
-
-        }
-        
-        for (auto i = 0u; i < deviceCreationDesc.queue_families.compute_family_max_count; ++i)
+        _preferredGraphicsIdx = deviceCreationDesc.graphics_idx;
+        _preferredComputeIdx = deviceCreationDesc.compute_idx;
+        _preferredCopyIdx = deviceCreationDesc.copy_idx;
+        for (auto [idx, count] : deviceCreationDesc.queues_per_index)
         {
-            _computeQueue.emplace_back(*_device->getQueue(deviceCreationDesc.queue_families.compute_family_index, i));
+            auto& queuesVec = _queuesByFamily[idx];
+            for (auto i = 0u; i < count; ++i)
+            {
+                Queue q(*_device->getQueue(idx, i), idx);
 
+                queuesVec.emplace_back(QueueManagement{q, false});
+            }
         }
+   
+        //if (desc.presentation_surface)
+        //{
+        //    InitializePresentationQueueFromExistingQueues(desc.presentation_surface);
+        //}
 
-        for (auto i = 0u; i < deviceCreationDesc.queue_families.copy_family_max_count; ++i)
+    }
+
+    std::optional<Queue> eureka::DeviceContext::TryCreateQueue(uint32_t family)
+    {
+        for (auto& q : _queuesByFamily.at(family))
         {
-            _copyQueue.emplace_back(*_device->getQueue(deviceCreationDesc.queue_families.copy_family_index, i));
+            if (!q.is_taken)
+            {
+                q.is_taken = true;
+                return q.queue;
+            }
         }
-
-        _families = deviceCreationDesc.queue_families;
-        
-        if (desc.presentation_surface)
-        {
-            InitializePresentationQueueFromExistingQueues(desc.presentation_surface);
-        }
-
+        return std::nullopt;
     }
 
 

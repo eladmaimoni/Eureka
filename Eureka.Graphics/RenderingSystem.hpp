@@ -47,9 +47,9 @@ namespace eureka
         std::unique_ptr<SwapChain>                           _swapChain;
         std::shared_ptr<DepthColorRenderPass>                _renderPass;
         std::vector<DepthColorRenderTarget>                  _renderTargets;
-        vk::Queue                                            _presentationQueue;
-        vk::Queue                                            _graphicsQueue;
-        vk::Queue                                            _uploadQueue;
+        Queue                                                _presentationQueue;
+        Queue                                                _graphicsQueue;
+        Queue                                                _uploadQueue;
 
         //
         // upload

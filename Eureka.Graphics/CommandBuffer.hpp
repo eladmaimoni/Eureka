@@ -107,7 +107,7 @@ namespace eureka
         FrameCommands() = default;
         FrameCommands(
             DeviceContext& deviceContext
-        ) : _pool(deviceContext.LogicalDevice(), CommandPoolDesc{.queue_family = deviceContext.Families().direct_graphics_family_index})
+        ) : _pool(deviceContext.LogicalDevice(), CommandPoolDesc{.queue_family = deviceContext._preferredGraphicsIdx})
         {
 
             vk::FenceCreateInfo{ .flags = vk::FenceCreateFlagBits::eSignaled };
