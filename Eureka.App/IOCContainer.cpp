@@ -64,10 +64,14 @@ namespace eureka
 
     std::unique_ptr<AssetLoader> IOCContainer::CreateAssetLoader()
     {
+
+
         return std::make_unique<AssetLoader>(
             _deviceContext,
             _copyQueue,
-            _copySubmitExecutor
+            _copySubmitExecutor,
+            _concurrencyRuntime.background_executor(),
+            _concurrencyRuntime.thread_pool_executor()
             );
     }
 
