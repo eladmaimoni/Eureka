@@ -4,11 +4,13 @@
     "builtin-baseline": "2ac61f87f69f0484b8044f95ab274038fbaf7bdd",
     "dependencies": [
         "catch2",
+        "concurrencpp",
         "eigen3",
         "glm",
         "glfw3",
         "vulkan",
         "function2",
+        "tinygltf",
         "vulkan-headers",
         "vulkan-memory-allocator"
     ]

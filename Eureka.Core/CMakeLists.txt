@@ -2,6 +2,7 @@
 
 set_source_group(debugging "debugger_trace.hpp" "debugger_trace_impl.hpp" "debugger_trace_impl.cpp")
 set_source_group(logging "logging.hpp" "logging_impl.hpp" "logging_impl.cpp")
+set_source_group(error "basic_errors.hpp")
 
 set_source_group(formatting "formatter_specializations.hpp")
 set_source_group(compiler "compiler.hpp")
@@ -14,6 +15,7 @@ add_library(
     ${debugging}
     ${formatting}
     ${compiler}
+    ${error}
 )
 
 set_compiler_flags(Eureka.Core) 

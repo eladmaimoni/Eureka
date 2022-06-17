@@ -58,6 +58,7 @@ target_precompile_headers(
     <Eigen/Core>
     <glm/glm.hpp>
     <function2/function2.hpp>
+    <concurrencpp/concurrencpp.h>
     <global_definitions.hpp>
  )
 

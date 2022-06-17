@@ -15,7 +15,6 @@ set_source_group(
 
 set_source_group(
     wrappers 
-    "PipelineTypes.hpp"
     "Mesh.hpp"
     "Mesh.cpp"
     "Instance.hpp" 
@@ -88,6 +87,7 @@ target_include_directories(
     PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
     PRIVATE 
+
     ${VULKAN_HPP_INCLUDE_DIRS}
 )
 
@@ -98,7 +98,8 @@ target_link_libraries(
     Eureka.Core 
     Eureka.Shaders 
     glfw
-
+    Eureka.Types
+    concurrencpp::concurrencpp
     unofficial::vulkan-memory-allocator::vulkan-memory-allocator
     
 )
