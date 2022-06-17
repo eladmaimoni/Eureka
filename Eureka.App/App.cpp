@@ -1,6 +1,7 @@
 #include "App.hpp"
 #include <debugger_trace.hpp>
 #include <RenderingSystem.hpp>
+#include <AssetLoading.hpp>
 
 namespace eureka
 {
@@ -40,9 +41,16 @@ namespace eureka
     void App::Initialize()
     {
         _renderingSystem = _container.CreateRenderingSystem();
+        _assetLoader = _container.CreateAssetLoader();
+
 
 
         _renderingSystem->Initialize();
+
+
+        _assetLoader->LoadModel("C:/Projects/Samples/Vulkan/data/models/FlightHelmet/glTF/FlightHelmet.gltf");
+
+
     }
 
 }

@@ -14,8 +14,9 @@ namespace eureka
     private:
         IOCContainer _container;
         std::unique_ptr<RenderingSystem> _renderingSystem;
+        std::unique_ptr<AssetLoader> _assetLoader;
     private:
         void Initialize();
 
-    };
-}
+    }; 
+}    

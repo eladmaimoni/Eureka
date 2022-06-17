@@ -18,7 +18,7 @@ namespace eureka
     //void CheckTinyGLTF(bool res);
     
 
-    LoadedModel LoadModel(
+    LoadedModel AssetLoader::LoadModel(
         const std::filesystem::path& path,
         const ModelLoadingConfig& config
     )
@@ -35,6 +35,8 @@ namespace eureka
         }
 
         auto ok = gltfContext.LoadASCIIFromFile(&gltfModel, &error, &warning, path.string());
+
+        
 
 
         LoadedModel model{};

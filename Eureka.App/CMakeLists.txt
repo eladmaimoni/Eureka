@@ -27,6 +27,7 @@ target_link_libraries(
     Eureka.Precompiled
     Eureka.Core
     Eureka.Types
+    Eureka.AssetLoading
     Eureka.Graphics
     Eureka.Shaders
     concurrencpp::concurrencpp
