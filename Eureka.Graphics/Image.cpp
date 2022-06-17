@@ -221,7 +221,7 @@ namespace eureka
 
         VmaAllocationCreateInfo allocationCreateInfo
         {
-            .usage = VMA_MEMORY_USAGE_GPU_ONLY
+            .usage = VMA_MEMORY_USAGE_AUTO
         };
 
         if (props.use_dedicated_memory_allocation)

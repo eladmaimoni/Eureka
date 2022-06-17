@@ -53,7 +53,7 @@ namespace eureka
     class Image2D : public AllocatedImage
     {
     public:
-        Image2D() = default;      
+        Image2D() = default;
         Image2D(const DeviceContext& deviceContext, const Image2DProperties& props);
         Image2D(Image2D&& that) : AllocatedImage(std::move(that)) {}
         Image2D& operator=(Image2D&& rhs);
@@ -62,4 +62,12 @@ namespace eureka
 
 
     Image2D CreateDepthImage(const DeviceContext& deviceContext, vk::Format format, uint32_t width, uint32_t height);
+
+    class MipmapImage2D : public AllocatedImage
+    {
+        // TODO: mipmapped image
+        // https://vulkan-tutorial.com/Generating_Mipmaps
+    };
+
+  
 }
