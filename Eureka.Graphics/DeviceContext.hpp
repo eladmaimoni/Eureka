@@ -1,11 +1,13 @@
 #pragma once
 #include "Instance.hpp"
 #include "vk_mem_alloc.h"
-#include <ShadersCache.hpp>
+
 #include "UpdateQueue.hpp"
 
 namespace eureka
 {
+    class ShaderCache;
+
     class Queue
     {
     public:
@@ -78,7 +80,7 @@ namespace eureka
         const std::shared_ptr<vkr::PhysicalDevice> PhysicalDevice() const { assert(_device); return _physicalDevice; }
         const std::shared_ptr<vkr::Device> LogicalDevice() const { assert(_device); return _device; }
         VmaAllocator Allocator() const { return _vmaAllocator; }
-        const ShaderCache& Shaders() { return _shaderCache; }
+        const std::shared_ptr<ShaderCache>& Shaders();
         const std::shared_ptr<RenderingUpdateQueue>& UpdateQueue() const { return _updateQueue; }
     private:
         void InitDeviceAndQueues(const vkr::Instance& instance, const DeviceContextConfig& desc);
@@ -100,7 +102,7 @@ namespace eureka
 
 
         VmaAllocator                                   _vmaAllocator{nullptr};
-        ShaderCache                                    _shaderCache;
+        std::shared_ptr<ShaderCache>                    _shaderCache;
         std::shared_ptr<RenderingUpdateQueue>    _updateQueue = std::make_shared<RenderingUpdateQueue>();
     };
 }

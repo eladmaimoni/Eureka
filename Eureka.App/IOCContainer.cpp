@@ -1,6 +1,8 @@
 #include "IOCContainer.hpp"
 #include "VkHelpers.hpp"
 #include "../Eureka.Graphics/RenderingSystem.hpp"
+#include "../Eureka.AssetLoading/AssetLoading.hpp"
+
 
 namespace eureka
 {
@@ -33,10 +35,13 @@ namespace eureka
 
     IOCContainer::IOCContainer()
         : 
-        _instance(CreateInstanceConfig(_glfw))
+        _instance(CreateInstanceConfig(_glfw)),
+        _copySubmitExecutor(_concurrencyRuntime.make_manual_executor())
     {
         _deviceContext.Init(_instance, CreateDeviceContextConfig());
 
+        _graphicsQueue = _deviceContext.CreateGraphicsQueue();
+        _copyQueue = _deviceContext.CreateCopyQueue();
 
     }
 
@@ -47,7 +52,23 @@ namespace eureka
 
     std::unique_ptr<RenderingSystem> IOCContainer::CreateRenderingSystem() 
     {
-        return std::make_unique<RenderingSystem>(_instance, _deviceContext, _glfw);
+        return std::make_unique<RenderingSystem>(
+            _instance,
+            _deviceContext,
+            _glfw,
+            _copySubmitExecutor,
+            _graphicsQueue,
+            _copyQueue
+            );
+    }
+
+    std::unique_ptr<AssetLoader> IOCContainer::CreateAssetLoader()
+    {
+        return std::make_unique<AssetLoader>(
+            _deviceContext,
+            _copyQueue,
+            _copySubmitExecutor
+            );
     }
 
 }

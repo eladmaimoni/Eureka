@@ -3,6 +3,7 @@
 #include "vk_mem_alloc.h"
 #include "vk_error_handling.hpp"
 #include <unordered_map>
+#include <ShadersCache.hpp>
 
 namespace eureka
 {
@@ -221,7 +222,7 @@ namespace eureka
         
         VK_CHECK(vmaCreateAllocator(&allocatorCreateInfo, &_vmaAllocator));
 
-        _shaderCache = ShaderCache(_device);
+        _shaderCache = std::make_shared<ShaderCache>(_device);
     }
 
     DeviceContext::~DeviceContext()
@@ -263,6 +264,11 @@ namespace eureka
             queue = TryCreateQueue(_preferredGraphicsIdx);
         }
         return *queue;
+    }
+
+    const std::shared_ptr<eureka::ShaderCache>& DeviceContext::Shaders()
+    {
+        return _shaderCache;
     }
 
     //vk::Queue DeviceContext::PresentQueue() const

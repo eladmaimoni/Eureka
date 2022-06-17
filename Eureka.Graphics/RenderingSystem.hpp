@@ -1,6 +1,7 @@
 #include <Instance.hpp>
 #include <DeviceContext.hpp>
 #include <GLFWRuntime.hpp>
+#include "GraphicsDefaults.hpp"
 #include "RenderTarget.hpp"
 #include "Mesh.hpp"
 #include "CommandBuffer.hpp"
@@ -11,6 +12,9 @@ namespace eureka
 {
     class SwapChain;
     
+    
+
+
     struct RenderingSystemConfig
     {
 
@@ -22,7 +26,10 @@ namespace eureka
         RenderingSystem(
             Instance& instance,
             DeviceContext& deviceContext,
-            GLFWRuntime& glfw
+            GLFWRuntime& glfw,
+            CopySubmitExecutor copySumitExecutor,
+            Queue graphicsQueue,
+            Queue copyQueue
         );
 
         ~RenderingSystem();
@@ -40,7 +47,7 @@ namespace eureka
         Instance& _instance;
         DeviceContext& _deviceContext;
         GLFWRuntime&   _glfw;
-
+        CopySubmitExecutor _copySumitExecutor;
         std::shared_ptr<RenderingUpdateQueue>          _updateQueue;
 
         GLFWWindowPtr                                        _window; // TODO should remove
@@ -49,7 +56,7 @@ namespace eureka
         std::vector<DepthColorRenderTarget>                  _renderTargets;
         Queue                                                _presentationQueue;
         Queue                                                _graphicsQueue;
-        Queue                                                _uploadQueue;
+        Queue                                                _copyQueue;
 
         //
         // upload

@@ -64,15 +64,21 @@ namespace eureka
     RenderingSystem::RenderingSystem(
         Instance& instance,
         DeviceContext& deviceContext,
-        GLFWRuntime& glfw
+        GLFWRuntime& glfw,
+        CopySubmitExecutor copySumitExecutor,
+        Queue graphicsQueue,
+        Queue copyQueue
     )
         :
         _glfw(glfw),
         _instance(instance),
         _deviceContext(deviceContext),
+        _copySumitExecutor(copySumitExecutor),
         _descPool(deviceContext),
         _camera(deviceContext),
         _updateQueue(deviceContext.UpdateQueue()),
+        _graphicsQueue(graphicsQueue),
+        _copyQueue(copyQueue),
         _uploadPool(deviceContext.LogicalDevice())
     {
 
@@ -114,8 +120,7 @@ namespace eureka
 
 
 
-        _graphicsQueue = _deviceContext.CreateGraphicsQueue();
-        _uploadQueue =_deviceContext.CreateCopyQueue();
+
         _presentationQueue = _deviceContext.CreatePresentQueue(*windowSurface.surface);
 
         InitializeSwapChain(windowSurface);
@@ -162,7 +167,7 @@ namespace eureka
             BufferConfig{ .byte_size = sizeof(mesh::COLORED_TRIANGLE_INDEX_DATA) + sizeof(mesh::COLORED_TRIANGLE_VERTEX_DATA) }
         );
 
-        _uploadPool = CommandPool(_deviceContext.LogicalDevice(), CommandPoolDesc{.queue_family = _uploadQueue.Family()});
+        _uploadPool = CommandPool(_deviceContext.LogicalDevice(), CommandPoolDesc{.queue_family = _copyQueue.Family()});
         _uploadDoneSemaphore = _deviceContext.LogicalDevice()->createSemaphore(vk::SemaphoreCreateInfo());
         _uploadCommandBuffer = _uploadPool.AllocatePrimaryCommandBuffer();
         _uploadDoneFence = _deviceContext.LogicalDevice()->createFence(vk::FenceCreateInfo{ .flags = vk::FenceCreateFlagBits::eSignaled });
@@ -206,8 +211,11 @@ namespace eureka
     //
     //////////////////////////////////////////////////////////////////////////
 
+    static constexpr std::size_t MAX_COPY_SUBMITS_PER_FRAME = 10;
+
     void RenderingSystem::RunOne()
     {
+        _copySumitExecutor->loop(10);
         _updateQueue->UpdatePreRender();
 
         auto [currentFrame, imageReadySemaphore] = _swapChain->AcquireNextAvailableImageAsync();
@@ -262,7 +270,7 @@ namespace eureka
             };
 
 
-            _uploadQueue->submit(uploadsSubmitInfo, *_uploadDoneFence);
+            _copyQueue->submit(uploadsSubmitInfo, *_uploadDoneFence);
 
 
         }

@@ -1,10 +1,12 @@
 #include <GLFWRuntime.hpp>
 #include <Instance.hpp>
 #include <DeviceContext.hpp>
+#include <GraphicsDefaults.hpp>
 
 namespace eureka
 {
     class RenderingSystem;
+    class AssetLoader;
 
     class IOCContainer
     {
@@ -13,14 +15,20 @@ namespace eureka
         ~IOCContainer();
 
 
-        std::unique_ptr<RenderingSystem> CreateRenderingSystem() ;
-
+        std::unique_ptr<RenderingSystem> CreateRenderingSystem();
+        std::unique_ptr<AssetLoader> CreateAssetLoader();
     private:
-        GLFWRuntime    _glfw;
-        Instance       _instance;
-        DeviceContext  _deviceContext;
+        GLFWRuntime                                    _glfw;
+        Instance                                       _instance;
+        DeviceContext                                  _deviceContext;
+        Queue                                          _graphicsQueue;
+        Queue                                          _copyQueue;
 
-        
+        concurrencpp::runtime                          _concurrencyRuntime;
+        CopySubmitExecutor                             _copySubmitExecutor;
+
+
+
 
     };
 }

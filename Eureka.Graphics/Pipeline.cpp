@@ -1,4 +1,5 @@
 #include "Pipeline.hpp"
+#include <ShadersCache.hpp>
 
 namespace eureka
 {
@@ -162,8 +163,8 @@ namespace eureka
         // Shaders
         // 
 
-        auto vshader = deviceContext.Shaders().LoadShaderModule(ColoredVertexVS);
-        auto fshader = deviceContext.Shaders().LoadShaderModule(ColoredVertexFS);
+        auto vshader = deviceContext.Shaders()->LoadShaderModule(ColoredVertexVS);
+        auto fshader = deviceContext.Shaders()->LoadShaderModule(ColoredVertexFS);
 
         std::array<vk::PipelineShaderStageCreateInfo, 2> shaderStages
         {
@@ -204,7 +205,7 @@ namespace eureka
         };
 
         _pipeline = deviceContext.LogicalDevice()->createGraphicsPipeline(
-            deviceContext.Shaders().Cache(),
+            deviceContext.Shaders()->Cache(),
             pipelineCreateInfo
         );
     }

@@ -24,6 +24,7 @@ target_link_libraries(
     PRIVATE
     Eureka.Core 
     Eureka.Types 
+    Eureka.Graphics 
     concurrencpp::concurrencpp
     Eureka.Precompiled 
 )
