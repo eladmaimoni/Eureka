@@ -1,5 +1,6 @@
 
 #include <debugger_trace.hpp>
+#include <trigger_debugger_breakpoint.hpp>
 
 namespace eureka
 {
@@ -89,7 +90,7 @@ namespace eureka
 
             DEBUGGER_TRACE("\n{}\n", separated);
 
-            
+            trigger_debugger_breakpoint();
 
 
         }

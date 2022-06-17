@@ -13,6 +13,9 @@ namespace eureka
     {
         auto supported_extentions = context.enumerateInstanceExtensionProperties();
 
+        DEBUGGER_TRACE("instance extentions: \n{}", supported_extentions | std::views::transform([](const auto& v) {return std::string_view(v.extensionName); }) );
+
+
         for (auto required_extention : desc.required_instance_extentions)
         {
             bool found = false;
@@ -36,6 +39,10 @@ namespace eureka
     void ValidateRequiredLayersExists(const vkr::Context& context, const InstanceConfig& desc)
     {
         auto supported_layers = context.enumerateInstanceLayerProperties();
+
+
+        //DEBUGGER_TRACE("instance layers: \n{}", supported_layers | std::views::transform([](const auto& v) {return std::string_view(v.layerName.data()); }));
+
 
         for (const auto& required_layer : desc.required_layers)
         {

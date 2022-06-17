@@ -1,4 +1,4 @@
-
+#pragma once
 #include "ShadersDeclare.hpp"
 #include <vulkan/vulkan_raii.hpp>
 

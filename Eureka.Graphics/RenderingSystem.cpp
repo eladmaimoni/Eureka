@@ -2,78 +2,29 @@
 #include "SwapChain.hpp"
 #include "RenderTarget.hpp"
 #include "GraphicsDefaults.hpp"
+#include <profiling_macros.hpp>
+#include "RenderDocIntegration.hpp"
 
 namespace eureka
 {
-
-    std::vector<DepthColorRenderTarget> CreateDepthColorTargetForSwapChain(
-        const DeviceContext& deviceContext,
-        const SwapChain& swapChain,
-        const std::shared_ptr<DepthColorRenderPass>& renderPass
-    )
-    {
-        std::vector<DepthColorRenderTarget> targets;
-      
-        // create depth image
-
-        auto renderArea = swapChain.RenderArea();
-        auto depthImage = std::make_shared<Image2D>(CreateDepthImage(deviceContext, renderPass->DepthFormat(), renderArea.extent.width, renderArea.extent.height));
-
-        // create frame buffer
-        auto images = swapChain.Images();
-        targets.reserve(images.size());
-
-        for (auto i = 0u; i < images.size(); ++i)
-        {
-            std::array<vk::ImageView, 2> attachments = { images[i]->View(), depthImage->View()};
-
-            vk::FramebufferCreateInfo framebufferCreateInfo
-            {
-                .flags = vk::FramebufferCreateFlags(),
-                .renderPass = renderPass->Get(),
-                .attachmentCount = static_cast<uint32_t>(attachments.size()),
-                .pAttachments = attachments.data(),
-                .width = renderArea.extent.width,
-                .height = renderArea.extent.height,
-                .layers = 1
-            };
-
-            auto framebuffer = deviceContext.LogicalDevice()->createFramebuffer(framebufferCreateInfo);
-
-            targets.emplace_back(
-                renderArea,
-                renderPass,
-                std::move(framebuffer),
-                std::move(images[i]),
-                depthImage
-            );
-        }
-   
-        return targets;
-    }
-}
-
-
-namespace eureka
-{
-    inline constexpr int DEFAULT_WINDOW_WIDTH = 1024;
-    inline constexpr int DEFAULT_WINDOW_HEIGHT = 768;
-
-
 
     RenderingSystem::RenderingSystem(
-        Instance& instance,
         DeviceContext& deviceContext,
-        GLFWRuntime& glfw
+        Queue graphicsQueue,
+        Queue copyQueue,
+        std::shared_ptr<FrameContext> frameContext,
+        std::shared_ptr<ITargetPass> mainPass,
+        std::shared_ptr<SubmissionThreadExecutionContext> submissionThreadExecutionContext,
+        std::shared_ptr<OneShotSubmissionHandler> oneShotSubmissionHandler
     )
         :
-        _glfw(glfw),
-        _instance(instance),
         _deviceContext(deviceContext),
-        _descPool(deviceContext),
-        _camera(deviceContext),
-        _updateQueue(deviceContext.UpdateQueue()),
-        _uploadPool(deviceContext.LogicalDevice())
+        _frameContext(std::move(frameContext)),
+        _mainPass(std::move(mainPass)),
+        _submissionThreadExecutionContext(/*std::move(*/submissionThreadExecutionContext/*)*/), // TODO
+        _oneShotSubmissionHandler(std::move(oneShotSubmissionHandler)),
+        _graphicsQueue(graphicsQueue),
+        _copyQueue(copyQueue)
     {
 
     }
@@ -91,108 +42,72 @@ namespace eureka
 
     void RenderingSystem::Initialize()
     {
+        _submissionThreadExecutionContext->SetCurrentThreadAsRenderingThread();
 
-        //
-        // this section should be moved to some sort of window class
-        //
 
-        auto windowSurface = _glfw.CreateVulkanWindowSurface(DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT, _instance.Get());
-        //_deviceContext.InitializePresentationQueueFromExistingQueues(*windowSurface.surface);
-
-       
-
-        _window = std::move(windowSurface.window);
-
-        glfwSetWindowUserPointer(_window.get(), this);
-        glfwSetWindowSizeCallback(_window.get(), [](GLFWwindow* window, int width, int height)
-            {
-                auto userPtr = glfwGetWindowUserPointer(window);
-                auto self = static_cast<RenderingSystem*>(userPtr);
-                self->HandleResize(static_cast<uint32_t>(width), static_cast<uint32_t>(height));
-            }
-        );
+        //_stageZone = HostWriteCombinedBuffer(
+        //    _deviceContext.Allocator(),
+        //    BufferConfig{ .byte_size = sizeof(mesh::COLORED_TRIANGLE_INDEX_DATA) + sizeof(mesh::COLORED_TRIANGLE_VERTEX_DATA) }
+        //);
 
 
 
-        _graphicsQueue = _deviceContext.CreateGraphicsQueue();
-        _uploadQueue =_deviceContext.CreateCopyQueue();
-        _presentationQueue = _deviceContext.CreatePresentQueue(*windowSurface.surface);
+        //_triangle = VertexAndIndexTransferableDeviceBuffer(
+        //    _deviceContext.Allocator(),
+        //    BufferConfig{ .byte_size = sizeof(mesh::COLORED_TRIANGLE_INDEX_DATA) + sizeof(mesh::COLORED_TRIANGLE_VERTEX_DATA) }
+        //);
 
-        InitializeSwapChain(windowSurface);
 
-        InitializeCommandPoolsAndBuffers();
+        //_lastFrameTime = std::chrono::high_resolution_clock::now();
 
-        bool found = false;
-        vk::Format depthFormat = DEFAULT_DEPTH_BUFFER_FORMAT;
-        for (auto format : { vk::Format::eD24UnormS8Uint, vk::Format::eD32Sfloat, vk::Format::eD32SfloatS8Uint })
+        //_coloredVertexPipeline = _pipelineCache->GetColoredVertexMeshPipeline();
+
+
+        //_camera.SetPosition(Eigen::Vector3f(0.0f, 0.0f, 2.5f));
+        //_camera.SetLookDirection(Eigen::Vector3f(0.0f, 0.0f, -1.0f));
+        //_camera.SetVerticalFov(3.14f / 4.0f);
+
+        //_constantBufferSet = _descPool->AllocateSet(_coloredVertexPipeline->GetPerViewLayout());
+
+        //auto [descType, descInfo] = _camera.GetNode()->DescriptorInfo();
+
+        //_constantBufferSet.SetBinding(0, descType, descInfo);
+
+
+
+        //// TODO REMOVE
+        //_stageZone.Assign(std::span(mesh::COLORED_TRIANGLE_INDEX_DATA), 0);
+        //_stageZone.Assign(std::span(mesh::COLORED_TRIANGLE_VERTEX_DATA), sizeof(mesh::COLORED_TRIANGLE_INDEX_DATA));
+
+        _resizeConnection = _mainPass->ConnectResizeSlot(
+            [this](uint32_t w, uint32_t h)
         {
-            auto props = _deviceContext.PhysicalDevice()->getFormatProperties(format);
+            HandleResize(w, h);
+        });
+        auto [width, height] = _mainPass->GetSize();
+        HandleResize(width, height);
 
-            if (props.optimalTilingFeatures & vk::FormatFeatureFlagBits::eDepthStencilAttachment)
-            {
-                depthFormat = format;
-                found = true;
-                break;
-            }
-        }
 
-        
-
-        DepthColorRenderPassConfig depthColorConfig
-        {
-            .color_output_format = _swapChain->ImageFormat(),
-            .depth_output_format = depthFormat
-        };
-
-        _renderPass = std::make_shared<DepthColorRenderPass>(_deviceContext, depthColorConfig);
-
-        {
-            HandleSwapChainResize();
-
-        }
-
+        //co_await _oneShotSubmissionHandler->ResumeOnRecordingContext();
      
-        _stageZone = HostStageZoneBuffer(
-            _deviceContext, 
-            BufferConfig { .byte_size = sizeof(mesh::COLORED_TRIANGLE_INDEX_DATA) + sizeof(mesh::COLORED_TRIANGLE_VERTEX_DATA)}        
-        );
+        //auto [uploadCommandBuffer, uploadDoneSemaphore] = _oneShotSubmissionHandler->NewOneShotCopyCommandBuffer();
+        //{
+        //    ScopedCommands commands(uploadCommandBuffer);
 
-        _triangle = VertexAndIndexTransferableDeviceBuffer(
-            _deviceContext,
-            BufferConfig{ .byte_size = sizeof(mesh::COLORED_TRIANGLE_INDEX_DATA) + sizeof(mesh::COLORED_TRIANGLE_VERTEX_DATA) }
-        );
-
-        _uploadPool = CommandPool(_deviceContext.LogicalDevice(), CommandPoolDesc{.queue_family = _uploadQueue.Family()});
-        _uploadDoneSemaphore = _deviceContext.LogicalDevice()->createSemaphore(vk::SemaphoreCreateInfo());
-        _uploadCommandBuffer = _uploadPool.AllocatePrimaryCommandBuffer();
-        _uploadDoneFence = _deviceContext.LogicalDevice()->createFence(vk::FenceCreateInfo{ .flags = vk::FenceCreateFlagBits::eSignaled });
-        _lastFrameTime = std::chrono::high_resolution_clock::now();
-
-        _perFrameDescriptorSet = std::make_shared<PerFrameGeneralPurposeDescriptorSetLayout>(_deviceContext);
-        _coloredVertexPipeline = ColoredVertexMeshPipeline(_deviceContext, _renderPass, _perFrameDescriptorSet);
-
-
-        _camera.SetPosition(Eigen::Vector3f(0.0f, 0.0f, 2.5f));
-        _camera.SetLookDirection(Eigen::Vector3f(0.0f, 0.0f, -1.0f));
-        _camera.SetVerticalFov(3.14f / 4.0f);
-
-        _constantBufferSet = _descPool.AllocateSet(_perFrameDescriptorSet->Get());
-
-        auto [descType, descInfo] = _camera.DescriptorInfo();
-
-        _constantBufferSet.SetBinding(0, descType, descInfo);
-
+        //    uploadCommandBuffer.copyBuffer(
+        //        _stageZone.Buffer(),
+        //        _triangle.Buffer(),
+        //        { vk::BufferCopy{.srcOffset = 0, .dstOffset = 0, .size = _triangle.ByteSize()} }
+        //    );
+        //}
+        //_oneShotSubmissionHandler->AppendCopyCommandSubmission(uploadCommandBuffer);
     }
 
-    void RenderingSystem::HandleSwapChainResize()
+    void RenderingSystem::HandleResize(uint32_t /*w*/, uint32_t /*h*/)
     {
-        _renderTargets = CreateDepthColorTargetForSwapChain(
-            _deviceContext, 
-            *_swapChain,
-            _renderPass
-        );
-        auto renderArea = _swapChain->RenderArea();
-        _camera.SetFullViewport(renderArea.offset.x, renderArea.offset.y, renderArea.extent.width, renderArea.extent.height);
+        DEBUGGER_TRACE("handle swap chain resize");
+
+        RunOne(); // refresh before next resize
     }
 
     void RenderingSystem::Deinitialize()
@@ -206,200 +121,125 @@ namespace eureka
     //
     //////////////////////////////////////////////////////////////////////////
 
+    static constexpr std::size_t MAX_COPY_SUBMITS_PER_FRAME = 10;
+
+
     void RenderingSystem::RunOne()
     {
-        _updateQueue->UpdatePreRender();
-
-        auto [currentFrame, imageReadySemaphore] = _swapChain->AcquireNextAvailableImageAsync();
-        
-
-        //
-        // wait for current frame to finish execution before we reset its command buffer (other frames can be in flight)
-        //
-
-        auto& currentFrameCommandRecord = _frameCommandBuffer[currentFrame];
-
-        auto currentFrameFence = currentFrameCommandRecord.DoneFence();
-
-        VK_CHECK(_deviceContext.LogicalDevice()->waitForFences(
-            { currentFrameFence, *_uploadDoneFence},
-            VK_TRUE,
-            UINT64_MAX
-        ));
-
-
-        _deviceContext.LogicalDevice()->resetFences(
-            { currentFrameFence, *_uploadDoneFence }
-        );
-        currentFrameCommandRecord.Reset();
-        _uploadPool.Reset();
+        try
         {
-            // this section could happen in a different thread (upload thread)
+            //if (HACK > 0 && HACK < 3)
+            //{
+            //    RenderDockIntegrationInstance->StartCapture();
+            //}
+        
+            PROFILE_CATEGORIZED_SCOPE("RunOne", Profiling::Color::Blue, Profiling::PROFILING_CATEGORY_RENDERING);
 
-            _stageZone.Assign(std::span(mesh::COLORED_TRIANGLE_INDEX_DATA), 0);
-            _stageZone.Assign(std::span(mesh::COLORED_TRIANGLE_VERTEX_DATA), sizeof(mesh::COLORED_TRIANGLE_INDEX_DATA));
+            //DEBUGGER_TRACE("RUN ONE START");
+
+            _frameContext->BeginFrame();
+
+            _submissionThreadExecutionContext->Executor().loop_all(MAX_COPY_SUBMITS_PER_FRAME);
+
+            _oneShotSubmissionHandler->SubmitPendingCopies();
+            _oneShotSubmissionHandler->PollCopyCompletions();
+            _oneShotSubmissionHandler->SubmitPendingGraphics();
+            _oneShotSubmissionHandler->PollGraphicsCompletions();
+
+            _mainPass->Prepare();
 
 
+            _submissionThreadExecutionContext->PreRenderExecutor().loop(100);
+
+            auto [mainCommandBuffer,doneSemaphore] = _frameContext->NewGraphicsCommandBuffer();
+
+            auto [valid, targetReady] = _mainPass->PreRecord();
+            if (!valid)
             {
-                ScopedCommands commands(_uploadCommandBuffer);
-
-                _uploadCommandBuffer.copyBuffer(
-                    _stageZone.Buffer(),
-                    _triangle.Buffer(),
-                    { vk::BufferCopy{.srcOffset = 0, .dstOffset = 0, .size = _triangle.ByteSize()} }
-                );
+                return;
             }
 
-            vk::SubmitInfo uploadsSubmitInfo
+            mainCommandBuffer.begin(vk::CommandBufferBeginInfo());
+            _mainPass->RecordDraw({ mainCommandBuffer });
+            _mainPass->PostRecord();
+
+            mainCommandBuffer.end();
+
+            std::array<vk::Semaphore, 1> waitSemaphores
             {
-                .waitSemaphoreCount = 0,
-                .pWaitSemaphores = nullptr,
-                .pWaitDstStageMask = {},
-                .commandBufferCount = 1,
-                .pCommandBuffers = &*_uploadCommandBuffer,
-                .signalSemaphoreCount = 1,
-                .pSignalSemaphores = &*_uploadDoneSemaphore
+                targetReady
+            };
+         
+            std::array<vk::PipelineStageFlags, 1> waitStageMasks
+            {
+                vk::PipelineStageFlagBits::eColorAttachmentOutput
             };
 
-
-            _uploadQueue->submit(uploadsSubmitInfo, *_uploadDoneFence);
-
-
+            vk::SubmitInfo submitInfo
+            {
+                .waitSemaphoreCount = static_cast<uint32_t>(waitSemaphores.size()),
+                .pWaitSemaphores = waitSemaphores.data(),
+                .pWaitDstStageMask = waitStageMasks.data(),
+                .commandBufferCount = 1,
+                .pCommandBuffers = &mainCommandBuffer,
+                .signalSemaphoreCount = 1,
+                .pSignalSemaphores = &doneSemaphore
+            };
+            
+            _graphicsQueue->submit({ submitInfo }, _frameContext->NewGraphicsSubmitFence());
+            _mainPass->PostSubmit(doneSemaphore);
+            _frameContext->EndFrame();    
         }
+        catch (const std::exception& err)
+        {
+            DEBUGGER_TRACE("RUN ONE error {}", err.what());
+        }
+        //DEBUGGER_TRACE("RUN ONE END");
+    }
 
 
+
+    //void RenderingSystem::RecordMainRenderPass(vk::CommandBuffer renderingCommandBuffer)
+    //{
+        //renderingCommandBuffer.beginRenderPass(_frameContext->PrimaryRenderPassBeginInfo(), vk::SubpassContents::eInline);
        
-        auto now = std::chrono::high_resolution_clock::now();
+        //_camera.GetNode()->SyncTransforms();
+        //renderingCommandBuffer.setViewport(0, { _camera.GetNode()->Viewport() });
+        //renderingCommandBuffer.setScissor(0, { _frameContext->RenderArea() }); // TODO from camera, 
 
-        //DEBUGGER_TRACE("current frame = {}, interval = {}ms", currentFrame, std::chrono::duration_cast<std::chrono::milliseconds>(now - _lastFrameTime).count());
+        //renderingCommandBuffer.bindDescriptorSets(
+        //    vk::PipelineBindPoint::eGraphics,
+        //    _coloredVertexPipeline->Layout(),
+        //    0,
+        //    { _constantBufferSet.Get() },
+        //    nullptr
+        //);
 
-        _lastFrameTime = now;
 
-
-
+        //renderingCommandBuffer.bindPipeline(
+        //    vk::PipelineBindPoint::eGraphics,
+        //    _coloredVertexPipeline->Get()
+        //);
         //
-        // record frame
-        //
+        //renderingCommandBuffer.bindIndexBuffer(
+        //    _triangle.Buffer(),
+        //    0,
+        //    vk::IndexType::eUint32
+        //);
 
-        auto& renderingCommandBuffer = currentFrameCommandRecord.CommandBuffer();
+        //renderingCommandBuffer.bindVertexBuffers(
+        //    0,
+        //    { _triangle.Buffer() },
+        //    { sizeof(mesh::COLORED_TRIANGLE_INDEX_DATA) }
+        //);
+ 
 
-        {
-            ScopedCommands sc(renderingCommandBuffer);
+        //renderingCommandBuffer.drawIndexed(3, 1, 0, 0, 1);
 
-            renderingCommandBuffer.beginRenderPass(_renderTargets[currentFrame].BeginInfo(), vk::SubpassContents::eInline);
+        //_imguiRenderer->RecordDrawCommands(renderingCommandBuffer);
 
+        //renderingCommandBuffer.endRenderPass();
 
-            renderingCommandBuffer.setViewport(0, { _camera.Viewport() });
-            renderingCommandBuffer.setScissor(0, { _swapChain->RenderArea() });
-
-            renderingCommandBuffer.bindDescriptorSets(
-                vk::PipelineBindPoint::eGraphics,
-                _coloredVertexPipeline.Layout(),
-                0,
-                { _constantBufferSet.Get() },
-                nullptr
-            );
-
-
-            renderingCommandBuffer.bindPipeline(
-                vk::PipelineBindPoint::eGraphics,
-                _coloredVertexPipeline.Get()
-            );
-
-            renderingCommandBuffer.bindVertexBuffers(
-                0,
-                {_triangle.Buffer()},
-                {sizeof(mesh::COLORED_TRIANGLE_INDEX_DATA)}
-            );
-            renderingCommandBuffer.bindIndexBuffer(
-                _triangle.Buffer(),
-                0, 
-                vk::IndexType::eUint32
-            );
-
-            renderingCommandBuffer.drawIndexed(3, 1, 0, 0, 1);
-
-            renderingCommandBuffer.endRenderPass();
-        }
-
-
-        //
-        // submit rendering
-        //
-
-        auto renderingDoneSemaphore = currentFrameCommandRecord.DoneSemaphore();
-
-
-        std::array<vk::Semaphore, 2> waitSemaphores
-        {
-            *_uploadDoneSemaphore,imageReadySemaphore
-        };
-
-
-        std::array<vk::PipelineStageFlags, 2> waitStageMasks
-        {
-            vk::PipelineStageFlagBits::eColorAttachmentOutput, vk::PipelineStageFlagBits::eVertexInput
-        };
-
-        vk::SubmitInfo submitInfo
-        {
-            .waitSemaphoreCount = 2,
-            .pWaitSemaphores = waitSemaphores.data(),
-            .pWaitDstStageMask = waitStageMasks.data(),
-            .commandBufferCount = 1,
-            .pCommandBuffers = &*renderingCommandBuffer,
-            .signalSemaphoreCount = 1,
-            .pSignalSemaphores = &renderingDoneSemaphore
-        };
-
-        _graphicsQueue->submit(
-            { submitInfo },
-            currentFrameFence
-        );
-
-        auto result = _swapChain->PresentLastAcquiredImageAsync(renderingDoneSemaphore);
-
-        if (result != vk::Result::eSuccess)
-        {
-            DEBUGGER_TRACE("result = {}", result);
-        }
-    }
-
-
-    void RenderingSystem::InitializeSwapChain(GLFWVulkanSurface& windowSurface)
-    {
-        SwapChainTargetConfig swapChainDesc{};
-        swapChainDesc.width = windowSurface.size.width;
-        swapChainDesc.height = windowSurface.size.height;
-        swapChainDesc.surface = std::move(windowSurface.surface);
-
-        swapChainDesc.present_queue_family = _presentationQueue.Family();
-        swapChainDesc.graphics_queue_family = _graphicsQueue.Family();
-
-        _swapChain = std::make_unique<SwapChain>(_deviceContext, _presentationQueue, std::move(swapChainDesc));
-
-        _maxFramesInFlight = _swapChain->ImageCount();
-    }
-
-    void RenderingSystem::InitializeCommandPoolsAndBuffers()
-    {
-        for (auto i = 0u; i < _maxFramesInFlight; ++i)
-        {          
-            _frameCommandBuffer.emplace_back(_deviceContext, _graphicsQueue);
-        }
-    }
-
-    void RenderingSystem::HandleResize(uint32_t width, uint32_t height)
-    {
-        DEBUGGER_TRACE("HandleResize({},{})", width, height);
-        
-        // recreate swap chain images and views
-        _swapChain->Resize(width, height);
-
-        // recreate all resizeable stuff
-        HandleSwapChainResize();
-
-        RunOne();
-    }
+    //}
 
 }

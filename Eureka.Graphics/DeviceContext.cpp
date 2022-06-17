@@ -3,23 +3,19 @@
 #include "vk_mem_alloc.h"
 #include "vk_error_handling.hpp"
 #include <unordered_map>
+#include <ShadersCache.hpp>
 
 namespace eureka
 {
 
-    bool IsDeviceSuitableForDisplay(const vkr::PhysicalDevice& device)
+    bool IsDeviceSuitable(const vkr::PhysicalDevice& device, const DeviceContextConfig& desc)
     {
-        /*
-        * A device is suitable if it can present to the screen, ie support
-        * the swapchain extension
-        */
-        const std::vector<std::string_view> requestedExtensions = {
-            VK_KHR_SWAPCHAIN_EXTENSION_NAME
-        };
 
         auto availableExtentions = device.enumerateDeviceExtensionProperties();
 
-        for (const auto& requestedExtension : requestedExtensions)
+        //DEBUGGER_TRACE("device extentions: \n{}", availableExtentions | std::views::transform([](const auto& v) {return std::string_view(v.extensionName); }) );
+
+        for (const auto& requestedExtension : desc.required_extentions)
         {
             bool found = false;
             for (auto availableExtention : availableExtentions)
@@ -37,6 +33,31 @@ namespace eureka
                 return false;
             }
         }
+        auto availableLayers = device.enumerateDeviceLayerProperties();
+
+        DEBUGGER_TRACE("device layers: \n{}", availableLayers | std::views::transform([](const auto& v) {return std::string_view(v.layerName); }));
+
+
+        for (const auto& requestedLayer : desc.required_layers)
+        {
+            bool found = false;
+            for (auto availableLayer : availableLayers)
+            {
+                std::string_view availableLayerName(availableLayer.layerName);
+                if (availableLayerName == requestedLayer)
+                {
+                    found = true;
+                    break;
+                }
+            }
+
+            if (!found)
+            {
+                return false;
+            }
+        }
+
+
 
         return true;
     }
@@ -221,7 +242,7 @@ namespace eureka
         
         VK_CHECK(vmaCreateAllocator(&allocatorCreateInfo, &_vmaAllocator));
 
-        _shaderCache = ShaderCache(_device);
+        _shaderCache = std::make_shared<ShaderCache>(_device);
     }
 
     DeviceContext::~DeviceContext()
@@ -265,6 +286,11 @@ namespace eureka
         return *queue;
     }
 
+    const std::shared_ptr<eureka::ShaderCache>& DeviceContext::Shaders()
+    {
+        return _shaderCache;
+    }
+
     //vk::Queue DeviceContext::PresentQueue() const
     //{ 
     //    assert(_device); 
@@ -276,16 +302,23 @@ namespace eureka
     //    return _presentQueue;
     //}
 
+
+
     void DeviceContext::InitDeviceAndQueues(const vkr::Instance& instance, const DeviceContextConfig& desc)
     {
         vkr::PhysicalDevices availableDevices(instance);
         vkr::PhysicalDevice* chosenPhysicalDevice = nullptr;
 
+
+
+
         for (auto& physicalDevice : availableDevices)
         {
             DEBUGGER_TRACE("Device name: {} type: {}", physicalDevice.getProperties().deviceName, physicalDevice.getProperties().deviceType);
          
-            if (IsDeviceSuitableForDisplay(physicalDevice))
+
+
+            if (IsDeviceSuitable(physicalDevice, desc))
             {
                 chosenPhysicalDevice = &physicalDevice;
                 break;
@@ -301,7 +334,12 @@ namespace eureka
         auto deviceCreationDesc = EnumerateQueueFamiliesForDeviceCreation(*chosenPhysicalDevice, desc);
 
         vk::PhysicalDeviceFeatures deviceFeatures = vk::PhysicalDeviceFeatures();
+
+        vk::PhysicalDeviceVulkan12Features features;
+        features.timelineSemaphore = true;
+
         vk::DeviceCreateInfo deviceInfo{
+            .pNext = &features,
             .flags = vk::DeviceCreateFlags(),
             .queueCreateInfoCount = 3,
             .pQueueCreateInfos = deviceCreationDesc.create_info.data(),

@@ -1,186 +1,152 @@
 #include "Pipeline.hpp"
+#include "PipelineTypes.hpp"
+
+#include "PipelineHelpers.hpp"
+#include "ShaderReflection.hpp"
 
 namespace eureka
 {
+    //////////////////////////////////////////////////////////////////////////
+    //
+    //                        UIPipeline
+    // 
+    //////////////////////////////////////////////////////////////////////////
 
-    PerFrameGeneralPurposeDescriptorSetLayout::PerFrameGeneralPurposeDescriptorSetLayout(DeviceContext& deviceContext)
+
+    ImGuiPipeline::ImGuiPipeline(
+        DeviceContext& deviceContext,
+        DescriptorSetLayoutCache& layoutCache,
+        vk::RenderPass renderPass
+    ) : _fragmentShaderSetLayout(layoutCache.RetrieveLayout(0, SET0_ID_001_PER_FONT))
     {
-        // describe the relation between the shader indices (set 0, binding 0)
-        // to the host indices 
-        // - host indices are the sets
-        // - device indices are the set index and binding number within the set that can potentially be unordered
-        // set 0, only has a single binding inside shader
-        vk::DescriptorSetLayoutBinding descriptorSetLayoutBinding
+        std::array<vk::DescriptorSetLayout, 1> setLayouts
         {
-            .binding = 0, // shader side index (why not named location??)
-            .descriptorType = vk::DescriptorType::eUniformBuffer,
-            .descriptorCount = 1, // a single constant buffer
-            .stageFlags = vk::ShaderStageFlagBits::eVertex
+            _fragmentShaderSetLayout,
         };
 
-        vk::DescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo
+        vk::PushConstantRange pushConstantsRange
         {
-            .bindingCount = 1,
-            .pBindings = &descriptorSetLayoutBinding
+            .stageFlags = vk::ShaderStageFlagBits::eVertex,
+            .offset = 0,
+            .size = sizeof(ImGuiPushConstantsBlock)
         };
 
-        _descriptorSetLayout = deviceContext.LogicalDevice()->createDescriptorSetLayout(descriptorSetLayoutCreateInfo);
-    }
 
-    ColoredVertexMeshPipeline::ColoredVertexMeshPipeline(DeviceContext& deviceContext, std::shared_ptr<DepthColorRenderPass> renderPass, std::shared_ptr<PerFrameGeneralPurposeDescriptorSetLayout> descriptorSetLayout) :
-        _descriptorSetLayout(descriptorSetLayout),
-        _renderPass(renderPass)
-    {
-        auto layoutHandle = _descriptorSetLayout->Get();
         vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo
         {
-            .setLayoutCount = 1,
-            .pSetLayouts = &layoutHandle
+            .setLayoutCount = static_cast<uint32_t>(setLayouts.size()),
+            .pSetLayouts = setLayouts.data(),
+            .pushConstantRangeCount = 1,
+            .pPushConstantRanges = &pushConstantsRange
         };
 
         _pipelineLayout = deviceContext.LogicalDevice()->createPipelineLayout(pipelineLayoutCreateInfo);
 
-        Setup(deviceContext);
+        Setup(deviceContext, renderPass);
     }
 
-    vk::PipelineLayout ColoredVertexMeshPipeline::Layout() const
+
+
+    void ImGuiPipeline::Setup(DeviceContext& deviceContext, vk::RenderPass renderPass)
     {
-        return *_pipelineLayout;
-    }
-
-    vk::Pipeline ColoredVertexMeshPipeline::Get() const
-    {
-        return *_pipeline;
-    }
-
-    void ColoredVertexMeshPipeline::Setup(DeviceContext& deviceContext)
-    {
-        //
-        // Setup States
-        //
-
-        vk::PipelineInputAssemblyStateCreateInfo inputAssemblyState
-        {
-            .topology = vk::PrimitiveTopology::eTriangleList
-        };
-
-        vk::PipelineRasterizationStateCreateInfo rasterizationState
-        {
-            .depthClampEnable = false,
-            .rasterizerDiscardEnable = false,
-            .polygonMode = vk::PolygonMode::eFill,
-            .cullMode = vk::CullModeFlagBits::eNone,
-            .frontFace = vk::FrontFace::eCounterClockwise,
-            .depthBiasEnable = false,
-            .lineWidth = 1.0f
-        };
-
-        vk::PipelineColorBlendAttachmentState blendAttachments
-        {
-            .blendEnable = false,
-            .colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA
-        };
-
-        vk::PipelineColorBlendStateCreateInfo blendState
-        {
-            .attachmentCount = 1,
-            .pAttachments = &blendAttachments
-        };
-
-        vk::PipelineViewportStateCreateInfo viewportState // overriden by dynamic state
-        {
-            .viewportCount = 1,
-            .scissorCount = 1
-        };
-
-        std::array<vk::DynamicState, 2> enabledDynamicStates{ vk::DynamicState::eViewport, vk::DynamicState::eScissor };
-
-
-        vk::PipelineDynamicStateCreateInfo dynamicState
-        {
-            .dynamicStateCount = static_cast<uint32_t>(enabledDynamicStates.size()),
-            .pDynamicStates = enabledDynamicStates.data()
-        };
-
-        vk::PipelineDepthStencilStateCreateInfo depthStencilState
-        {
-            .depthTestEnable = true,
-            .depthWriteEnable = true,
-            .depthCompareOp = vk::CompareOp::eLessOrEqual,
-            .depthBoundsTestEnable = false,
-            .stencilTestEnable = false,
-            .front = vk::StencilOpState{.failOp = vk::StencilOp::eKeep,.passOp = vk::StencilOp::eKeep, .depthFailOp = vk::StencilOp::eKeep, .compareOp = vk::CompareOp::eAlways },
-            .back = vk::StencilOpState{.failOp = vk::StencilOp::eKeep,.passOp = vk::StencilOp::eKeep, .depthFailOp = vk::StencilOp::eKeep, .compareOp = vk::CompareOp::eAlways }
-        };
-
-        vk::PipelineMultisampleStateCreateInfo multisampleState
-        {
-            .rasterizationSamples = vk::SampleCountFlagBits::e1,
-            .pSampleMask = nullptr
-        };
-
         //
         // Vertex Attributes 
         //
 
-        vk::VertexInputBindingDescription vertexInputBinding
-        {
-            .binding = 0,
-            .stride = sizeof(PositionColorVertex),
-            .inputRate = vk::VertexInputRate::eVertex
-        };
-
-        std::array<vk::VertexInputAttributeDescription, 2> vertexInputAttributs
-        {
-            // xyz position at shader location 0
-            vk::VertexInputAttributeDescription
-            {
-                .location = 0,
-                .binding = 0,
-                .format = vk::Format::eR32G32B32Sfloat,
-                .offset = offsetof(PositionColorVertex, position)
-            },
-            // rgb color at shader location 1
-            vk::VertexInputAttributeDescription
-            {
-                .location = 1,
-                .binding = 0,
-                .format = vk::Format::eR32G32B32Sfloat,
-                .offset = offsetof(PositionColorVertex, color)
-            }
-        };
+        auto layout = MakeInterleavedVertexLayout<ImGuiVertex>();
 
         vk::PipelineVertexInputStateCreateInfo vertexInputState
         {
-            .vertexBindingDescriptionCount = 1,
-            .pVertexBindingDescriptions = &vertexInputBinding,
-            .vertexAttributeDescriptionCount = static_cast<uint32_t>(vertexInputAttributs.size()),
-            .pVertexAttributeDescriptions = vertexInputAttributs.data()
+            .vertexBindingDescriptionCount = static_cast<uint32_t>(layout.bindings.size()),
+            .pVertexBindingDescriptions = layout.bindings.data(),
+            .vertexAttributeDescriptionCount = static_cast<uint32_t>(layout.attributes.size()),
+            .pVertexAttributeDescriptions = layout.attributes.data()
         };
 
+        DefaultFixedPiplinePreset preset{};
+        SetupFixedPreset<UIFixedPresetTraits>(preset);
+
+        std::array<ShaderId, 2> ids{ ImGuiVS, ImGuiFS };
+        auto shadersPipeline = MakeShaderPipeline(ids, * deviceContext.Shaders());
+
+
+        //auto _pipelineLayout2 = ReflectPipeline(dynamic_span<ShaderId>(ids.data(), ids.size()));
         //
-        // Shaders
-        // 
+        // All Together
+        //
 
-        auto vshader = deviceContext.Shaders().LoadShaderModule(ColoredVertexVS);
-        auto fshader = deviceContext.Shaders().LoadShaderModule(ColoredVertexFS);
-
-        std::array<vk::PipelineShaderStageCreateInfo, 2> shaderStages
+        vk::GraphicsPipelineCreateInfo pipelineCreateInfo
         {
-            vk::PipelineShaderStageCreateInfo
-            {
-                .stage = vk::ShaderStageFlagBits::eVertex,
-                .module = *vshader,
-                .pName = "main"
-            },
-            vk::PipelineShaderStageCreateInfo
-            {
-                .stage = vk::ShaderStageFlagBits::eFragment,
-                .module = *fshader,
-                .pName = "main"
-            }
+            .stageCount = static_cast<uint32_t>(shadersPipeline.stages.size()),
+            .pStages = shadersPipeline.stages.data(),
+            .pVertexInputState = &vertexInputState,
+            .pInputAssemblyState = &preset.input_assembly_create_info,
+            .pTessellationState = nullptr,
+            .pViewportState = &preset.viewport_state_create_info,
+            .pRasterizationState = &preset.rasterization_state_create_info,
+            .pMultisampleState = &preset.multisampling_state_create_info,
+            .pDepthStencilState = &preset.depth_stencil_state_create_info,
+            .pColorBlendState = &preset.color_blend_state_create_info,
+            .pDynamicState = &preset.dynamic_state_create_info,
+            .layout = *_pipelineLayout,
+            .renderPass = renderPass
         };
 
+        _pipeline = deviceContext.LogicalDevice()->createGraphicsPipeline(
+            deviceContext.Shaders()->Cache(),
+            pipelineCreateInfo
+        );
+    }
+
+    //////////////////////////////////////////////////////////////////////////
+    //
+    //                        ColoredVertexMeshPipeline
+    // 
+    //////////////////////////////////////////////////////////////////////////
+    ColoredVertexMeshPipeline::ColoredVertexMeshPipeline(
+        DeviceContext& deviceContext, 
+        DescriptorSetLayoutCache& layoutCache,
+        vk::RenderPass renderPass
+    ) 
+    {
+        _descLayout = layoutCache.RetrieveLayout(0, SET0_ID_000_PER_VIEW);
+       
+        vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo
+        {
+            .setLayoutCount = 1,
+            .pSetLayouts = &_descLayout
+        };
+
+        _pipelineLayout = deviceContext.LogicalDevice()->createPipelineLayout(pipelineLayoutCreateInfo);
+
+ 
+
+        Setup(deviceContext, renderPass);
+    }
+
+    void ColoredVertexMeshPipeline::Setup(DeviceContext& deviceContext, vk::RenderPass renderPass)
+    {
+        //
+        // Vertex Attributes 
+        //
+
+        auto layout = MakeInterleavedVertexLayout<PositionColorVertex>();
+
+        vk::PipelineVertexInputStateCreateInfo vertexInputState
+        {
+            .vertexBindingDescriptionCount = static_cast<uint32_t>(layout.bindings.size()),
+            .pVertexBindingDescriptions = layout.bindings.data(),
+            .vertexAttributeDescriptionCount = static_cast<uint32_t>(layout.attributes.size()),
+            .pVertexAttributeDescriptions = layout.attributes.data()
+        };
+
+        DefaultFixedPiplinePreset preset{};
+        SetupFixedPreset<MeshFixedPresetTraits>(preset);
+
+        std::array<ShaderId, 2> ids{ ColoredVertexVS, ColoredVertexFS };
+        auto shadersPipeline = MakeShaderPipeline(ids, *deviceContext.Shaders());
+
+      
 
         //
         // All Together
@@ -188,50 +154,117 @@ namespace eureka
 
         vk::GraphicsPipelineCreateInfo pipelineCreateInfo
         {
-            .stageCount = static_cast<uint32_t>(shaderStages.size()),
-            .pStages = shaderStages.data(),
+            .stageCount = static_cast<uint32_t>(shadersPipeline.stages.size()),
+            .pStages = shadersPipeline.stages.data(),
             .pVertexInputState = &vertexInputState,
-            .pInputAssemblyState = &inputAssemblyState,
+            .pInputAssemblyState = &preset.input_assembly_create_info,
             .pTessellationState = nullptr,
-            .pViewportState = &viewportState,
-            .pRasterizationState = &rasterizationState,
-            .pMultisampleState = &multisampleState,
-            .pDepthStencilState = &depthStencilState,
-            .pColorBlendState = &blendState,
-            .pDynamicState = &dynamicState,
+            .pViewportState = &preset.viewport_state_create_info,
+            .pRasterizationState = &preset.rasterization_state_create_info,
+            .pMultisampleState = &preset.multisampling_state_create_info,
+            .pDepthStencilState = &preset.depth_stencil_state_create_info,
+            .pColorBlendState = &preset.color_blend_state_create_info,
+            .pDynamicState = &preset.dynamic_state_create_info,
             .layout = *_pipelineLayout,
-            .renderPass = _renderPass->Get()
+            .renderPass = renderPass
         };
 
         _pipeline = deviceContext.LogicalDevice()->createGraphicsPipeline(
-            deviceContext.Shaders().Cache(),
+            deviceContext.Shaders()->Cache(),
             pipelineCreateInfo
         );
     }
 
 
 
-    DescriptorPool::DescriptorPool(DeviceContext& deviceContext)
-        : _device(deviceContext.LogicalDevice())
-    {
-        // We need to tell the API the number of max. requested descriptors per type
-        std::array<vk::DescriptorPoolSize, 1> perTypeMaxCount{};
-        perTypeMaxCount[0] = vk::DescriptorPoolSize{ .type = vk::DescriptorType::eUniformBuffer, .descriptorCount = 1 };
+    //////////////////////////////////////////////////////////////////////////
+    //
+    //                    NormalMappedShadedMeshPipeline
+    // 
+    //////////////////////////////////////////////////////////////////////////
 
-        // For additional types you need to add new entries in the type count list
-        // E.g. for two combined image samplers :
-        // typeCounts[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        // typeCounts[1].descriptorCount = 2;
-
-        // Create the global descriptor pool
-        // All descriptors used in this example are allocated from this pool
-        vk::DescriptorPoolCreateInfo descriptorPoolCreateInfo
+    PhongShadedMeshWithNormalMapPipeline::PhongShadedMeshWithNormalMapPipeline(
+        DeviceContext& deviceContext, 
+        vk::RenderPass renderPass,
+        const SingleVertexShaderUBODescriptorSetLayout& perViewDescriptorSetLayout,
+        const ColorAndNormalMapFragmentDescriptorSetLayout& perNormalMappedModelDescriptorSetLayout
+    )
+    { 
+        std::array<vk::DescriptorSetLayout, 2> setLayouts
         {
-            .maxSets = 1,
-            .poolSizeCount = static_cast<uint32_t>(perTypeMaxCount.size()),
-            .pPoolSizes = perTypeMaxCount.data()
+            perViewDescriptorSetLayout.Get(),
+            perNormalMappedModelDescriptorSetLayout.Get(),
         };
-        _pool = _device->createDescriptorPool(descriptorPoolCreateInfo);
+
+        vk::PushConstantRange pushConstantsRange
+        {
+            .stageFlags = vk::ShaderStageFlagBits::eVertex,
+            .offset = 0,
+            .size = sizeof(Eigen::Matrix4f)
+        };
+
+        vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo
+        {
+            .setLayoutCount = static_cast<uint32_t>(setLayouts.size()),
+            .pSetLayouts = setLayouts.data(),
+            .pushConstantRangeCount = 1,
+            .pPushConstantRanges = &pushConstantsRange
+        };
+
+        _pipelineLayout = deviceContext.LogicalDevice()->createPipelineLayout(pipelineLayoutCreateInfo);
+
+        Setup(deviceContext, renderPass);
     }
+
+    void PhongShadedMeshWithNormalMapPipeline::Setup(DeviceContext& deviceContext, vk::RenderPass renderPass)
+    {
+        //
+        // Vertex Attributes 
+        //
+
+        auto layout = MakeDeinterleavedVertexLayout<Eigen::Vector3f, Eigen::Vector3f, Eigen::Vector2f, Eigen::Vector4f>();
+
+        vk::PipelineVertexInputStateCreateInfo vertexInputState
+        {
+            .vertexBindingDescriptionCount = static_cast<uint32_t>(layout.bindings.size()),
+            .pVertexBindingDescriptions = layout.bindings.data(),
+            .vertexAttributeDescriptionCount = static_cast<uint32_t>(layout.attributes.size()),
+            .pVertexAttributeDescriptions = layout.attributes.data()
+        };
+
+        DefaultFixedPiplinePreset preset{};
+        SetupFixedPreset<MeshFixedPresetTraits>(preset);
+
+
+        auto shadersPipeline = MakeShaderPipeline(std::array<ShaderId, 2> { ShadedMeshWithNormalMapVS, PhongShadedMeshWithNormalMapFS }, * deviceContext.Shaders());
+
+        //
+        // All Together
+        //
+
+        vk::GraphicsPipelineCreateInfo pipelineCreateInfo
+        {
+            .stageCount = static_cast<uint32_t>(shadersPipeline.stages.size()),
+            .pStages = shadersPipeline.stages.data(),
+            .pVertexInputState = &vertexInputState,
+            .pInputAssemblyState = &preset.input_assembly_create_info,
+            .pTessellationState = nullptr,
+            .pViewportState = &preset.viewport_state_create_info,
+            .pRasterizationState = &preset.rasterization_state_create_info,
+            .pMultisampleState = &preset.multisampling_state_create_info,
+            .pDepthStencilState = &preset.depth_stencil_state_create_info,
+            .pColorBlendState = &preset.color_blend_state_create_info,
+            .pDynamicState = &preset.dynamic_state_create_info,
+            .layout = *_pipelineLayout,
+            .renderPass = renderPass
+        };
+
+        _pipeline = deviceContext.LogicalDevice()->createGraphicsPipeline(
+            deviceContext.Shaders()->Cache(),
+            pipelineCreateInfo
+        );
+    }
+
+
 
 }

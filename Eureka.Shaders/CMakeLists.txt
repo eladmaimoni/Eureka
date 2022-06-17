@@ -15,6 +15,7 @@
 function(configure_glsl_shader_compilation shader_file)
     get_source_file_property(shader_type ${shader_file} ShaderType)    
     get_filename_component(shader_name ${shader_file} NAME_WE)
+    
     message("raw shader file = ${shader_file}")
     message("shader name = ${shader_name}")
     message("shader type = ${shader_type}")
@@ -62,11 +63,12 @@ function(configure_hlsl_shader_compilation shader_file)
         #MAIN_DEPENDENCY ${shader_file} # tried with and without
 
         COMMAND
-        ${dxc_executable} -spirv -HV 2021 -E main -fspv-target-env=vulkan1.2
+        ${dxc_executable} -spirv -HV 2021 -E main -fspv-target-env=vulkan1.2 
         -T ${shader_type}        
         ${CMAKE_CURRENT_SOURCE_DIR}/${shader_file}
         -Fo
         ${EUREKA_COMPILED_SHADERS_DIRECTORY}/${shader_name}.spv
+        -I ${CMAKE_CURRENT_SOURCE_DIR}
         COMMAND
         bin2h
         ${EUREKA_COMPILED_SHADERS_DIRECTORY}/${shader_name}.spv
@@ -84,7 +86,11 @@ endfunction()
 
 function(configure_hlsl_shaders_compilation)
     message("dxc_executable = ${dxc_executable}")
+    # prevent visual studio hlsl compilation
+    # https://stackoverflow.com/questions/43739539/cmake-avoid-compilation-of-hlsl-shader-files-on-visual-studio
+    set_source_files_properties(${ARGN} PROPERTIES VS_TOOL_OVERRIDE "None")
     foreach(shader IN LISTS ARGN)
+        #set_source_files_properties(${shader} PROPERTIES VS_TOOL_OVERRIDE "None")
         configure_hlsl_shader_compilation(${shader})
     endforeach()
 endfunction()
@@ -106,10 +112,10 @@ endmacro(shaders_group)
 ################################################################################
 #                                  Shaders
 ################################################################################
-shaders_group(glsl_vertex_shaders vertex "TriangleVS.vert")
-shaders_group(glsl_fragment_shaders fragment "TriangleFS.frag") 
-shaders_group(hlsl_fragment_shaders ps_6_0 "ColoredVertexFS.hlsl")
-shaders_group(hlsl_vertex_shaders vs_6_0 "ColoredVertexVS.hlsl")
+shaders_group(glsl_vertex_shaders vertex "ImGuiGLSLVS.vert" "TriangleVS.vert")
+shaders_group(glsl_fragment_shaders fragment "ImGuiGLSLFS.frag" "TriangleFS.frag") 
+shaders_group(hlsl_fragment_shaders ps_6_0 "ImGuiFS.hlsl" "ColoredVertexFS.hlsl" "PhongShadedMeshWithNormalMapFS.hlsl")
+shaders_group(hlsl_vertex_shaders vs_6_0 "ImGuiVS.hlsl" "ColoredVertexVS.hlsl" "ShadedMeshWithNormalMapVS.hlsl")
 
 
 ################################################################################
@@ -129,18 +135,28 @@ configure_glsl_shaders_compilation(${glsl_fragment_shaders})
 configure_hlsl_shaders_compilation(${hlsl_vertex_shaders})
 configure_hlsl_shaders_compilation(${hlsl_fragment_shaders})
 
+set_source_group(
+    common
+    "set0_id_000.hlsli"
+)
 
-add_library(
-    Eureka.Shaders 
-    STATIC 
-    ${hlsl_vertex_shaders}
-    ${hlsl_fragment_shaders}
-    ${glsl_vertex_shaders}
-    ${glsl_fragment_shaders}
+set_source_group(
+    shader_cache 
     "ShadersCache.cpp"
     "ShadersCache.hpp"
     "ShadersDeclare.hpp"
     "ShadersImpl.cpp"
+)
+
+add_library(
+    Eureka.Shaders 
+    STATIC 
+    ${common}
+    ${shader_cache}
+    ${hlsl_vertex_shaders}
+    ${hlsl_fragment_shaders}
+    ${glsl_vertex_shaders}
+    ${glsl_fragment_shaders}
 )
 
 set_compiler_flags(Eureka.Shaders)

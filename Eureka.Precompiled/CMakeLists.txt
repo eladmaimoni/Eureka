@@ -1,14 +1,20 @@
 add_library(Eureka.Precompiled STATIC "precompiled.cpp" "global_definitions.hpp")
 
 set_compiler_flags(Eureka.Precompiled)   
-
+if (MSVC)
+    target_compile_options(Eureka.Precompiled  PRIVATE /wd4324)
+endif()
 target_link_libraries(
   Eureka.Precompiled
   PUBLIC
+  Eureka.Core
   Vulkan::Vulkan
   Eigen3::Eigen
   glm::glm
   function2::function2
+  Boost::boost 
+  Boost::container
+  Pal::Sigslot
   )
 
 target_include_directories(Eureka.Precompiled PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} "${PROJECT_BINARY_DIR}")
@@ -55,9 +61,7 @@ target_precompile_headers(
     <vector> 
     <vulkan/vulkan.hpp>
     #<vulkan/vulkan_raii.hpp> # this messes up the pdb files !!!
-    <Eigen/Core>
-    <glm/glm.hpp>
-    <function2/function2.hpp>
+    
     <global_definitions.hpp>
  )
 

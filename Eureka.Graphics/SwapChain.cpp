@@ -121,35 +121,72 @@ namespace eureka
 
     void SwapChain::Resize(uint32_t width, uint32_t height)
     {
-        _desc.width = width;
-        _desc.height = height;
-        _capabilities = _deviceContext.PhysicalDevice()->getSurfaceCapabilitiesKHR(*_desc.surface);
-        _currentSemaphore = 0;
 
-        CreateSwapChain();
+
+        if (width > 0 && height > 0)
+        {
+            _desc.width = width;
+            _desc.height = height;
+            _capabilities = _deviceContext.PhysicalDevice()->getSurfaceCapabilitiesKHR(*_desc.surface);
+            _currentSemaphore = 0;
+            CreateSwapChain();
+            _resizeSignal(width, height);
+        }
+
+
     }
 
     SwapChainImageReference SwapChain::AcquireNextAvailableImageAsync()
     {
         // https://stackoverflow.com/questions/65054157/do-i-need-dedicated-fences-semaphores-per-swap-chain-image-per-frame-or-per-com
-        _currentSemaphore = (_currentSemaphore + 1) % _imageReadySemapores.size();
+
 
         auto semaphoreHandle = *_imageReadySemapores[_currentSemaphore];
 
-        auto [result, index] = _swapchain.acquireNextImage(UINT64_MAX, semaphoreHandle);
+        uint32_t                     imageIndex;
+        vk::Result result = static_cast<vk::Result>(
+            _swapchain.getDispatcher()->vkAcquireNextImageKHR(static_cast<VkDevice>(**_deviceContext.LogicalDevice()),
+                static_cast<VkSwapchainKHR>(*_swapchain),
+                UINT64_MAX,
+                static_cast<VkSemaphore>(semaphoreHandle),
+                nullptr,
+                &imageIndex)
+            );
 
-        _lastAquiredImage = index;
-        VK_CHECK(result);
 
+        //auto [result, index] = _swapchain.acquireNextImage(UINT64_MAX, semaphoreHandle);
+        if (result == vk::Result::eSuccess)
+        {
+            _currentSemaphore = (_currentSemaphore + 1) % _imageReadySemapores.size();
+            _lastAquiredImage = imageIndex;
+            return SwapChainImageReference
+            {
+                .valid = true,
+                .image_index = imageIndex,
+                .image_ready = semaphoreHandle
+            };
+
+        }
+        else if (result == vk::Result::eErrorOutOfDateKHR)
+        {
+            CreateSwapChain();
+        }
         return SwapChainImageReference
         {
-            .image_index = index,
+            .valid = false,
+            .image_index = imageIndex,
             .image_ready = semaphoreHandle
         };
+
+ 
+
+
     }
 
     vk::Result SwapChain::PresentLastAcquiredImageAsync(vk::Semaphore renderingDoneSemaphore)
     {
+
+
         //VkSemaphore sem = renderingDoneSemaphore;
         vk::PresentInfoKHR presentInfo
         {
@@ -159,7 +196,20 @@ namespace eureka
              .pSwapchains = &*_swapchain,
              .pImageIndices = &_lastAquiredImage
         };
-        return _presentationQueue->presentKHR(presentInfo);
+      
+        try
+        {
+            return _presentationQueue->presentKHR(presentInfo);
+        }
+        catch (const vk::OutOfDateKHRError& err)
+        {
+            DEBUGGER_TRACE("{}", err.what());
+            CreateSwapChain();
+        }
+        
+        vk::Result result = vk::Result::eErrorOutOfDateKHR;
+
+        return result;
     }
 
     vk::Rect2D SwapChain::RenderArea() const
@@ -179,6 +229,7 @@ namespace eureka
     void SwapChain::CreateSwapChain()
     {
         vk::Extent2D selectedExtent = CalcMaxExtent(_desc.width, _desc.height, _capabilities);
+
         uint32_t minImageCount = std::max(2u, _capabilities.minImageCount);
         vk::SwapchainCreateInfoKHR createInfo
         {
@@ -237,6 +288,7 @@ namespace eureka
             auto view = _deviceContext.LogicalDevice()->createImageView(imageViewCreateInfo);
             _surfaceImages[i] = std::make_shared<Image>(images[i], std::move(view));
         }
+        
     }
 
     uint32_t SwapChain::ImageCount() const
@@ -244,5 +296,7 @@ namespace eureka
         return static_cast<uint32_t>(_surfaceImages.size());
     }
 
+
+ 
 
 }

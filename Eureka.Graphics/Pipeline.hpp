@@ -3,120 +3,204 @@
 #include "VkHelpers.hpp"
 #include "vk_error_handling.hpp"
 #include "RenderPass.hpp"
-#include "Mesh.hpp"
+#include "DescriptorSetsLayout.hpp"
 
 namespace eureka
 {  
-
-    class DescriptorSet
-    {
-    private:
-        vkr::DescriptorSet _set{ nullptr };
-    public:
-        vk::DescriptorSet Get() { return *_set; }
-        DescriptorSet() = default;
-        DescriptorSet(vkr::DescriptorSet set)
-            :
-            _set(std::move(set))
-        {
-
-            
-
-        }
-
-        void SetBinding(uint32_t bindingSlot, vk::DescriptorType descType,  const vk::DescriptorBufferInfo& bufferInfo)
-        {
-
-            vk::WriteDescriptorSet writeDescriptorSet
-            {
-                .dstSet = *_set,
-                .dstBinding = bindingSlot,
-                .descriptorCount = 1,
-                .descriptorType = descType,
-                .pBufferInfo = &bufferInfo
-            
-            };
-
-            _set.getDevice().updateDescriptorSets(1, &writeDescriptorSet, 0, nullptr);
-        }
-
-    };
-
-    class DescriptorPool
-    {
-    private:
-        std::shared_ptr<vkr::Device> _device;
-        vkr::DescriptorPool _pool{ nullptr };
-
-    public:
-        DescriptorPool(DeviceContext& deviceContext);
-        vk::DescriptorPool Get() const 
-        {
-            return *_pool;
-        }
-
-        vkr::DescriptorSet AllocateSet(vk::DescriptorSetLayout layout)
-        {
-            vk::DescriptorSetAllocateInfo allocInfo
-            {
-                .descriptorPool = *_pool,
-                .descriptorSetCount = 1,
-                .pSetLayouts = &layout
-
-            };
-            auto device = **_device;
-            vk::DescriptorSet descriptorSet{};
-
-            VK_CHECK(vkAllocateDescriptorSets(
-                device,
-                (VkDescriptorSetAllocateInfo*)& allocInfo,
-                (VkDescriptorSet*)&descriptorSet)
-            );
-
-            return vkr::DescriptorSet(*_device, descriptorSet, *_pool);
-     
-        }
-    };
-
+    
 
 
     //////////////////////////////////////////////////////////////////////////
     //
-    // This is the set of constant buffers the shader receives
-    // the shader expects a single set of descriptors with only one entry ('binding')
+    //                        PipelineBase
     // 
     //////////////////////////////////////////////////////////////////////////
-    class PerFrameGeneralPurposeDescriptorSetLayout
+    class PipelineBase
     {
-        vkr::DescriptorSetLayout _descriptorSetLayout{ nullptr };       
+    protected:
+        vkr::PipelineLayout _pipelineLayout{ nullptr };
+        vkr::Pipeline       _pipeline{ nullptr };
+
+        EUREKA_DEFAULT_MOVEABLE(PipelineBase);
     public:
-        vk::DescriptorSetLayout Get() const { return *_descriptorSetLayout; }
-        PerFrameGeneralPurposeDescriptorSetLayout() = default;
-        PerFrameGeneralPurposeDescriptorSetLayout(PerFrameGeneralPurposeDescriptorSetLayout&& that) = default;
-        PerFrameGeneralPurposeDescriptorSetLayout& operator=(PerFrameGeneralPurposeDescriptorSetLayout&& that) = default;
-        PerFrameGeneralPurposeDescriptorSetLayout(DeviceContext& deviceContext);
+        vk::PipelineLayout Layout() const
+        {
+            return *_pipelineLayout;
+        }
+
+        vk::Pipeline Get() const
+        {
+            return *_pipeline;
+        }
     };
 
 
-
-    class ColoredVertexMeshPipeline
+    //////////////////////////////////////////////////////////////////////////
+    //
+    //                        UIPipeline
+    // 
+    //////////////////////////////////////////////////////////////////////////
+    class ImGuiPipeline : public PipelineBase
     {
-        std::shared_ptr<PerFrameGeneralPurposeDescriptorSetLayout> _descriptorSetLayout;
-        std::shared_ptr<DepthColorRenderPass>                _renderPass;
-        vkr::PipelineLayout _pipelineLayout{nullptr};
-        vkr::Pipeline       _pipeline{nullptr};
-        void Setup(DeviceContext& deviceContext);
+        vk::DescriptorSetLayout _fragmentShaderSetLayout;
+        void Setup(DeviceContext& deviceContext, vk::RenderPass renderPass);   
+    public:
+        ImGuiPipeline(
+            DeviceContext& deviceContext,
+            DescriptorSetLayoutCache& layoutCache,
+            vk::RenderPass renderPass
+        );
+        EUREKA_DEFAULT_MOVEABLE(ImGuiPipeline);
+    
+        vk::DescriptorSetLayout GetFragmentShaderDescriptorSetLayout() const
+        {
+            return _fragmentShaderSetLayout;
+        }
+    };
+
+
+    //////////////////////////////////////////////////////////////////////////
+    //
+    //                        ColoredVertexMeshPipeline
+    // 
+    //////////////////////////////////////////////////////////////////////////
+    class ColoredVertexMeshPipeline : public PipelineBase
+    {
+        vk::DescriptorSetLayout _descLayout;
+        void Setup(DeviceContext& deviceContext, vk::RenderPass renderPass);
     public:
         ColoredVertexMeshPipeline(
             DeviceContext& deviceContext, 
-            std::shared_ptr<DepthColorRenderPass> renderPass,
-            std::shared_ptr<PerFrameGeneralPurposeDescriptorSetLayout> descriptorSetLayout
+            DescriptorSetLayoutCache& layoutCache,
+            vk::RenderPass renderPass
         );
-        ColoredVertexMeshPipeline() = default;
-        ColoredVertexMeshPipeline(ColoredVertexMeshPipeline&& that) = default;
-        ColoredVertexMeshPipeline& operator=(ColoredVertexMeshPipeline&& rhs) = default;
-        vk::PipelineLayout Layout() const;
-        vk::Pipeline Get() const;
+        EUREKA_DEFAULT_MOVEABLE(ColoredVertexMeshPipeline);
+    
+        vk::DescriptorSetLayout GetPerViewLayout() const 
+        {
+            return _descLayout;
+        }
+    };
 
+    //////////////////////////////////////////////////////////////////////////
+    //
+    //                        PhongShadedMeshWithNormalMapPipeline
+    // 
+    //////////////////////////////////////////////////////////////////////////
+    class PhongShadedMeshWithNormalMapPipeline : public PipelineBase
+    {
+        void Setup(DeviceContext& deviceContext, vk::RenderPass renderPass);
+        
+    public:
+        PhongShadedMeshWithNormalMapPipeline(
+            DeviceContext& deviceContext,
+            vk::RenderPass renderPass,
+            const SingleVertexShaderUBODescriptorSetLayout& perViewDescriptorSetLayout,
+            const ColorAndNormalMapFragmentDescriptorSetLayout& perNormalMappedModelDescriptorSetLayout
+        );
+        EUREKA_DEFAULT_MOVEABLE(PhongShadedMeshWithNormalMapPipeline);
+    };
+
+    //////////////////////////////////////////////////////////////////////////
+    //
+    //                        PiplinesCache
+    // 
+    //////////////////////////////////////////////////////////////////////////
+
+    template<typename P>
+    struct CachedPipeline
+    {
+        using pipeline_type = P;
+        std::mutex         mtx;
+        std::shared_ptr<P> p;
+    };
+
+    // TODO per render pass object
+    // TODO remove specific render pass dependency
+    class PipelineCache
+    {
+    private:
+        DeviceContext& _deviceContext;     
+        std::shared_ptr<DescriptorSetLayoutCache> _layoutCache;
+
+        // NOTE: if we allow multiple render passes, we should use a different pipeline cache
+        // but the same descriptor set layouts
+        // we should probably have a pipeline cache per render pass instance
+        vk::RenderPass                                              _renderPass;
+        SingleVertexShaderUBODescriptorSetLayout                    _singleVertexShaderUBODSL;
+        ColorAndNormalMapFragmentDescriptorSetLayout                _perNormalMappedModelDSL;
+
+
+        CachedPipeline<ColoredVertexMeshPipeline>                   _coloredVertexMeshPipeline;
+        CachedPipeline<PhongShadedMeshWithNormalMapPipeline>        _phongShadedMeshWithNormalMapPipeline;
+        CachedPipeline<ImGuiPipeline>                               _imguiPipeline;
+
+        template<typename CachedPipeline, typename ... Args>
+        std::shared_ptr<typename CachedPipeline::pipeline_type> GetCachedPipeline(CachedPipeline& cachedPipeline, Args&& ... args)
+        {
+            auto ptr = cachedPipeline.p;
+
+            if (!ptr)
+            {
+                std::scoped_lock lk(cachedPipeline.mtx);
+                if (!cachedPipeline.p)
+                {
+                    cachedPipeline.p = std::make_shared<typename CachedPipeline::pipeline_type>(
+                        _deviceContext,
+                        std::forward<Args>(args)...
+                        );
+                }
+                ptr = cachedPipeline.p;
+            }
+            return ptr;
+        }
+
+    public:
+        PipelineCache(
+            DeviceContext& deviceContext,
+            std::shared_ptr<DescriptorSetLayoutCache> setLayoutCache,
+            vk::RenderPass renderPass
+        )
+            : 
+            _deviceContext(deviceContext), 
+            _layoutCache(std::move(setLayoutCache)),
+            _renderPass(std::move(renderPass)),
+            _singleVertexShaderUBODSL(deviceContext),
+            _perNormalMappedModelDSL(deviceContext)
+        {
+
+        }
+
+
+        const ColorAndNormalMapFragmentDescriptorSetLayout& GetColorAndNormalMapFragmentDescriptorSetLayout()
+        {
+            return _perNormalMappedModelDSL;
+        }
+
+        std::shared_ptr<ColoredVertexMeshPipeline> GetColoredVertexMeshPipeline()
+        {
+            return GetCachedPipeline(
+                _coloredVertexMeshPipeline,
+                *_layoutCache,
+                _renderPass
+            );
+        }
+        std::shared_ptr<ImGuiPipeline> GetImGuiPipeline()
+        {
+            return GetCachedPipeline(
+                _imguiPipeline,
+                *_layoutCache,
+                _renderPass
+            );
+        }
+        std::shared_ptr<PhongShadedMeshWithNormalMapPipeline> GetPhongShadedMeshWithNormalMapPipeline()
+        {
+            return GetCachedPipeline(
+                _phongShadedMeshWithNormalMapPipeline,
+                _renderPass,
+                _singleVertexShaderUBODSL,
+                _perNormalMappedModelDSL
+                );
+        }
     };
 }
