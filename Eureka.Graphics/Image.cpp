@@ -276,4 +276,49 @@ namespace eureka
         );
     }
 
+    //////////////////////////////////////////////////////////////////////////
+    //
+    //                     SampledImage2D (linear sampling)
+    //
+    //////////////////////////////////////////////////////////////////////////
+
+
+    SampledImage2D::SampledImage2D(const DeviceContext& deviceContext, const Image2DProperties& props)
+        : Image2D(deviceContext, props)
+    {
+        vk::SamplerCreateInfo samplerCreateInfo
+        {
+            .magFilter = vk::Filter::eLinear,
+            .minFilter = vk::Filter::eLinear,
+            .mipmapMode = vk::SamplerMipmapMode::eLinear,
+            .addressModeU = vk::SamplerAddressMode::eRepeat,
+            .addressModeV = vk::SamplerAddressMode::eRepeat,
+            .addressModeW = vk::SamplerAddressMode::eRepeat,
+            .mipLodBias = 0.0f,
+            .compareOp = vk::CompareOp::eNever,
+            .minLod = 0.0f
+        };
+
+        _sampler = deviceContext.LogicalDevice()->createSampler(samplerCreateInfo);
+    }
+
+    SampledImage2D::SampledImage2D(SampledImage2D&& that) 
+        : Image2D(std::move(that)), _sampler(std::move(that._sampler))
+    {
+
+
+    }
+
+    SampledImage2D::~SampledImage2D()
+    {
+
+    }
+
+    SampledImage2D& SampledImage2D::SampledImage2D::operator=(SampledImage2D&& rhs)
+    {
+        Image2D::operator=(std::move(rhs));
+        _sampler = std::move(rhs._sampler);
+        return *this;
+    }
+
 }

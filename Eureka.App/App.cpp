@@ -48,7 +48,7 @@ namespace eureka
         _renderingSystem->Initialize();
 
 
-        _assetLoader->LoadModel("C:/Projects/Samples/Vulkan/data/models/FlightHelmet/glTF/FlightHelmet.gltf");
+        _assetLoader->LoadModel("C:/Projects/Samples/Vulkan/data/models/FlightHelmet/glTF/scene.gltf");
 
 
     }
