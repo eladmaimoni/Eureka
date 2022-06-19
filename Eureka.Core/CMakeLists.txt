@@ -16,6 +16,7 @@ add_library(
     ${formatting}
     ${compiler}
     ${error}
+    "basic_utils.hpp"
 )
 
 set_compiler_flags(Eureka.Core) 

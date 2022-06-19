@@ -4,6 +4,8 @@
 #include <basic_errors.hpp>
 #include <Image.hpp>
 #include <Buffer.hpp>
+#include <basic_utils.hpp>
+
 
 //#ifndef VK_CHECK
 //#ifdef NDEBUG
@@ -15,6 +17,9 @@
 
 namespace eureka
 {
+
+
+
     //void CheckTinyGLTF(bool res, const char* stmt, const char* fname, int line);
     //void CheckTinyGLTF(bool res);
     
@@ -149,9 +154,9 @@ namespace eureka
         //const tinygltf::BufferView& bufferView = gltfModel.bufferViews[accessor.bufferView];
         //const tinygltf::Buffer& buffer = gltfModel.buffers[bufferView.buffer];
 
-        const float* positionBuffer = nullptr;
-        const float* normalsBuffer = nullptr;
-        const float* texCoordsBuffer = nullptr;
+        //const float* positionBuffer = nullptr;
+        //const float* normalsBuffer = nullptr;
+        //const float* texCoordsBuffer = nullptr;
 
         // Get buffer data for vertex normals
 
@@ -163,34 +168,33 @@ namespace eureka
         auto texAttr = glTFPrimitive.attributes.find("TEXCOORD_0");
         auto tangentAttr = glTFPrimitive.attributes.find("TANGENT");
 
-
-
-        if (positionAttr != glTFPrimitive.attributes.end() && normalAttr != glTFPrimitive.attributes.end() && texAttr != glTFPrimitive.attributes.end())
+        if (any_not_equal_to_first(glTFPrimitive.attributes.end(), positionAttr, normalAttr, texAttr, tangentAttr))
         {
             const auto& positionAccessor = gltfModel.accessors.at(positionAttr->second);
             const auto& normalAccessor = gltfModel.accessors.at(normalAttr->second);
             const auto& texAccessor = gltfModel.accessors.at(texAttr->second);
+            const auto& tangentAccessor = gltfModel.accessors.at(tangentAttr->second);
         
-            if (positionAccessor.bufferView == normalAccessor.bufferView || positionAccessor.bufferView == texAccessor.bufferView || normalAccessor.bufferView == texAccessor.bufferView)
+            if (any_pair_is_equal(positionAccessor.bufferView, normalAccessor.bufferView, texAccessor.bufferView, tangentAccessor.bufferView))
             {
-                DEBUGGER_TRACE("interleaved data, not implemented yet"); throw std::logic_error("not implemented");
+                DEBUGGER_TRACE("interleaved gltf data, not implemented yet"); throw std::logic_error("not implemented");
             }
             
-            if (positionAccessor.componentType != TINYGLTF_COMPONENT_TYPE_FLOAT || normalAccessor.componentType != TINYGLTF_COMPONENT_TYPE_FLOAT || texAccessor.componentType != TINYGLTF_COMPONENT_TYPE_FLOAT)
+            if (any_not_equal_to_first(TINYGLTF_COMPONENT_TYPE_FLOAT, positionAccessor.componentType, normalAccessor.componentType, texAccessor.componentType, tangentAccessor.componentType))
             {
                 DEBUGGER_TRACE("unsupported component type"); throw std::logic_error("not implemented");
             }
 
-        
             const auto& positionBufferView = gltfModel.bufferViews.at(positionAccessor.bufferView);
             const auto& normalBufferView = gltfModel.bufferViews.at(normalAccessor.bufferView);
             const auto& texBufferView = gltfModel.bufferViews.at(texAccessor.bufferView);
+            const auto& tangentBufferView = gltfModel.bufferViews.at(tangentAccessor.bufferView);
 
+            std::span positionsView(reinterpret_cast<const float*>(gltfModel.buffers[positionBufferView.buffer].data.data() + positionBufferView.byteOffset + positionAccessor.byteOffset), positionAccessor.count * tinygltf::GetNumComponentsInType(positionAccessor.type));
+            std::span normalsView(reinterpret_cast<const float*>(gltfModel.buffers[normalBufferView.buffer].data.data() + normalBufferView.byteOffset + normalAccessor.byteOffset), normalAccessor.count * tinygltf::GetNumComponentsInType(normalAccessor.type));
+            std::span texView(reinterpret_cast<const float*>(gltfModel.buffers[texBufferView.buffer].data.data() + texBufferView.byteOffset + texAccessor.byteOffset), texAccessor.count * tinygltf::GetNumComponentsInType(texAccessor.type));
+            std::span tangentsView(reinterpret_cast<const float*>(gltfModel.buffers[tangentBufferView.buffer].data.data() + tangentBufferView.byteOffset + tangentAccessor.byteOffset), tangentAccessor.count * tinygltf::GetNumComponentsInType(tangentAccessor.type));
             
-
-
-            // check if data is interleaved
-
         }
 
         //if (glTFPrimitive.attributes.contains("POSITION"))
