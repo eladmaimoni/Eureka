@@ -5,7 +5,7 @@
 #include <Image.hpp>
 #include <Buffer.hpp>
 #include <basic_utils.hpp>
-#include <SecondaryCommandRecorder.hpp>
+
 
 namespace eureka
 {
@@ -14,6 +14,15 @@ namespace eureka
 
     template<typename T>
     using dynamic_cspan = std::span<const T, std::dynamic_extent>;
+
+    template<typename T>
+    dynamic_cspan<uint8_t> to_raw_span(const dynamic_cspan<T>& s)
+    {
+        return dynamic_cspan<uint8_t>(
+            reinterpret_cast<const uint8_t*>(s.data()),
+            s.size_bytes()
+            );
+    }
 
     struct PrimitiveDataView
     {
@@ -90,6 +99,17 @@ namespace eureka
     };
 
 
+    AssetLoader::AssetLoader(DeviceContext& deviceContext, Queue queue, CopySubmitExecutor copySubmitExecutor, IOExecutor ioExecutor, PoolExecutor poolExecutor) :
+        _deviceContext(deviceContext),
+        _copyQueue(queue),
+        _copySubmitExecutor(std::move(copySubmitExecutor)),
+        _ioExecutor(std::move(ioExecutor)),
+        _poolExecutor(std::move(poolExecutor)),
+        _stageZone(deviceContext, StageZoneConfig{ .bytes_capacity = STAGE_ZONE_SIZE })
+    {
+
+    }
+
     result_t<LoadedModel> AssetLoader::LoadModel(
         const std::filesystem::path& path,
         const ModelLoadingConfig& config
@@ -100,6 +120,7 @@ namespace eureka
         {
             throw std::logic_error("busy");
         }
+
         scoped_raii scopedBusy([this]() { _busy.store(false); });
 
 
@@ -135,10 +156,10 @@ namespace eureka
         images.reserve(gltfModel.images.size());
 
 
-        std::vector<BufferDataUploadTransferDesc> indicesUploadDesc;
+        std::vector<dynamic_cspan<uint8_t>> indicesUploadDesc;
         indicesUploadDesc.reserve(gltfModel.meshes.size());
 
-        std::vector<BufferDataUploadTransferDesc> vertexDataUploadDesc;
+        std::vector<dynamic_cspan<uint8_t>> vertexDataUploadDesc;
         vertexDataUploadDesc.reserve(gltfModel.meshes.size());
 
         //
@@ -179,10 +200,35 @@ namespace eureka
                 {
                     auto primitiveView = ExtractPrimitiveData(gltfModel, mesh.primitives[j]);
 
+                    // TODO: calculate buffer offsets
+                    indicesUploadDesc.emplace_back(to_raw_span(primitiveView.index_view));
+                    vertexDataUploadDesc.emplace_back(to_raw_span(primitiveView.position_view));
+                    vertexDataUploadDesc.emplace_back(to_raw_span(primitiveView.normal_view));
+                    vertexDataUploadDesc.emplace_back(to_raw_span(primitiveView.uv_view));
+                    vertexDataUploadDesc.emplace_back(to_raw_span(primitiveView.tangent_view));
                 }
             }
-
         }
+
+        
+
+        _stageZone.Reset();
+
+        // TODO check stage zone leftover
+        for (const auto& idxSpan : indicesUploadDesc)
+        {
+            _stageZone.Assign(idxSpan);
+        }
+        for (const auto& vertexSpan : vertexDataUploadDesc)
+        {
+            _stageZone.Assign(vertexSpan);
+        }
+        
+        VertexAndIndexTransferableDeviceBuffer deviceBuffer(_deviceContext, BufferConfig{ .byte_size = _stageZone.Position() });
+
+
+        // record command
+
 
         co_await concurrencpp::resume_on(*_copySubmitExecutor);
 

@@ -2,7 +2,7 @@
 
 #include <DeviceContext.hpp>
 #include <GraphicsDefaults.hpp>
-
+#include <SecondaryCommandRecorder.hpp>
 
 namespace eureka
 {
@@ -18,7 +18,7 @@ namespace eureka
 
     };
 
-
+    inline constexpr uint64_t STAGE_ZONE_SIZE = 1024 * 1024 * 4; // 4MB
 
     class AssetLoader
     {
@@ -30,25 +30,17 @@ namespace eureka
             IOExecutor ioExecutor,
             PoolExecutor poolExecutor
             
-        )
-            :
-            _deviceContext(deviceContext),
-            _copyQueue(queue),
-            _copySubmitExecutor(std::move(copySubmitExecutor)),
-            _ioExecutor(std::move(ioExecutor)),
-            _poolExecutor(std::move(poolExecutor))
-        {
-
-        }
+        );
 
         result_t<LoadedModel> LoadModel(const std::filesystem::path& path, const ModelLoadingConfig& config = ModelLoadingConfig{});
 
-        std::atomic_bool              _busy{ false };
-        DeviceContext&                _deviceContext;
-        Queue                         _copyQueue;
-        CopySubmitExecutor            _copySubmitExecutor;
-        IOExecutor                    _ioExecutor;
-        PoolExecutor                  _poolExecutor;
+        std::atomic_bool                     _busy{ false };
+        DeviceContext&                       _deviceContext;
+        Queue                                _copyQueue;
+        CopySubmitExecutor                   _copySubmitExecutor;
+        IOExecutor                           _ioExecutor;
+        PoolExecutor                         _poolExecutor;
+        SequentialStageZone                  _stageZone;
     };
 
 }

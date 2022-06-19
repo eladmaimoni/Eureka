@@ -16,13 +16,17 @@ namespace eureka
         HostWriteCombinedBuffer _buffer;
         uint64_t               _position{ 0 };
 
+    public:
         SequentialStageZone(DeviceContext& deviceContext, StageZoneConfig config)
             : _buffer(deviceContext, BufferConfig{ .byte_size = config.bytes_capacity })
         {
 
 
         }
-
+        uint64_t Position() const
+        {
+            return _position;
+        }
         uint64_t LeftoverBytes() const
         {
             return _buffer.ByteSize() - _position;
@@ -35,6 +39,12 @@ namespace eureka
             _buffer.Assign(s, _position);
             _position += s.size_bytes();
         }
+
+        void Reset()
+        {
+            _position = 0;
+        }
+
 
 
     };
