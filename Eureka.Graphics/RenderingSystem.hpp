@@ -65,7 +65,7 @@ namespace eureka
         vkr::Fence                                           _uploadDoneFence{ nullptr };
         CommandPool                                          _uploadPool; // TODO upload thread of some sort
         vkr::CommandBuffer                                   _uploadCommandBuffer{ nullptr };
-        HostStageZoneBuffer                                  _stageZone;
+        HostWriteCombinedBuffer                                  _stageZone;
         
 
         DescriptorPool                                       _descPool;

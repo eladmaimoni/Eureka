@@ -43,8 +43,8 @@ namespace eureka
 
         result_t<LoadedModel> LoadModel(const std::filesystem::path& path, const ModelLoadingConfig& config = ModelLoadingConfig{});
 
-
-        DeviceContext& _deviceContext;
+        std::atomic_bool              _busy{ false };
+        DeviceContext&                _deviceContext;
         Queue                         _copyQueue;
         CopySubmitExecutor            _copySubmitExecutor;
         IOExecutor                    _ioExecutor;

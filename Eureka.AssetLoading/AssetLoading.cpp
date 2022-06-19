@@ -5,23 +5,76 @@
 #include <Image.hpp>
 #include <Buffer.hpp>
 #include <basic_utils.hpp>
-
-
-//#ifndef VK_CHECK
-//#ifdef NDEBUG
-//#define VK_CHECK(stmt) eureka::CheckVulkan(stmt); 
-//#else
-//#define VK_CHECK(stmt) eureka::CheckVulkan(stmt, #stmt, __FILE__, __LINE__); 
-//#endif
-//#endif
+#include <SecondaryCommandRecorder.hpp>
 
 namespace eureka
 {
+    template<typename T>
+    using dynamic_span = std::span<T, std::dynamic_extent>;
 
+    template<typename T>
+    using dynamic_cspan = std::span<const T, std::dynamic_extent>;
 
+    struct PrimitiveDataView
+    {
+        dynamic_cspan<uint16_t> index_view;
+        dynamic_cspan<float>    position_view;
+        dynamic_cspan<float>    normal_view;
+        dynamic_cspan<float>    uv_view;
+        dynamic_cspan<float>    tangent_view;
+    };
 
-    //void CheckTinyGLTF(bool res, const char* stmt, const char* fname, int line);
-    //void CheckTinyGLTF(bool res);
+    PrimitiveDataView ExtractPrimitiveData(
+        const tinygltf::Model& gltfModel,
+        const tinygltf::Primitive& glTFPrimitive
+    )
+    {
+        auto positionAttr = glTFPrimitive.attributes.find("POSITION");
+        auto normalAttr = glTFPrimitive.attributes.find("NORMAL");
+        auto texAttr = glTFPrimitive.attributes.find("TEXCOORD_0");
+        auto tangentAttr = glTFPrimitive.attributes.find("TANGENT");
+
+        if (any_equal_to_first(glTFPrimitive.attributes.end(), positionAttr, normalAttr, texAttr, tangentAttr))
+        {
+            DEBUGGER_TRACE("missing data, not implemented yet"); throw std::logic_error("not implemented");
+        }
+
+        const auto& indexAccessor = gltfModel.accessors[glTFPrimitive.indices];
+        const auto& positionAccessor = gltfModel.accessors.at(positionAttr->second);
+        const auto& normalAccessor = gltfModel.accessors.at(normalAttr->second);
+        const auto& texAccessor = gltfModel.accessors.at(texAttr->second);
+        const auto& tangentAccessor = gltfModel.accessors.at(tangentAttr->second);
+
+        if (any_pair_is_equal(positionAccessor.bufferView, normalAccessor.bufferView, texAccessor.bufferView, tangentAccessor.bufferView))
+        {
+            DEBUGGER_TRACE("interleaved gltf data, not implemented yet"); throw std::logic_error("not implemented");
+        }
+
+        if (any_not_equal_to_first(TINYGLTF_COMPONENT_TYPE_FLOAT, positionAccessor.componentType, normalAccessor.componentType, texAccessor.componentType, tangentAccessor.componentType))
+        {
+            DEBUGGER_TRACE("unsupported component type"); throw std::logic_error("not implemented");
+        }
+
+        if (indexAccessor.componentType != TINYGLTF_PARAMETER_TYPE_UNSIGNED_SHORT)
+        {
+            DEBUGGER_TRACE("unsupported component type"); throw std::logic_error("not implemented");
+        }
+
+        const auto& indexBufferView = gltfModel.bufferViews[indexAccessor.bufferView];
+        const auto& positionBufferView = gltfModel.bufferViews.at(positionAccessor.bufferView);
+        const auto& normalBufferView = gltfModel.bufferViews.at(normalAccessor.bufferView);
+        const auto& texBufferView = gltfModel.bufferViews.at(texAccessor.bufferView);
+        const auto& tangentBufferView = gltfModel.bufferViews.at(tangentAccessor.bufferView);
+
+        return PrimitiveDataView
+        {
+            .index_view = std::span(reinterpret_cast<const uint16_t*>(gltfModel.buffers[indexBufferView.buffer].data.data() + indexBufferView.byteOffset + indexAccessor.byteOffset), indexAccessor.count * tinygltf::GetNumComponentsInType(indexAccessor.type)),
+            .position_view = std::span(reinterpret_cast<const float*>(gltfModel.buffers[positionBufferView.buffer].data.data() + positionBufferView.byteOffset + positionAccessor.byteOffset), positionAccessor.count * tinygltf::GetNumComponentsInType(positionAccessor.type)),
+            .normal_view = std::span(reinterpret_cast<const float*>(gltfModel.buffers[normalBufferView.buffer].data.data() + normalBufferView.byteOffset + normalAccessor.byteOffset), normalAccessor.count * tinygltf::GetNumComponentsInType(normalAccessor.type)),
+            .uv_view = std::span(reinterpret_cast<const float*>(gltfModel.buffers[texBufferView.buffer].data.data() + texBufferView.byteOffset + texAccessor.byteOffset), texAccessor.count * tinygltf::GetNumComponentsInType(texAccessor.type)),
+            .tangent_view = std::span(reinterpret_cast<const float*>(gltfModel.buffers[tangentBufferView.buffer].data.data() + tangentBufferView.byteOffset + tangentAccessor.byteOffset), tangentAccessor.count * tinygltf::GetNumComponentsInType(tangentAccessor.type))
+        };
+    }
     
     struct Image2DUploadTransferDesc
     {
@@ -42,10 +95,13 @@ namespace eureka
         const ModelLoadingConfig& config
     )
     {
-        if (!std::filesystem::exists(path))
+        bool expected = false;
+        if (!_busy.compare_exchange_strong(expected, true))
         {
-            throw file_not_found_error(path);
+            throw std::logic_error("busy");
         }
+        scoped_raii scopedBusy([this]() { _busy.store(false); });
+
 
         auto pathstring = path.string();
 
@@ -121,13 +177,7 @@ namespace eureka
 
                 for (auto j = 0u; j < mesh.primitives.size(); ++j)
                 {
-                    const tinygltf::Primitive& glTFPrimitive = mesh.primitives[i];
-
-                    const tinygltf::Accessor& accessor = gltfModel.accessors[glTFPrimitive.indices];
-                    const tinygltf::BufferView& bufferView = gltfModel.bufferViews[accessor.bufferView];
-                    const tinygltf::Buffer& buffer = gltfModel.buffers[bufferView.buffer];
-
-
+                    auto primitiveView = ExtractPrimitiveData(gltfModel, mesh.primitives[j]);
 
                 }
             }
@@ -144,84 +194,5 @@ namespace eureka
 
     
 
-
-    void ParsePrimitiveData(
-        const tinygltf::Model& gltfModel, 
-        const tinygltf::Primitive& glTFPrimitive
-    )
-    {
-        //const tinygltf::Accessor& accessor = gltfModel.accessors[glTFPrimitive.indices];
-        //const tinygltf::BufferView& bufferView = gltfModel.bufferViews[accessor.bufferView];
-        //const tinygltf::Buffer& buffer = gltfModel.buffers[bufferView.buffer];
-
-        //const float* positionBuffer = nullptr;
-        //const float* normalsBuffer = nullptr;
-        //const float* texCoordsBuffer = nullptr;
-
-        // Get buffer data for vertex normals
-
-        assert(glTFPrimitive.attributes.contains("POSITION") && glTFPrimitive.attributes.contains("NORMAL") && glTFPrimitive.attributes.contains("TEXCOORD_0")); // only support this type for now
-
-
-        auto positionAttr = glTFPrimitive.attributes.find("POSITION");
-        auto normalAttr = glTFPrimitive.attributes.find("NORMAL");
-        auto texAttr = glTFPrimitive.attributes.find("TEXCOORD_0");
-        auto tangentAttr = glTFPrimitive.attributes.find("TANGENT");
-
-        if (any_not_equal_to_first(glTFPrimitive.attributes.end(), positionAttr, normalAttr, texAttr, tangentAttr))
-        {
-            const auto& positionAccessor = gltfModel.accessors.at(positionAttr->second);
-            const auto& normalAccessor = gltfModel.accessors.at(normalAttr->second);
-            const auto& texAccessor = gltfModel.accessors.at(texAttr->second);
-            const auto& tangentAccessor = gltfModel.accessors.at(tangentAttr->second);
-        
-            if (any_pair_is_equal(positionAccessor.bufferView, normalAccessor.bufferView, texAccessor.bufferView, tangentAccessor.bufferView))
-            {
-                DEBUGGER_TRACE("interleaved gltf data, not implemented yet"); throw std::logic_error("not implemented");
-            }
-            
-            if (any_not_equal_to_first(TINYGLTF_COMPONENT_TYPE_FLOAT, positionAccessor.componentType, normalAccessor.componentType, texAccessor.componentType, tangentAccessor.componentType))
-            {
-                DEBUGGER_TRACE("unsupported component type"); throw std::logic_error("not implemented");
-            }
-
-            const auto& positionBufferView = gltfModel.bufferViews.at(positionAccessor.bufferView);
-            const auto& normalBufferView = gltfModel.bufferViews.at(normalAccessor.bufferView);
-            const auto& texBufferView = gltfModel.bufferViews.at(texAccessor.bufferView);
-            const auto& tangentBufferView = gltfModel.bufferViews.at(tangentAccessor.bufferView);
-
-            std::span positionsView(reinterpret_cast<const float*>(gltfModel.buffers[positionBufferView.buffer].data.data() + positionBufferView.byteOffset + positionAccessor.byteOffset), positionAccessor.count * tinygltf::GetNumComponentsInType(positionAccessor.type));
-            std::span normalsView(reinterpret_cast<const float*>(gltfModel.buffers[normalBufferView.buffer].data.data() + normalBufferView.byteOffset + normalAccessor.byteOffset), normalAccessor.count * tinygltf::GetNumComponentsInType(normalAccessor.type));
-            std::span texView(reinterpret_cast<const float*>(gltfModel.buffers[texBufferView.buffer].data.data() + texBufferView.byteOffset + texAccessor.byteOffset), texAccessor.count * tinygltf::GetNumComponentsInType(texAccessor.type));
-            std::span tangentsView(reinterpret_cast<const float*>(gltfModel.buffers[tangentBufferView.buffer].data.data() + tangentBufferView.byteOffset + tangentAccessor.byteOffset), tangentAccessor.count * tinygltf::GetNumComponentsInType(tangentAccessor.type));
-            
-        }
-
-        //if (glTFPrimitive.attributes.contains("POSITION"))
-        //{
-        //    
-
-        //    const tinygltf::Accessor& accessor = gltfModel.accessors[glTFPrimitive.attributes.find("POSITION")->second];
-        //    const tinygltf::BufferView& view = gltfModel.bufferViews[accessor.bufferView];
-        //    positionBuffer = reinterpret_cast<const float*>(&(input.buffers[view.buffer].data[accessor.byteOffset + view.byteOffset]));
-        //    vertexCount = accessor.count;
-        //}
-        //// Get buffer data for vertex normals
-        //if (glTFPrimitive.attributes.contains("NORMAL"))
-        //{
-        //    const tinygltf::Accessor& accessor = input.accessors[glTFPrimitive.attributes.find("NORMAL")->second];
-        //    const tinygltf::BufferView& view = input.bufferViews[accessor.bufferView];
-        //    normalsBuffer = reinterpret_cast<const float*>(&(input.buffers[view.buffer].data[accessor.byteOffset + view.byteOffset]));
-        //}
-        //// Get buffer data for vertex texture coordinates
-        //// glTF supports multiple sets, we only load the first one
-        //if (glTFPrimitive.attributes.contains("TEXCOORD_0"))
-        //{
-        //    const tinygltf::Accessor& accessor = input.accessors[glTFPrimitive.attributes.find("TEXCOORD_0")->second];
-        //    const tinygltf::BufferView& view = input.bufferViews[accessor.bufferView];
-        //    texCoordsBuffer = reinterpret_cast<const float*>(&(input.buffers[view.buffer].data[accessor.byteOffset + view.byteOffset]));
-        //}
-
-    }
 
 } 

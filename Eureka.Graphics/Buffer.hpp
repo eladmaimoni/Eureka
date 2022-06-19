@@ -5,7 +5,7 @@ namespace eureka
 {
     struct BufferConfig
     {
-        uint32_t byte_size;
+        uint64_t byte_size;
     };
 
     //////////////////////////////////////////////////////////////////////////
@@ -22,13 +22,13 @@ namespace eureka
         vk::Buffer        _buffer{ nullptr };
         uint64_t          _byteSize{ 0 };
         AllocatedBuffer(DeviceContext& deviceContext);
-    public:
         AllocatedBuffer() = default;    
-        virtual ~AllocatedBuffer();
+        ~AllocatedBuffer(); // NOTE: non virtual and protected
         AllocatedBuffer& operator=(AllocatedBuffer&& rhs);
         AllocatedBuffer& operator=(const AllocatedBuffer& rhs) = delete;
         AllocatedBuffer(AllocatedBuffer&& that);
         AllocatedBuffer(const AllocatedBuffer& that) = delete;
+    public:
         uint64_t ByteSize() const;
         vk::Buffer Buffer() const { return _buffer; }
         vk::DescriptorBufferInfo DescriptorInfo() const;
@@ -45,12 +45,12 @@ namespace eureka
     protected:
         void* _ptr{ nullptr };
         HostMappedAllocatedBuffer(DeviceContext& deviceContext);
-    public:
-        virtual ~HostMappedAllocatedBuffer();
+        ~HostMappedAllocatedBuffer(); // NOTE: non virtual and protected
         HostMappedAllocatedBuffer() = default;  
         HostMappedAllocatedBuffer& operator=(HostMappedAllocatedBuffer&& rhs);
         HostMappedAllocatedBuffer(HostMappedAllocatedBuffer&& that);
 
+    public:
         template<typename T>
         T* Ptr()
         {
@@ -59,7 +59,7 @@ namespace eureka
         }
 
         template<typename T, std::size_t COUNT>
-        void Assign(std::span<T, COUNT> s, uint32_t byte_offset = 0)
+        void Assign(std::span<T, COUNT> s, uint64_t byte_offset = 0)
         {
             assert((s.size_bytes() + byte_offset) <= _byteSize);
             std::memcpy(
@@ -70,7 +70,7 @@ namespace eureka
         }
 
         template<typename T>
-        void Assign(const T& data, uint32_t byte_offset = 0)
+        void Assign(const T& data, uint64_t byte_offset = 0)
         {
             assert((sizeof(T) + byte_offset) <= _byteSize);
             std::memcpy(
@@ -90,11 +90,11 @@ namespace eureka
     //
     //////////////////////////////////////////////////////////////////////////
 
-    class HostStageZoneBuffer : public HostMappedAllocatedBuffer
+    class HostWriteCombinedBuffer : public HostMappedAllocatedBuffer
     {
     public:
-        HostStageZoneBuffer() = default;
-        HostStageZoneBuffer(DeviceContext& deviceContext, const BufferConfig& config);
+        HostWriteCombinedBuffer() = default;
+        HostWriteCombinedBuffer(DeviceContext& deviceContext, const BufferConfig& config);
     };
 
     //////////////////////////////////////////////////////////////////////////

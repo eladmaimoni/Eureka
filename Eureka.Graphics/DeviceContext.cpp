@@ -18,7 +18,9 @@ namespace eureka
             VK_KHR_SWAPCHAIN_EXTENSION_NAME
         };
 
+
         auto availableExtentions = device.enumerateDeviceExtensionProperties();
+        //DEBUGGER_TRACE("device extentions: \n{}", availableExtentions | std::views::transform([](const auto& v) {return std::string_view(v.extensionName); }) );
 
         for (const auto& requestedExtension : requestedExtensions)
         {
@@ -287,10 +289,15 @@ namespace eureka
         vkr::PhysicalDevices availableDevices(instance);
         vkr::PhysicalDevice* chosenPhysicalDevice = nullptr;
 
+
+
+
         for (auto& physicalDevice : availableDevices)
         {
             DEBUGGER_TRACE("Device name: {} type: {}", physicalDevice.getProperties().deviceName, physicalDevice.getProperties().deviceType);
          
+
+
             if (IsDeviceSuitableForDisplay(physicalDevice))
             {
                 chosenPhysicalDevice = &physicalDevice;

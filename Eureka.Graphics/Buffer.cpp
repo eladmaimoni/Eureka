@@ -116,11 +116,11 @@ namespace eureka
 
     //////////////////////////////////////////////////////////////////////////
     //
-    //                        HostStageZoneBuffer
+    //                        HostWriteCombinedBuffer
     //
     //////////////////////////////////////////////////////////////////////////
 
-    HostStageZoneBuffer::HostStageZoneBuffer(DeviceContext& deviceContext, const BufferConfig& config) : HostMappedAllocatedBuffer(deviceContext)
+    HostWriteCombinedBuffer::HostWriteCombinedBuffer(DeviceContext& deviceContext, const BufferConfig& config) : HostMappedAllocatedBuffer(deviceContext)
     {
         vk::BufferCreateInfo bufferCreateInfo
         {

@@ -11,6 +11,7 @@ set_source_group(
     infrastructure 
     "VkMemAllocator.cpp"
     "GraphicsDefaults.hpp"
+
 )
 
 set_source_group(
@@ -45,6 +46,8 @@ set_source_group(
     "Camera.cpp"      
     "UpdateQueue.hpp"
     "UpdateQueue.cpp"
+    "SecondaryCommandRecorder.hpp"
+    "SecondaryCommandRecorder.cpp"
 
 )
 

@@ -157,7 +157,7 @@ namespace eureka
         }
 
      
-        _stageZone = HostStageZoneBuffer(
+        _stageZone = HostWriteCombinedBuffer(
             _deviceContext, 
             BufferConfig { .byte_size = sizeof(mesh::COLORED_TRIANGLE_INDEX_DATA) + sizeof(mesh::COLORED_TRIANGLE_VERTEX_DATA)}        
         );
