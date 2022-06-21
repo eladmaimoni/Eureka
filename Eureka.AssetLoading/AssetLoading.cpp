@@ -105,7 +105,8 @@ namespace eureka
         _copySubmitExecutor(std::move(copySubmitExecutor)),
         _ioExecutor(std::move(ioExecutor)),
         _poolExecutor(std::move(poolExecutor)),
-        _stageZone(deviceContext, StageZoneConfig{ .bytes_capacity = STAGE_ZONE_SIZE })
+        _stageZone(deviceContext, StageZoneConfig{ .bytes_capacity = STAGE_ZONE_SIZE }),
+        _uploadCommandPool(deviceContext.LogicalDevice(), CommandPoolDesc{ .type = CommandPoolType::eTransientResettableBuffers, .queue_family = _copyQueue.Family() })
     {
 
     }
@@ -227,8 +228,11 @@ namespace eureka
         VertexAndIndexTransferableDeviceBuffer deviceBuffer(_deviceContext, BufferConfig{ .byte_size = _stageZone.Position() });
 
 
-        // record command
 
+
+        // record commands
+
+        
 
         co_await concurrencpp::resume_on(*_copySubmitExecutor);
 

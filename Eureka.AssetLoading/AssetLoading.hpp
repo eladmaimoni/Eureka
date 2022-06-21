@@ -3,6 +3,7 @@
 #include <DeviceContext.hpp>
 #include <GraphicsDefaults.hpp>
 #include <SecondaryCommandRecorder.hpp>
+#include <Commands.hpp>
 
 namespace eureka
 {
@@ -41,6 +42,7 @@ namespace eureka
         IOExecutor                           _ioExecutor;
         PoolExecutor                         _poolExecutor;
         SequentialStageZone                  _stageZone;
+        CommandPool                          _uploadCommandPool;
     };
 
 }

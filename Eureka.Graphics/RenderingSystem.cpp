@@ -78,8 +78,7 @@ namespace eureka
         _camera(deviceContext),
         _updateQueue(deviceContext.UpdateQueue()),
         _graphicsQueue(graphicsQueue),
-        _copyQueue(copyQueue),
-        _uploadPool(deviceContext.LogicalDevice())
+        _copyQueue(copyQueue)
     {
 
     }
@@ -167,7 +166,7 @@ namespace eureka
             BufferConfig{ .byte_size = sizeof(mesh::COLORED_TRIANGLE_INDEX_DATA) + sizeof(mesh::COLORED_TRIANGLE_VERTEX_DATA) }
         );
 
-        _uploadPool = CommandPool(_deviceContext.LogicalDevice(), CommandPoolDesc{.queue_family = _copyQueue.Family()});
+        _uploadPool = CommandPool(_deviceContext.LogicalDevice(), CommandPoolDesc{ .type = CommandPoolType::eLinear, .queue_family = _copyQueue.Family() });
         _uploadDoneSemaphore = _deviceContext.LogicalDevice()->createSemaphore(vk::SemaphoreCreateInfo());
         _uploadCommandBuffer = _uploadPool.AllocatePrimaryCommandBuffer();
         _uploadDoneFence = _deviceContext.LogicalDevice()->createFence(vk::FenceCreateInfo{ .flags = vk::FenceCreateFlagBits::eSignaled });
@@ -215,7 +214,7 @@ namespace eureka
 
     void RenderingSystem::RunOne()
     {
-        _copySumitExecutor->loop(10);
+        _copySumitExecutor->loop(MAX_COPY_SUBMITS_PER_FRAME);
         _updateQueue->UpdatePreRender();
 
         auto [currentFrame, imageReadySemaphore] = _swapChain->AcquireNextAvailableImageAsync();

@@ -4,7 +4,7 @@
 #include "GraphicsDefaults.hpp"
 #include "RenderTarget.hpp"
 #include "Mesh.hpp"
-#include "CommandBuffer.hpp"
+#include "Commands.hpp"
 #include "Pipeline.hpp"
 #include "Camera.hpp"
 
@@ -65,7 +65,7 @@ namespace eureka
         vkr::Fence                                           _uploadDoneFence{ nullptr };
         CommandPool                                          _uploadPool; // TODO upload thread of some sort
         vkr::CommandBuffer                                   _uploadCommandBuffer{ nullptr };
-        HostWriteCombinedBuffer                                  _stageZone;
+        HostWriteCombinedBuffer                              _stageZone;
         
 
         DescriptorPool                                       _descPool;

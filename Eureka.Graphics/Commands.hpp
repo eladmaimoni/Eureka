@@ -23,43 +23,38 @@ namespace eureka
         }
     };
 
+
+
+    enum class CommandPoolType
+    {
+        eLinear = 0u,
+        eTransientResettableBuffers = static_cast<uint32_t>(vk::CommandPoolCreateFlagBits::eTransient | vk::CommandPoolCreateFlagBits::eResetCommandBuffer)
+    };
+
     struct CommandPoolDesc
     {
+        CommandPoolType type;
         uint32_t queue_family;
     };
 
     class CommandPool
     {
-        std::shared_ptr<vkr::Device> _device;
+    
+        std::shared_ptr<vkr::Device> _device{nullptr};
         vkr::CommandPool _pool{nullptr};
-
     public:
-        CommandPool(std::shared_ptr<vkr::Device> device) 
-            : _device(std::move(device))
-        {
-
-        };
+        CommandPool() = default;
+        ~CommandPool() = default;
         CommandPool(CommandPool&& that) = default;
-        CommandPool& operator=(CommandPool&& rhs)
-        {
-            _device = std::move(rhs._device);
-            _pool = std::move(rhs._pool);
-            return *this;
-        }
-        CommandPool(
-            std::shared_ptr<vkr::Device> device,
-            const CommandPoolDesc& desc
+        CommandPool& operator=(CommandPool&& rhs) = default;
+        CommandPool(std::shared_ptr<vkr::Device> device, const CommandPoolDesc& desc)
+            :
+            _device(std::move(device)), 
+            _pool(*_device, 
+                vk::CommandPoolCreateInfo{
+                    .flags = static_cast<vk::CommandPoolCreateFlagBits>(desc.type), 
+                    .queueFamilyIndex = desc.queue_family }
             )
-            : 
-            _device(std::move(device)),
-            _pool(
-                *_device,
-                vk::CommandPoolCreateInfo
-                { 
-                    .flags = {},  // no flags, means we can only reset the pool and not the command buffers
-                    .queueFamilyIndex = desc.queue_family 
-                }
-                )
         {
 
         }
@@ -68,7 +63,7 @@ namespace eureka
         {
             _pool.reset();
         }
-
+        vk::CommandPool Get() const { return *_pool; }
         vkr::CommandBuffer AllocatePrimaryCommandBuffer() const 
         {
             vk::CommandBufferAllocateInfo commandBufferAllocateInfo
@@ -83,9 +78,8 @@ namespace eureka
             VK_CHECK(vkAllocateCommandBuffers(device, &Vk(commandBufferAllocateInfo), &Vk(commandBuffer)));
             return vkr::CommandBuffer(*_device, commandBuffer, *_pool);
         }
-
-        vk::CommandPool Get() const {return *_pool;}
     };
+
 
     class FrameCommands
     {
@@ -108,7 +102,7 @@ namespace eureka
         FrameCommands(
             DeviceContext& deviceContext,
             Queue graphicsQueue
-        ) : _pool(deviceContext.LogicalDevice(), CommandPoolDesc{.queue_family = graphicsQueue.Family()})
+        ) : _pool(deviceContext.LogicalDevice(), CommandPoolDesc{.type = CommandPoolType::eLinear, .queue_family = graphicsQueue.Family() })
         {
 
             vk::FenceCreateInfo{ .flags = vk::FenceCreateFlagBits::eSignaled };
