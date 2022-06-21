@@ -65,7 +65,7 @@ namespace eureka
         Instance& instance,
         DeviceContext& deviceContext,
         GLFWRuntime& glfw,
-        CopySubmitExecutor copySumitExecutor,
+        std::shared_ptr<submission_thread_executor> submissionThreadExecutor,
         Queue graphicsQueue,
         Queue copyQueue
     )
@@ -73,7 +73,7 @@ namespace eureka
         _glfw(glfw),
         _instance(instance),
         _deviceContext(deviceContext),
-        _copySumitExecutor(copySumitExecutor),
+        _submissionThreadExecutor(std::move(submissionThreadExecutor)),
         _descPool(deviceContext),
         _camera(deviceContext),
         _updateQueue(deviceContext.UpdateQueue()),
@@ -214,7 +214,7 @@ namespace eureka
 
     void RenderingSystem::RunOne()
     {
-        _copySumitExecutor->loop(MAX_COPY_SUBMITS_PER_FRAME);
+        _submissionThreadExecutor->loop_all(MAX_COPY_SUBMITS_PER_FRAME);
         _updateQueue->UpdatePreRender();
 
         auto [currentFrame, imageReadySemaphore] = _swapChain->AcquireNextAvailableImageAsync();

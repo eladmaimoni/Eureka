@@ -13,6 +13,9 @@ namespace eureka
     {
         auto supported_extentions = context.enumerateInstanceExtensionProperties();
 
+        DEBUGGER_TRACE("instance extentions: \n{}", supported_extentions | std::views::transform([](const auto& v) {return std::string_view(v.extensionName); }) );
+
+
         for (auto required_extention : desc.required_instance_extentions)
         {
             bool found = false;

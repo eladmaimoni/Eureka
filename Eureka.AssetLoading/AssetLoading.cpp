@@ -99,10 +99,13 @@ namespace eureka
     };
 
 
-    AssetLoader::AssetLoader(DeviceContext& deviceContext, Queue queue, CopySubmitExecutor copySubmitExecutor, IOExecutor ioExecutor, PoolExecutor poolExecutor) :
+    AssetLoader::AssetLoader(DeviceContext& deviceContext, 
+        Queue queue, 
+        std::shared_ptr<submission_thread_executor> submissionThreadExecutor,
+        IOExecutor ioExecutor, PoolExecutor poolExecutor) :
         _deviceContext(deviceContext),
         _copyQueue(queue),
-        _copySubmitExecutor(std::move(copySubmitExecutor)),
+        _submissionThreadExecutor(std::move(submissionThreadExecutor)),
         _ioExecutor(std::move(ioExecutor)),
         _poolExecutor(std::move(poolExecutor)),
         _stageZone(deviceContext, StageZoneConfig{ .bytes_capacity = STAGE_ZONE_SIZE }),
@@ -228,13 +231,14 @@ namespace eureka
         VertexAndIndexTransferableDeviceBuffer deviceBuffer(_deviceContext, BufferConfig{ .byte_size = _stageZone.Position() });
 
 
+        co_await concurrencpp::resume_on(_submissionThreadExecutor->one_shot_copy_sebmit_executor());
+
+        // record commands on the main thread for now
+        // we should only offload recording to other threads once it is necessary
+
+        // send the command buffer to the copy submit executor which will submit recorded copy commands at once
 
 
-        // record commands
-
-        
-
-        co_await concurrencpp::resume_on(*_copySubmitExecutor);
 
         DEBUGGER_TRACE("rendering thread fun");
 

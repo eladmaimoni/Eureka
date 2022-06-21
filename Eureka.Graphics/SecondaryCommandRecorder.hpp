@@ -2,6 +2,25 @@
 
 #include "DeviceContext.hpp"
 #include "Buffer.hpp"
+#include "GraphicsDefaults.hpp"
+#include "Commands.hpp"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 namespace eureka
 {
@@ -49,6 +68,64 @@ namespace eureka
 
     };
 
+
+    struct OneShotCopySubmissionPacket
+    {
+        vkr::CommandBuffer                 command_buffer{ nullptr };
+        vkr::Fence                         done_fence{nullptr};
+        concurrencpp::result_promise<void> done_promise;
+    };
+
+
+    
+    class SubmissionThreadContext
+    {
+    private:
+        DeviceContext& _deviceConetext;
+        Queue                                     _copyQueue;
+        OneShotCopySubmitExecutor                 _oneShotCopySubmitExecutor;
+        CommandPool                               _oneShotCopyCommandPool;
+        std::vector<OneShotCopySubmissionPacket>  _oneShotCopyCommandBuffers;
+    public:
+        SubmissionThreadContext(
+            DeviceContext& deviceContext,
+            Queue queue,
+            OneShotCopySubmitExecutor oneShotCopySubmitExecutor
+            )
+            : 
+            _deviceConetext(deviceContext),
+            _copyQueue(queue),
+            _oneShotCopySubmitExecutor(std::move(oneShotCopySubmitExecutor)),
+            _oneShotCopyCommandPool(deviceContext.LogicalDevice(), CommandPoolDesc{ .type = CommandPoolType::eTransientResettableBuffers, .queue_family = _copyQueue.Family() })
+        {
+
+        }
+
+        CommandPool& OneShotCopySubmitCommandPool()
+        {
+            // TODO assert correct thread
+            return _oneShotCopyCommandPool;
+        }
+        
+        concurrencpp::result<void> AppendOneShotCommandBufferSubmission(vkr::CommandBuffer buffer)
+        {
+            // TODO assert correct thread
+            OneShotCopySubmissionPacket sumbissionPacket
+            {
+                .command_buffer = std::move(buffer),
+                .done_fence = _deviceConetext.LogicalDevice()->createFence(vk::FenceCreateInfo{.flags = vk::FenceCreateFlagBits::eSignaled }),
+            };
+
+            auto result = sumbissionPacket.done_promise.get_result();
+
+            _oneShotCopyCommandBuffers.emplace_back(std::move(sumbissionPacket));
+        }
+
+        ManualExecutor& OneShotCopySubmitExecutionContext()
+        {
+            return *_oneShotCopySubmitExecutor;
+        }
+    };
 
 
 }

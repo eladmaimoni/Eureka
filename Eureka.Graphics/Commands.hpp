@@ -133,11 +133,5 @@ namespace eureka
         }
     };
 
-    class CommandBuffer
-    {
-        CommandBuffer(std::shared_ptr<vkr::Queue> queue)
-        {
 
-        }
-    };
 }

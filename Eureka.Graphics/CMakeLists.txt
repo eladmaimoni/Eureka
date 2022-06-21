@@ -48,7 +48,8 @@ set_source_group(
     "UpdateQueue.cpp"
     "SecondaryCommandRecorder.hpp"
     "SecondaryCommandRecorder.cpp"
-
+    "SubmissionThreadExecutor.hpp"
+    "SubmissionThreadExecutor.cpp"
 )
 
 set_source_group(
@@ -72,7 +73,7 @@ add_library(
     ${wrappers}
     ${windowing}
     ${objects}
-)
+ )
 
 
 set_compiler_flags(Eureka.Graphics)

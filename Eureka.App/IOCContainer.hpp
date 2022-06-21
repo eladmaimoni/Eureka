@@ -2,6 +2,7 @@
 #include <Instance.hpp>
 #include <DeviceContext.hpp>
 #include <GraphicsDefaults.hpp>
+#include "SubmissionThreadExecutor.hpp"
 
 namespace eureka
 {
@@ -24,8 +25,10 @@ namespace eureka
         Queue                                          _graphicsQueue;
         Queue                                          _copyQueue;
 
-        concurrencpp::runtime                          _concurrencyRuntime;
-        CopySubmitExecutor                             _copySubmitExecutor;
+        concurrencpp::runtime                           _concurrencyRuntime;
+        std::shared_ptr<submission_thread_executor>     _submissionThreadExecutor;
+        //OneShotCopySubmitExecutor                       _copySubmitExecutor;
+
 
 
 

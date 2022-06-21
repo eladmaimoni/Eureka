@@ -36,7 +36,8 @@ namespace eureka
     IOCContainer::IOCContainer()
         : 
         _instance(CreateInstanceConfig(_glfw)),
-        _copySubmitExecutor(_concurrencyRuntime.make_manual_executor())
+        //_copySubmitExecutor(_concurrencyRuntime.make_manual_executor()),
+        _submissionThreadExecutor(_concurrencyRuntime.make_executor<submission_thread_executor>())
     {
         _deviceContext.Init(_instance, CreateDeviceContextConfig());
 
@@ -56,7 +57,7 @@ namespace eureka
             _instance,
             _deviceContext,
             _glfw,
-            _copySubmitExecutor,
+            _submissionThreadExecutor,
             _graphicsQueue,
             _copyQueue
             );
@@ -69,7 +70,7 @@ namespace eureka
         return std::make_unique<AssetLoader>(
             _deviceContext,
             _copyQueue,
-            _copySubmitExecutor,
+            _submissionThreadExecutor,
             _concurrencyRuntime.background_executor(),
             _concurrencyRuntime.thread_pool_executor()
             );
