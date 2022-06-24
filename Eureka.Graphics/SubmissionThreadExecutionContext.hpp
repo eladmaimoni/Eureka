@@ -21,7 +21,7 @@ namespace eureka
         Queue                                      _copyQueue;
         SubmissionThreadExecutor                   _executor;
         CommandPool                                _oneShotCopyCommandPool;
-        std::vector<OneShotCopySubmissionPacket>   _oneShotCopyCommandBuffers;
+        std::deque<OneShotCopySubmissionPacket>   _oneShotCopyCommandBuffers;
     public:
         SubmissionThreadExecutionContext(
             DeviceContext& deviceContext,
@@ -84,10 +84,25 @@ namespace eureka
         // Rendering thread accessors
         //
 
-        std::vector<OneShotCopySubmissionPacket> RetrieveOneShotCopySubmissionPackets()
-        {            
+        std::size_t OneShotCopySubmissionPacketsCount()
+        {
             // TODO assert correct thread
-            return std::move(_oneShotCopyCommandBuffers);
+            return _oneShotCopyCommandBuffers.size();
+        }
+
+        std::vector<OneShotCopySubmissionPacket> RetrieveOneShotCopySubmissionPackets(std::size_t count)
+        {  
+            // TODO assert correct thread
+            std::vector<OneShotCopySubmissionPacket> pkts(count);
+
+            // TODO probably a better way to move the first count elements
+            for (auto i = 0; i < count; ++i)
+            {
+                pkts[i] = std::move(_oneShotCopyCommandBuffers.front());
+                _oneShotCopyCommandBuffers.pop_front();
+            }
+    
+            return pkts;
         }
     };
 }

@@ -155,6 +155,20 @@ namespace eureka
 
         }
 
+        //for (auto i = 0; i < 10; ++i)
+        //{
+        //    _pendingSubmits.emplace_back(
+        //        PendingSubmitFence
+        //        {
+        //            .fence = _deviceContext.LogicalDevice()->createFence(vk::FenceCreateInfo{.flags = vk::FenceCreateFlagBits::eSignaled }),
+        //            .in_flight = false
+        //        }
+        //    );
+        //}
+
+
+
+        _uploadDoneFence = _deviceContext.LogicalDevice()->createFence(vk::FenceCreateInfo{ .flags = vk::FenceCreateFlagBits::eSignaled });
      
         _stageZone = HostWriteCombinedBuffer(
             _deviceContext, 
@@ -169,7 +183,7 @@ namespace eureka
         _uploadPool = CommandPool(_deviceContext.LogicalDevice(), CommandPoolDesc{ .type = CommandPoolType::eLinear, .queue_family = _copyQueue.Family() });
         _uploadDoneSemaphore = _deviceContext.LogicalDevice()->createSemaphore(vk::SemaphoreCreateInfo());
         _uploadCommandBuffer = _uploadPool.AllocatePrimaryCommandBuffer();
-        _uploadDoneFence = _deviceContext.LogicalDevice()->createFence(vk::FenceCreateInfo{ .flags = vk::FenceCreateFlagBits::eSignaled });
+       
         _lastFrameTime = std::chrono::high_resolution_clock::now();
 
         _perFrameDescriptorSet = std::make_shared<PerFrameGeneralPurposeDescriptorSetLayout>(_deviceContext);
@@ -228,6 +242,8 @@ namespace eureka
 
         auto currentFrameFence = currentFrameCommandRecord.DoneFence();
 
+        // wait only for per frame fence, other things should be done using semaphores
+
         VK_CHECK(_deviceContext.LogicalDevice()->waitForFences(
             { currentFrameFence, *_uploadDoneFence},
             VK_TRUE,
@@ -238,11 +254,10 @@ namespace eureka
         _deviceContext.LogicalDevice()->resetFences(
             { currentFrameFence, *_uploadDoneFence }
         );
+
         currentFrameCommandRecord.Reset();
         _uploadPool.Reset();
         {
-
-   
             // this section could happen in a different thread (upload thread)
 
             _stageZone.Assign(std::span(mesh::COLORED_TRIANGLE_INDEX_DATA), 0);
@@ -274,21 +289,53 @@ namespace eureka
 
             _copyQueue->submit(uploadsSubmitInfo, *_uploadDoneFence);
         }
-        {
-            auto oneShotCopy = _submissionThreadExecutionContext->RetrieveOneShotCopySubmissionPackets();
 
+
+
+ 
+
+        _pendingOneShotCopies.reserve(100);
+        _pendingOneShotsignalValues.reserve(100);
+        _pendingOneShotSignalSemaphores.reserve(100);
+   
+
+        auto submissionPending = _submissionThreadExecutionContext->OneShotCopySubmissionPacketsCount();
+
+        if (submissionPending > 0)
+        {
+            // TODO: find the first linear range that can be reused
+            auto currentPendingCount = _pendingOneShotCopies.size();
+            auto addedPendingCount = static_cast<uint32_t>(std::min(submissionPending, _pendingOneShotCopies.capacity()));
+
+            auto oneShotCopies = _submissionThreadExecutionContext->RetrieveOneShotCopySubmissionPackets(addedPendingCount);
+                         
+            for (auto& pending : oneShotCopies)
+            {
+                _pendingOneShotsignalValues.emplace_back(1);
+                _pendingOneShotSignalSemaphores.emplace_back(*pending.done_timeline_semaphore);
+                _pendingOneShotCommandBuffers.emplace_back(*pending.command_buffer);
+                _pendingOneShotCopies.emplace_back(std::move(pending));
+            }
+
+            vk::TimelineSemaphoreSubmitInfo timelineInfo
+            {
+                .signalSemaphoreValueCount = addedPendingCount,
+                .pSignalSemaphoreValues = _pendingOneShotsignalValues.data() + currentPendingCount,
+            };
 
             vk::SubmitInfo uploadsSubmitInfo
             {
+                .pNext = &timelineInfo,
                 .waitSemaphoreCount = 0,
                 .pWaitSemaphores = nullptr,
                 .pWaitDstStageMask = {},
-                .commandBufferCount = 1,
-                .pCommandBuffers = &*_uploadCommandBuffer,
-                .signalSemaphoreCount = 1,
-                .pSignalSemaphores = &*_uploadDoneSemaphore
+                .commandBufferCount = addedPendingCount,
+                .pCommandBuffers = _pendingOneShotCommandBuffers.data() + currentPendingCount,
+                .signalSemaphoreCount = addedPendingCount,
+                .pSignalSemaphores = _pendingOneShotSignalSemaphores.data() + currentPendingCount
             };
 
+            _copyQueue->submit(uploadsSubmitInfo, nullptr);
         }
 
        

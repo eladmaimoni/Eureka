@@ -314,7 +314,12 @@ namespace eureka
         auto deviceCreationDesc = EnumerateQueueFamiliesForDeviceCreation(*chosenPhysicalDevice, desc);
 
         vk::PhysicalDeviceFeatures deviceFeatures = vk::PhysicalDeviceFeatures();
+
+        vk::PhysicalDeviceVulkan12Features features;
+        features.timelineSemaphore = true;
+
         vk::DeviceCreateInfo deviceInfo{
+            .pNext = &features,
             .flags = vk::DeviceCreateFlags(),
             .queueCreateInfoCount = 3,
             .pQueueCreateInfos = deviceCreationDesc.create_info.data(),

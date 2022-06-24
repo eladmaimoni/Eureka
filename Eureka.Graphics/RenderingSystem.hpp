@@ -21,6 +21,12 @@ namespace eureka
 
     };
 
+    struct PendingSubmitFence
+    {
+        vkr::Fence fence{ nullptr };
+        bool       in_flight = false;
+    };
+
     class RenderingSystem
     {
     public:
@@ -91,5 +97,11 @@ namespace eureka
 
         void InitializeSwapChain(GLFWVulkanSurface& windowSurface);
         void InitializeCommandPoolsAndBuffers();
+        std::vector<OneShotCopySubmissionPacket> _pendingOneShotCopies;
+        std::vector<uint64_t>                    _pendingOneShotsignalValues;
+        std::vector<vk::Semaphore>               _pendingOneShotSignalSemaphores;
+        std::vector<vk::CommandBuffer>           _pendingOneShotCommandBuffers;
+
+        std::vector<PendingSubmitFence>          _pendingSubmits;
     };
 }
