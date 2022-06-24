@@ -10,7 +10,7 @@ namespace eureka
     struct OneShotCopySubmissionPacket
     {
         vkr::CommandBuffer                 command_buffer{ nullptr };
-        vkr::Fence                         done_fence{ nullptr };
+        vkr::Semaphore                     done_timeline_semaphore{ nullptr };
         concurrencpp::result_promise<void> done_promise;
     };
 
@@ -45,16 +45,29 @@ namespace eureka
 
         concurrencpp::result<void> AppendOneShotCommandBufferSubmission(vkr::CommandBuffer buffer)
         {
+            vk::SemaphoreTypeCreateInfo semaphoreTypeCreateInfo
+            {
+                .semaphoreType = vk::SemaphoreType::eTimeline,
+                .initialValue = 0
+            };
+
+            vk::SemaphoreCreateInfo semaphoreCreateInfo
+            { 
+                .pNext = &semaphoreTypeCreateInfo
+            };
+
             // TODO assert correct thread
             OneShotCopySubmissionPacket sumbissionPacket
             {
                 .command_buffer = std::move(buffer),
-                .done_fence = _deviceConetext.LogicalDevice()->createFence(vk::FenceCreateInfo{.flags = vk::FenceCreateFlagBits::eSignaled }),
+                .done_timeline_semaphore = _deviceConetext.LogicalDevice()->createSemaphore(semaphoreCreateInfo)               
             };
 
             auto result = sumbissionPacket.done_promise.get_result();
 
             _oneShotCopyCommandBuffers.emplace_back(std::move(sumbissionPacket));
+
+            return result;
         }
 
         submission_thread_sub_executor& OneShotCopySubmitExecutor()
@@ -67,6 +80,14 @@ namespace eureka
             return *_executor;
         }
 
+        // 
+        // Rendering thread accessors
+        //
 
+        std::vector<OneShotCopySubmissionPacket> RetrieveOneShotCopySubmissionPackets()
+        {            
+            // TODO assert correct thread
+            return std::move(_oneShotCopyCommandBuffers);
+        }
     };
 }

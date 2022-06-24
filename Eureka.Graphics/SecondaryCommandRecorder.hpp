@@ -47,6 +47,10 @@ namespace eureka
             _position = 0;
         }
 
+        vk::Buffer Buffer() const
+        {
+            return _buffer.Buffer();
+        }
 
 
     };

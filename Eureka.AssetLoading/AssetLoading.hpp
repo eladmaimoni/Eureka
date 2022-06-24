@@ -30,20 +30,19 @@ namespace eureka
             Queue queue,
             std::shared_ptr<SubmissionThreadExecutionContext> submissionThreadExecutionContext,
             IOExecutor ioExecutor,
-            PoolExecutor poolExecutor
-            
+            PoolExecutor poolExecutor     
         );
 
         result_t<LoadedModel> LoadModel(const std::filesystem::path& path, const ModelLoadingConfig& config = ModelLoadingConfig{});
 
-        std::atomic_bool                            _busy{ false };
-        DeviceContext&                              _deviceContext;
-        Queue                                       _copyQueue;
-        std::shared_ptr<SubmissionThreadExecutionContext> _submissionThreadExecutionContext;
-        IOExecutor                                  _ioExecutor;
-        PoolExecutor                                _poolExecutor;
-        SequentialStageZone                         _stageZone;
-        CommandPool                                 _uploadCommandPool;
+        std::atomic_bool                                     _busy{ false };
+        DeviceContext&                                       _deviceContext;
+        Queue                                                _copyQueue;
+        std::shared_ptr<SubmissionThreadExecutionContext>    _submissionThreadExecutionContext;
+        IOExecutor                                           _ioExecutor;
+        PoolExecutor                                         _poolExecutor;
+        SequentialStageZone                                  _stageZone;
+        CommandPool                                          _uploadCommandPool;
     };
 
 }

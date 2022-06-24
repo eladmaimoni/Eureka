@@ -121,6 +121,7 @@ namespace eureka
         const ModelLoadingConfig& config
     )
     {
+        
         bool expected = false;
         if (!_busy.compare_exchange_strong(expected, true))
         {
@@ -234,6 +235,24 @@ namespace eureka
 
 
         co_await concurrencpp::resume_on(_submissionThreadExecutionContext->OneShotCopySubmitExecutor());
+
+
+        auto uploadCommandBuffer = _submissionThreadExecutionContext->OneShotCopySubmitCommandPool().AllocatePrimaryCommandBuffer();
+
+        {
+            ScopedCommands commands(uploadCommandBuffer);
+
+            uploadCommandBuffer.copyBuffer(
+                _stageZone.Buffer(),
+                deviceBuffer.Buffer(),
+                { vk::BufferCopy{.srcOffset = 0, .dstOffset = 0, .size = _stageZone.Position()} }
+            );
+        }
+
+        // TODO co_await
+        co_await _submissionThreadExecutionContext->AppendOneShotCommandBufferSubmission(
+            std::move(uploadCommandBuffer)
+        );
 
         // record commands on the main thread for now
         // we should only offload recording to other threads once it is necessary

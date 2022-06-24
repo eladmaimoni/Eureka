@@ -241,6 +241,8 @@ namespace eureka
         currentFrameCommandRecord.Reset();
         _uploadPool.Reset();
         {
+
+   
             // this section could happen in a different thread (upload thread)
 
             _stageZone.Assign(std::span(mesh::COLORED_TRIANGLE_INDEX_DATA), 0);
@@ -257,6 +259,7 @@ namespace eureka
                 );
             }
 
+  
             vk::SubmitInfo uploadsSubmitInfo
             {
                 .waitSemaphoreCount = 0,
@@ -270,10 +273,23 @@ namespace eureka
 
 
             _copyQueue->submit(uploadsSubmitInfo, *_uploadDoneFence);
+        }
+        {
+            auto oneShotCopy = _submissionThreadExecutionContext->RetrieveOneShotCopySubmissionPackets();
 
+
+            vk::SubmitInfo uploadsSubmitInfo
+            {
+                .waitSemaphoreCount = 0,
+                .pWaitSemaphores = nullptr,
+                .pWaitDstStageMask = {},
+                .commandBufferCount = 1,
+                .pCommandBuffers = &*_uploadCommandBuffer,
+                .signalSemaphoreCount = 1,
+                .pSignalSemaphores = &*_uploadDoneSemaphore
+            };
 
         }
-
 
        
         auto now = std::chrono::high_resolution_clock::now();
