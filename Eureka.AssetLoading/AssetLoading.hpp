@@ -4,7 +4,7 @@
 #include <GraphicsDefaults.hpp>
 #include <SecondaryCommandRecorder.hpp>
 #include <Commands.hpp>
-#include <SubmissionThreadExecutor.hpp>
+#include <SubmissionThreadExecutionContext.hpp>
 
 namespace eureka
 {
@@ -28,7 +28,7 @@ namespace eureka
         AssetLoader(
             DeviceContext& deviceContext,
             Queue queue,
-            std::shared_ptr<submission_thread_executor> submissionThreadExecutor,
+            std::shared_ptr<SubmissionThreadExecutionContext> submissionThreadExecutionContext,
             IOExecutor ioExecutor,
             PoolExecutor poolExecutor
             
@@ -36,14 +36,14 @@ namespace eureka
 
         result_t<LoadedModel> LoadModel(const std::filesystem::path& path, const ModelLoadingConfig& config = ModelLoadingConfig{});
 
-        std::atomic_bool                     _busy{ false };
-        DeviceContext&                       _deviceContext;
-        Queue                                _copyQueue;
-        std::shared_ptr<submission_thread_executor> _submissionThreadExecutor;
-        IOExecutor                           _ioExecutor;
-        PoolExecutor                         _poolExecutor;
-        SequentialStageZone                  _stageZone;
-        CommandPool                          _uploadCommandPool;
+        std::atomic_bool                            _busy{ false };
+        DeviceContext&                              _deviceContext;
+        Queue                                       _copyQueue;
+        std::shared_ptr<SubmissionThreadExecutionContext> _submissionThreadExecutionContext;
+        IOExecutor                                  _ioExecutor;
+        PoolExecutor                                _poolExecutor;
+        SequentialStageZone                         _stageZone;
+        CommandPool                                 _uploadCommandPool;
     };
 
 }

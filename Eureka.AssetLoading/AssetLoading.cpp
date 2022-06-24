@@ -99,13 +99,15 @@ namespace eureka
     };
 
 
-    AssetLoader::AssetLoader(DeviceContext& deviceContext, 
+    AssetLoader::AssetLoader(
+        DeviceContext& deviceContext, 
         Queue queue, 
-        std::shared_ptr<submission_thread_executor> submissionThreadExecutor,
-        IOExecutor ioExecutor, PoolExecutor poolExecutor) :
+        std::shared_ptr<SubmissionThreadExecutionContext> submissionThreadExecutionContext,
+        IOExecutor ioExecutor, PoolExecutor poolExecutor
+    ) :
         _deviceContext(deviceContext),
         _copyQueue(queue),
-        _submissionThreadExecutor(std::move(submissionThreadExecutor)),
+        _submissionThreadExecutionContext(std::move(submissionThreadExecutionContext)),
         _ioExecutor(std::move(ioExecutor)),
         _poolExecutor(std::move(poolExecutor)),
         _stageZone(deviceContext, StageZoneConfig{ .bytes_capacity = STAGE_ZONE_SIZE }),
@@ -143,7 +145,7 @@ namespace eureka
 
         if (!ok)
         {
-            DEBUGGER_TRACE("failed loding {} : error = {} warning = {}", path, error, warning);
+            DEBUGGER_TRACE("failed loading {} : error = {} warning = {}", path, error, warning);
             throw std::runtime_error("bad gltf");
         }
 
@@ -231,7 +233,7 @@ namespace eureka
         VertexAndIndexTransferableDeviceBuffer deviceBuffer(_deviceContext, BufferConfig{ .byte_size = _stageZone.Position() });
 
 
-        co_await concurrencpp::resume_on(_submissionThreadExecutor->one_shot_copy_sebmit_executor());
+        co_await concurrencpp::resume_on(_submissionThreadExecutionContext->OneShotCopySubmitExecutor());
 
         // record commands on the main thread for now
         // we should only offload recording to other threads once it is necessary

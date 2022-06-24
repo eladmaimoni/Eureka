@@ -50,6 +50,8 @@ set_source_group(
     "SecondaryCommandRecorder.cpp"
     "SubmissionThreadExecutor.hpp"
     "SubmissionThreadExecutor.cpp"
+    "SubmissionThreadExecutionContext.hpp"
+    "SubmissionThreadExecutionContext.cpp"
 )
 
 set_source_group(

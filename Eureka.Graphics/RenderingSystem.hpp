@@ -7,7 +7,7 @@
 #include "Commands.hpp"
 #include "Pipeline.hpp"
 #include "Camera.hpp"
-#include "SubmissionThreadExecutor.hpp"
+#include "SubmissionThreadExecutionContext.hpp"
 
 namespace eureka
 {
@@ -28,7 +28,7 @@ namespace eureka
             Instance& instance,
             DeviceContext& deviceContext,
             GLFWRuntime& glfw,
-            std::shared_ptr<submission_thread_executor> submissionThreadExecutor,
+            std::shared_ptr<SubmissionThreadExecutionContext> submissionThreadExecutionContext,
             Queue graphicsQueue,
             Queue copyQueue
         );
@@ -49,7 +49,7 @@ namespace eureka
         DeviceContext& _deviceContext;
         GLFWRuntime&   _glfw;
 
-        std::shared_ptr<submission_thread_executor>    _submissionThreadExecutor;
+        std::shared_ptr<SubmissionThreadExecutionContext>    _submissionThreadExecutionContext;
         std::shared_ptr<RenderingUpdateQueue>          _updateQueue;
 
         GLFWWindowPtr                                        _window; // TODO should remove

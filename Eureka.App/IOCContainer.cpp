@@ -1,8 +1,9 @@
 #include "IOCContainer.hpp"
 #include "VkHelpers.hpp"
-#include "../Eureka.Graphics/RenderingSystem.hpp"
-#include "../Eureka.AssetLoading/AssetLoading.hpp"
 
+#include "../Eureka.Graphics/RenderingSystem.hpp"
+#include "../Eureka.Graphics/SubmissionThreadExecutionContext.hpp"
+#include "../Eureka.AssetLoading/AssetLoading.hpp"
 
 namespace eureka
 {
@@ -35,15 +36,22 @@ namespace eureka
 
     IOCContainer::IOCContainer()
         : 
-        _instance(CreateInstanceConfig(_glfw)),
+        _instance(CreateInstanceConfig(_glfw))
         //_copySubmitExecutor(_concurrencyRuntime.make_manual_executor()),
-        _submissionThreadExecutor(_concurrencyRuntime.make_executor<submission_thread_executor>())
+
     {
         _deviceContext.Init(_instance, CreateDeviceContextConfig());
 
         _graphicsQueue = _deviceContext.CreateGraphicsQueue();
         _copyQueue = _deviceContext.CreateCopyQueue();
 
+        auto submissionThreadExecutor = _concurrencyRuntime.make_executor<submission_thread_executor>();
+
+        _submissionThreadExecutionContext = std::make_shared<SubmissionThreadExecutionContext>(
+            _deviceContext,
+            _copyQueue,
+            std::move(submissionThreadExecutor)
+            );
     }
 
     IOCContainer::~IOCContainer()
@@ -57,7 +65,7 @@ namespace eureka
             _instance,
             _deviceContext,
             _glfw,
-            _submissionThreadExecutor,
+            _submissionThreadExecutionContext,
             _graphicsQueue,
             _copyQueue
             );
@@ -70,7 +78,7 @@ namespace eureka
         return std::make_unique<AssetLoader>(
             _deviceContext,
             _copyQueue,
-            _submissionThreadExecutor,
+            _submissionThreadExecutionContext,
             _concurrencyRuntime.background_executor(),
             _concurrencyRuntime.thread_pool_executor()
             );

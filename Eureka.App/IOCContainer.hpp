@@ -2,12 +2,13 @@
 #include <Instance.hpp>
 #include <DeviceContext.hpp>
 #include <GraphicsDefaults.hpp>
-#include "SubmissionThreadExecutor.hpp"
+
 
 namespace eureka
 {
     class RenderingSystem;
     class AssetLoader;
+    class SubmissionThreadExecutionContext;
 
     class IOCContainer
     {
@@ -19,15 +20,15 @@ namespace eureka
         std::unique_ptr<RenderingSystem> CreateRenderingSystem();
         std::unique_ptr<AssetLoader> CreateAssetLoader();
     private:
-        GLFWRuntime                                    _glfw;
-        Instance                                       _instance;
-        DeviceContext                                  _deviceContext;
-        Queue                                          _graphicsQueue;
-        Queue                                          _copyQueue;
-
-        concurrencpp::runtime                           _concurrencyRuntime;
-        std::shared_ptr<submission_thread_executor>     _submissionThreadExecutor;
-        //OneShotCopySubmitExecutor                       _copySubmitExecutor;
+        GLFWRuntime                                       _glfw;
+        Instance                                          _instance;
+        DeviceContext                                     _deviceContext;
+        Queue                                             _graphicsQueue;
+        Queue                                             _copyQueue;
+                                                          
+        concurrencpp::runtime                              _concurrencyRuntime;
+        std::shared_ptr<SubmissionThreadExecutionContext>  _submissionThreadExecutionContext;
+        
 
 
 
