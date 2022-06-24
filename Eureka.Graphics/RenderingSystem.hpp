@@ -56,7 +56,7 @@ namespace eureka
         GLFWRuntime&   _glfw;
 
         std::shared_ptr<SubmissionThreadExecutionContext>    _submissionThreadExecutionContext;
-        std::shared_ptr<RenderingUpdateQueue>          _updateQueue;
+
 
         GLFWWindowPtr                                        _window; // TODO should remove
         std::unique_ptr<SwapChain>                           _swapChain;

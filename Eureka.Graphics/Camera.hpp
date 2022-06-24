@@ -3,6 +3,7 @@
 #include "DeviceContext.hpp"
 #include "Mesh.hpp"
 #include <eigen_graphics.hpp>
+#include "SubmissionThreadExecutionContext.hpp"
 
 namespace eureka
 {
@@ -21,10 +22,10 @@ namespace eureka
         ViewProjection  _viewProjection;
         vk::Viewport    _viewport{.x = 0.0f, .y = 0.0f, .width = 100.0f, .height = 100.0f, .minDepth = 0.0f, .maxDepth = 1.0f };
 
-        HostVisibleDeviceConstantBuffer             _constantBuffer;
-        std::shared_ptr<RenderingUpdateQueue> _updateQueue;
+        HostVisibleDeviceConstantBuffer                   _constantBuffer;
+        std::shared_ptr<SubmissionThreadExecutionContext> _submissionThreadExecutionContext;
     public:
-        PerspectiveCamera(DeviceContext& deviceContext);
+        PerspectiveCamera(DeviceContext& deviceContext, std::shared_ptr<SubmissionThreadExecutionContext> submissionThreadExecutionContext);
         void SetPosition(const Eigen::Vector3f& position);
         void SetLookDirection(const  Eigen::Vector3f& direction);
         void SetDirectionRelativeToBase(const  Eigen::Vector3f& baseDirection, const  Eigen::Vector3f& xyzRotationRad);
@@ -39,6 +40,6 @@ namespace eureka
         }
         const vk::Viewport& Viewport() const;
     private:
-        void SyncTransforms();
+        concurrencpp::null_result SyncTransforms();
     };
 }

@@ -4,9 +4,10 @@
 namespace eureka
 {
 
-    PerspectiveCamera::PerspectiveCamera(DeviceContext& deviceContext) :
+    PerspectiveCamera::PerspectiveCamera(DeviceContext& deviceContext, std::shared_ptr<SubmissionThreadExecutionContext> submissionThreadExecutionContext) 
+        :
         _constantBuffer(deviceContext, BufferConfig{ .byte_size = static_cast<uint32_t>(sizeof(ViewProjection)) }),
-        _updateQueue(deviceContext.UpdateQueue())
+        _submissionThreadExecutionContext(std::move(submissionThreadExecutionContext))
     {
         Eigen::Vector3f center = _position + _direction;
         _viewProjection.view = Eigen::lookAt(_position, center, _up);
@@ -94,14 +95,23 @@ namespace eureka
         return _viewport;
     }
 
-    void PerspectiveCamera::SyncTransforms()
+    concurrencpp::null_result PerspectiveCamera::SyncTransforms()
     {
-        _updateQueue->EnqueueUpdate(
-            [this, viewProjection = _viewProjection]()
-            {
-                _constantBuffer.Assign(viewProjection);
-            }
-        );
+        auto viewProjection = _viewProjection;
+        
+        co_await concurrencpp::resume_on(_submissionThreadExecutionContext->Executor());
+
+        _constantBuffer.Assign(viewProjection);
+
+
+        co_return;
+        //_submissionThreadExecutionContext
+        //_updateQueue->EnqueueUpdate(
+        //    [this, ]()
+        //    {
+        //      
+        //    }
+        //);
     }
 
 }

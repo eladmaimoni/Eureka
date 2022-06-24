@@ -73,10 +73,9 @@ namespace eureka
         _glfw(glfw),
         _instance(instance),
         _deviceContext(deviceContext),
-        _submissionThreadExecutionContext(std::move(submissionThreadExecutionContext)),
+        _submissionThreadExecutionContext(/*std::move(*/submissionThreadExecutionContext/*)*/), // TODO
         _descPool(deviceContext),
-        _camera(deviceContext),
-        _updateQueue(deviceContext.UpdateQueue()),
+        _camera(deviceContext, /*std::move(*/submissionThreadExecutionContext/*)*/),  // TODO
         _graphicsQueue(graphicsQueue),
         _copyQueue(copyQueue)
     {
@@ -229,7 +228,6 @@ namespace eureka
     void RenderingSystem::RunOne()
     {
         _submissionThreadExecutionContext->Executor().loop_all(MAX_COPY_SUBMITS_PER_FRAME);
-        _updateQueue->UpdatePreRender();
 
         auto [currentFrame, imageReadySemaphore] = _swapChain->AcquireNextAvailableImageAsync();
         
