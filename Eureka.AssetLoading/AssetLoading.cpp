@@ -236,7 +236,7 @@ namespace eureka
 
         co_await concurrencpp::resume_on(_submissionThreadExecutionContext->OneShotCopySubmitExecutor());
 
-
+        DEBUGGER_TRACE("rendering thread fun - recording one shot copy");
         auto uploadCommandBuffer = _submissionThreadExecutionContext->OneShotCopySubmitCommandPool().AllocatePrimaryCommandBuffer();
 
         {
@@ -261,7 +261,7 @@ namespace eureka
 
 
 
-        DEBUGGER_TRACE("rendering thread fun");
+        DEBUGGER_TRACE("rendering thread fun - copy submitted and signaled as done");
 
         LoadedModel res{};
         co_return res;

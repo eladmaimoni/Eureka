@@ -102,6 +102,6 @@ namespace eureka
         std::vector<vk::Semaphore>               _pendingOneShotSignalSemaphores;
         std::vector<vk::CommandBuffer>           _pendingOneShotCommandBuffers;
 
-        std::vector<PendingSubmitFence>          _pendingSubmits;
+        //std::vector<PendingSubmitFence>          _pendingSubmits;
     };
 }

@@ -336,6 +336,52 @@ namespace eureka
             };
 
             _copyQueue->submit(uploadsSubmitInfo, nullptr);
+            DEBUGGER_TRACE("submitted {} one shot copies", addedPendingCount);
+        }
+
+        if (!_pendingOneShotCopies.empty())
+        {
+            std::vector<vk::Semaphore> waitSemaphores;
+            auto totalPending = 0;
+            auto totalDone = 0;
+            for (auto i = 0; i < _pendingOneShotCopies.size(); ++i)
+            {
+                if (_pendingOneShotsignalValues[i] == 1)
+                {
+                    ++totalPending;
+                    vk::SemaphoreWaitInfo waitInfo
+                    {
+                        .semaphoreCount = 1,
+                        .pSemaphores = &_pendingOneShotSignalSemaphores[i],
+                        .pValues = &_pendingOneShotsignalValues[i]
+                    };
+
+                    auto result = _deviceContext.LogicalDevice()->waitSemaphores(waitInfo, 0);
+
+                    if (result == vk::Result::eTimeout)
+                    {
+                        DEBUGGER_TRACE("pending semaphore {} not yet finished", i);
+                    }
+                    else if (result == vk::Result::eSuccess)
+                    {
+                        ++totalDone;
+                        DEBUGGER_TRACE("pending semaphore {} done", i);
+                        
+                        _pendingOneShotCopies[i].done_promise.set_result();
+                        _pendingOneShotsignalValues[i] = 0;
+                        _pendingOneShotCopies[i] = {}; // destroy
+                    }
+
+                }
+            }
+
+            if (totalPending == totalDone)
+            {
+                _pendingOneShotCopies.clear();
+                _pendingOneShotsignalValues.clear();
+                _pendingOneShotSignalSemaphores.clear();
+                _pendingOneShotCommandBuffers.clear();
+            }
         }
 
        
