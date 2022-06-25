@@ -10,6 +10,9 @@
 namespace eureka
 {
 
+    template<typename T> using svec10 = boost::container::small_vector<T, 10>;
+    template<typename T> using svec15 = boost::container::small_vector<T, 15>;
+    template<typename T> using svec20 = boost::container::small_vector<T, 20>;
 
     struct PrimitiveDataView
     {
@@ -118,8 +121,8 @@ namespace eureka
         {
             ScopedCommands commands(uploadCommandBuffer);
 
-            std::vector< vk::ImageMemoryBarrier> preTransferImageMemoryBarriers;
-            std::vector< vk::ImageMemoryBarrier> postTransferImageMemoryBarriers;
+            svec10<vk::ImageMemoryBarrier> preTransferImageMemoryBarriers;
+            svec10<vk::ImageMemoryBarrier> postTransferImageMemoryBarriers;
 
             for (const auto& imageUploadDesc : imageUploads)
             {
@@ -297,17 +300,17 @@ namespace eureka
 
         DEBUGGER_TRACE("pool thread fun");
 
-        std::vector<Image2DUploadTransferDesc> imageUploadDescs;
+        svec10<Image2DUploadTransferDesc> imageUploadDescs;
         imageUploadDescs.reserve(gltfModel.images.size() + gltfModel.nodes.size());
 
-        std::vector<SampledImage2D> images;
+        svec10<SampledImage2D> images;
         images.reserve(gltfModel.images.size());
 
 
-        std::vector<dynamic_cspan<uint8_t>> indicesUploadDesc;
+        svec10<dynamic_cspan<uint8_t>> indicesUploadDesc;
         indicesUploadDesc.reserve(gltfModel.meshes.size());
 
-        std::vector<dynamic_cspan<uint8_t>> vertexDataUploadDesc;
+        svec10<dynamic_cspan<uint8_t>> vertexDataUploadDesc;
         vertexDataUploadDesc.reserve(gltfModel.meshes.size());
 
         //
