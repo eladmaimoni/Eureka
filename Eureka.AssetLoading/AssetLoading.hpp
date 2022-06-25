@@ -8,13 +8,44 @@
 
 namespace eureka
 {
+    template<typename T>
+    using dynamic_span = std::span<T, std::dynamic_extent>;
 
+    template<typename T>
+    using dynamic_cspan = std::span<const T, std::dynamic_extent>;
 
+    template<typename T>
+    dynamic_cspan<uint8_t> to_raw_span(const dynamic_cspan<T>& s)
+    {
+        return dynamic_cspan<uint8_t>(
+            reinterpret_cast<const uint8_t*>(s.data()),
+            s.size_bytes()
+            );
+    }
+
+    struct Image2DUploadTransferDesc
+    {
+        dynamic_cspan<uint8_t> src_span;
+        uint64_t    stage_zone_offset;
+        vk::Image   destination_image;
+        vk::Extent3D destination_image_extent;
+    };
+
+    struct BufferDataUploadTransferDesc
+    {
+        vk::Buffer src_buffer;
+        uint64_t   src_offset;
+        uint64_t   bytes;
+
+        vk::Buffer dst_buffer;
+        uint64_t   dst_offset;
+    };
 
     struct ModelLoadingConfig
     {
         std::stop_token cancel;
     };
+
     struct LoadedModel
     {
 
@@ -35,6 +66,9 @@ namespace eureka
 
         result_t<LoadedModel> LoadModel(const std::filesystem::path& path, const ModelLoadingConfig& config);
 
+
+
+    private:
         std::atomic_bool                                     _busy{ false };
         DeviceContext&                                       _deviceContext;
         Queue                                                _copyQueue;
@@ -43,6 +77,8 @@ namespace eureka
         PoolExecutor                                         _poolExecutor;
         SequentialStageZone                                  _stageZone;
         CommandPool                                          _uploadCommandPool;
+
+        vkr::CommandBuffer RecordUploadCommands(dynamic_span<Image2DUploadTransferDesc> imageUploads, const BufferDataUploadTransferDesc& bufferUpload);
     };
 
 }

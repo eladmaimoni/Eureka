@@ -9,20 +9,7 @@
 
 namespace eureka
 {
-    template<typename T>
-    using dynamic_span = std::span<T, std::dynamic_extent>;
 
-    template<typename T>
-    using dynamic_cspan = std::span<const T, std::dynamic_extent>;
-
-    template<typename T>
-    dynamic_cspan<uint8_t> to_raw_span(const dynamic_cspan<T>& s)
-    {
-        return dynamic_cspan<uint8_t>(
-            reinterpret_cast<const uint8_t*>(s.data()),
-            s.size_bytes()
-            );
-    }
 
     struct PrimitiveDataView
     {
@@ -85,19 +72,10 @@ namespace eureka
         };
     }
     
-    struct Image2DUploadTransferDesc
-    {
-        dynamic_cspan<uint8_t> src_span;
-        uint64_t    stage_zone_offset;
-        vk::Image   destination_image;
-        vk::Extent3D destination_image_extent;
-    };
 
-    struct BufferDataUploadTransferDesc
-    {
-        uint8_t* src_ptr; // host temporary buffer containing data
-        std::size_t bytes;
-    };
+
+
+
 
 
     AssetLoader::AssetLoader(
@@ -126,12 +104,164 @@ namespace eureka
 
     }
 
+
+    vkr::CommandBuffer AssetLoader::RecordUploadCommands(dynamic_span<Image2DUploadTransferDesc> imageUploads, const BufferDataUploadTransferDesc& bufferUpload)
+    {
+        PROFILE_CATEGORIZED_SCOPE("Asset Loading Command Recording", Profiling::Color::Green, Profiling::PROFILING_CATEGORY_RENDERING);
+        DEBUGGER_TRACE("rendering thread fun - recording one shot copy");
+
+        auto uploadCommandBuffer = _submissionThreadExecutionContext->OneShotCopySubmitCommandPool().AllocatePrimaryCommandBuffer();
+
+        auto& copyQueue = _submissionThreadExecutionContext->CopyQueue();
+        auto& graphicsQueue = _submissionThreadExecutionContext->GraphicsQueue();
+
+        {
+            ScopedCommands commands(uploadCommandBuffer);
+
+            std::vector< vk::ImageMemoryBarrier> preTransferImageMemoryBarriers;
+            std::vector< vk::ImageMemoryBarrier> postTransferImageMemoryBarriers;
+
+            for (const auto& imageUploadDesc : imageUploads)
+            {
+                vk::ImageSubresourceRange subresourceRange
+                {
+                    .aspectMask = vk::ImageAspectFlagBits::eColor,
+                    .baseMipLevel = 0,
+                    .levelCount = 1,
+                    .layerCount = 1
+                };
+
+                vk::ImageMemoryBarrier preTransferImageMemoryBarrier
+                {
+                    .srcAccessMask = vk::AccessFlagBits::eNoneKHR,
+                    .dstAccessMask = vk::AccessFlagBits::eTransferWrite,
+                    .oldLayout = vk::ImageLayout::eUndefined,
+                    .newLayout = vk::ImageLayout::eTransferDstOptimal,
+                    .srcQueueFamilyIndex = copyQueue.Family(),
+                    .dstQueueFamilyIndex = copyQueue.Family(),
+                    .image = imageUploadDesc.destination_image,
+                    .subresourceRange = subresourceRange
+                };
+
+                preTransferImageMemoryBarriers.emplace_back(preTransferImageMemoryBarrier);
+
+                vk::ImageMemoryBarrier postTransferImageMemoryBarrier
+                {
+                    .srcAccessMask = vk::AccessFlagBits::eTransferWrite,
+                    .dstAccessMask = vk::AccessFlagBits::eShaderRead,
+                    .oldLayout = vk::ImageLayout::eTransferDstOptimal,
+                    .newLayout = vk::ImageLayout::eShaderReadOnlyOptimal,
+                    .srcQueueFamilyIndex = copyQueue.Family(),
+                    .dstQueueFamilyIndex = graphicsQueue.Family(),
+                    .image = imageUploadDesc.destination_image,
+                    .subresourceRange = subresourceRange
+                };
+
+                postTransferImageMemoryBarriers.emplace_back(postTransferImageMemoryBarrier);
+            }
+
+            uploadCommandBuffer.pipelineBarrier(
+                vk::PipelineStageFlagBits::eTopOfPipe,
+                vk::PipelineStageFlagBits::eTransfer,
+                {},
+                nullptr,
+                nullptr,
+                preTransferImageMemoryBarriers
+            );
+
+            for (const auto& imageUploadDesc : imageUploads)
+            {
+                vk::ImageSubresourceLayers subresourceLayers
+                {
+                    .aspectMask = vk::ImageAspectFlagBits::eColor,
+                    .mipLevel = 0,
+                    .baseArrayLayer = 0,
+                    .layerCount = 1
+                };
+
+                vk::BufferImageCopy region
+                {
+                    .bufferOffset = imageUploadDesc.stage_zone_offset,
+                    .imageSubresource = subresourceLayers,
+                    .imageExtent = imageUploadDesc.destination_image_extent
+                };
+
+                uploadCommandBuffer.copyBufferToImage(
+                    _stageZone.Buffer(),
+                    imageUploadDesc.destination_image,
+                    vk::ImageLayout::eTransferDstOptimal,
+                    { region }
+                );
+            }
+
+            uploadCommandBuffer.copyBuffer(
+                bufferUpload.src_buffer,
+                bufferUpload.dst_buffer,
+                { vk::BufferCopy{.srcOffset = bufferUpload.src_offset, .dstOffset = bufferUpload.dst_offset, .size = bufferUpload.bytes} }
+            );
+
+            vk::BufferMemoryBarrier bufferMemoryBarrier
+            {
+                 .srcAccessMask = vk::AccessFlagBits::eTransferWrite,
+                 .dstAccessMask = vk::AccessFlagBits::eShaderRead,
+                 .srcQueueFamilyIndex = copyQueue.Family(),
+                 .dstQueueFamilyIndex = graphicsQueue.Family(),
+                 .buffer = bufferUpload.dst_buffer,
+                 .offset = 0,
+                 .size = bufferUpload.bytes
+            };
+
+            uploadCommandBuffer.pipelineBarrier(
+                vk::PipelineStageFlagBits::eTransfer,
+                vk::PipelineStageFlagBits::eBottomOfPipe,
+                {},
+                nullptr,
+                { bufferMemoryBarrier },
+                postTransferImageMemoryBarriers
+            );
+
+            //vk::BufferMemoryBarrier2KHR bufferMemoryBarrier
+            //{
+            //     .srcStageMask = vk::PipelineStageFlagBits2KHR::eTransfer,
+            //     .srcAccessMask = vk::AccessFlagBits2KHR::eTransferWrite,
+            //     .srcQueueFamilyIndex = copyQueue.Family(),
+            //     .dstQueueFamilyIndex = graphicsQueue.Family(),
+            //     .buffer = deviceBuffer.Buffer(),
+            //};
+
+            //vk::DependencyInfoKHR dependencyInfo
+            //{
+            //    .bufferMemoryBarrierCount = 1,
+            //    .pBufferMemoryBarriers = &bufferMemoryBarrier,
+            //};
+
+            //uploadCommandBuffer.pipelineBarrier2KHR(dependencyInfo);
+
+
+            /*
+                VULKAN_HPP_NAMESPACE::AccessFlags   srcAccessMask       = {};
+    VULKAN_HPP_NAMESPACE::AccessFlags   dstAccessMask       = {};
+
+            */
+
+            //uploadCommandBuffer.pipelineBarrier(
+            //    vk::PipelineStageFlagBits::eTransfer,
+            //    vk::PipelineStageFlagBits::eBottomOfPipe,
+            //    {},
+            //    nullptr,
+            //    nullptr,
+            //    nullptr
+            //);
+        }
+        return uploadCommandBuffer;
+    }
+
     result_t<LoadedModel> AssetLoader::LoadModel(
         const std::filesystem::path& path,
         const ModelLoadingConfig& config
     )
     {
-        PROFILE_CATEGORIZED_SCOPE("Asset Loading Background", Profiling::Color::Red, Profiling::PROFILING_CATEGORY_RENDERING);
+        PROFILE_CATEGORIZED_UNTHREADED_SCOPE("Asset Loading Background", Profiling::Color::Red, Profiling::PROFILING_CATEGORY_RENDERING);
         auto cancellationToken = config.cancel;
         bool expected = false;
         if (!_busy.compare_exchange_strong(expected, true))
@@ -247,9 +377,15 @@ namespace eureka
             _stageZone.Assign(imageUploadDesc.src_span);
         }
 
-        auto bufferCopyOffset = _stageZone.Position();
-
-  
+        BufferDataUploadTransferDesc bufferUploadDesc
+        {
+            .src_buffer = _stageZone.Buffer(),
+            .src_offset = _stageZone.Position(),
+            .bytes = deviceBuffer.ByteSize(),
+            .dst_buffer = deviceBuffer.Buffer(),
+            .dst_offset = 0
+        };
+     
         for (const auto& idxSpan : indicesUploadDesc)
         {
             _stageZone.Assign(idxSpan);
@@ -260,170 +396,17 @@ namespace eureka
         }
 
         ThrowOnCancelled(cancellationToken);
-
+  
         co_await concurrencpp::resume_on(_submissionThreadExecutionContext->OneShotCopySubmitExecutor());
 
-        DEBUGGER_TRACE("rendering thread fun - recording one shot copy");
-        auto uploadCommandBuffer = _submissionThreadExecutionContext->OneShotCopySubmitCommandPool().AllocatePrimaryCommandBuffer();
+        auto uploadCommandBuffer = RecordUploadCommands(imageUploadDescs, bufferUploadDesc);
 
+        co_await _submissionThreadExecutionContext->AppendOneShotCommandBufferSubmission(std::move(uploadCommandBuffer));
         
-        {
-            PROFILE_CATEGORIZED_SCOPE("Asset Loading Command Recording", Profiling::Color::Green, Profiling::PROFILING_CATEGORY_RENDERING);
-            auto& copyQueue = _submissionThreadExecutionContext->CopyQueue();
-            auto& graphicsQueue = _submissionThreadExecutionContext->GraphicsQueue();
-            ScopedCommands commands(uploadCommandBuffer);
-
-            std::vector< vk::ImageMemoryBarrier> preTransferImageMemoryBarriers;
-            std::vector< vk::ImageMemoryBarrier> postTransferImageMemoryBarriers;
-
-            for (const auto& imageUploadDesc : imageUploadDescs)
-            {
-                vk::ImageSubresourceRange subresourceRange
-                {
-                    .aspectMask = vk::ImageAspectFlagBits::eColor,
-                    .baseMipLevel = 0,
-                    .levelCount = 1,
-                    .layerCount = 1
-                };
-
-                vk::ImageMemoryBarrier preTransferImageMemoryBarrier
-                {
-                    .srcAccessMask = vk::AccessFlagBits::eNoneKHR,
-                    .dstAccessMask = vk::AccessFlagBits::eTransferWrite,
-                    .oldLayout = vk::ImageLayout::eUndefined,
-                    .newLayout = vk::ImageLayout::eTransferDstOptimal,
-                    .srcQueueFamilyIndex = copyQueue.Family(),
-                    .dstQueueFamilyIndex = copyQueue.Family(),
-                    .image = imageUploadDesc.destination_image,
-                    .subresourceRange = subresourceRange
-                };
-
-                preTransferImageMemoryBarriers.emplace_back(preTransferImageMemoryBarrier);
-
-                vk::ImageMemoryBarrier postTransferImageMemoryBarrier
-                {
-                    .srcAccessMask = vk::AccessFlagBits::eTransferWrite,
-                    .dstAccessMask = vk::AccessFlagBits::eShaderRead,
-                    .oldLayout = vk::ImageLayout::eTransferDstOptimal,
-                    .newLayout = vk::ImageLayout::eShaderReadOnlyOptimal,
-                    .srcQueueFamilyIndex = copyQueue.Family(),
-                    .dstQueueFamilyIndex = graphicsQueue.Family(),
-                    .image = imageUploadDesc.destination_image,
-                    .subresourceRange = subresourceRange
-                };
-
-                postTransferImageMemoryBarriers.emplace_back(postTransferImageMemoryBarrier);
-            }
-
-            uploadCommandBuffer.pipelineBarrier(
-                vk::PipelineStageFlagBits::eTopOfPipe,
-                vk::PipelineStageFlagBits::eTransfer,
-                {},
-                nullptr,
-                nullptr,
-                preTransferImageMemoryBarriers
-            );
-
-            for (const auto& imageUploadDesc : imageUploadDescs)
-            {
-                vk::ImageSubresourceLayers subresourceLayers
-                {
-                    .aspectMask = vk::ImageAspectFlagBits::eColor,
-                    .mipLevel = 0,
-                    .baseArrayLayer = 0,
-                    .layerCount = 1
-                };
-
-                vk::BufferImageCopy region
-                {
-                    .bufferOffset = imageUploadDesc.stage_zone_offset,
-                    .imageSubresource = subresourceLayers,
-                    .imageExtent = imageUploadDesc.destination_image_extent
-                };
-
-                uploadCommandBuffer.copyBufferToImage(
-                    _stageZone.Buffer(),
-                    imageUploadDesc.destination_image,
-                    vk::ImageLayout::eTransferDstOptimal,
-                    { region }
-                );
-            }
-
-            uploadCommandBuffer.copyBuffer(
-                _stageZone.Buffer(),
-                deviceBuffer.Buffer(),
-                { vk::BufferCopy{.srcOffset = bufferCopyOffset, .dstOffset = 0, .size = totalBufferMemory} }
-            );
-
-            vk::BufferMemoryBarrier bufferMemoryBarrier
-            {
-                 .srcAccessMask = vk::AccessFlagBits::eTransferWrite,
-                 .dstAccessMask = vk::AccessFlagBits::eShaderRead,
-                 .srcQueueFamilyIndex = copyQueue.Family(),
-                 .dstQueueFamilyIndex = graphicsQueue.Family(),
-                 .buffer = deviceBuffer.Buffer(),
-                 .offset = 0,
-                 .size = deviceBuffer.ByteSize()
-            };
-
-            uploadCommandBuffer.pipelineBarrier(
-                vk::PipelineStageFlagBits::eTransfer,
-                vk::PipelineStageFlagBits::eBottomOfPipe,
-                {},
-                nullptr,
-                { bufferMemoryBarrier },
-                postTransferImageMemoryBarriers
-            );
-
-            //vk::BufferMemoryBarrier2KHR bufferMemoryBarrier
-            //{
-            //     .srcStageMask = vk::PipelineStageFlagBits2KHR::eTransfer,
-            //     .srcAccessMask = vk::AccessFlagBits2KHR::eTransferWrite,
-            //     .srcQueueFamilyIndex = copyQueue.Family(),
-            //     .dstQueueFamilyIndex = graphicsQueue.Family(),
-            //     .buffer = deviceBuffer.Buffer(),
-            //};
-
-            //vk::DependencyInfoKHR dependencyInfo
-            //{
-            //    .bufferMemoryBarrierCount = 1,
-            //    .pBufferMemoryBarriers = &bufferMemoryBarrier,
-            //};
-
-            //uploadCommandBuffer.pipelineBarrier2KHR(dependencyInfo);
-
-
-            /*
-                VULKAN_HPP_NAMESPACE::AccessFlags   srcAccessMask       = {};
-    VULKAN_HPP_NAMESPACE::AccessFlags   dstAccessMask       = {};
-            
-            */
-
-            //uploadCommandBuffer.pipelineBarrier(
-            //    vk::PipelineStageFlagBits::eTransfer,
-            //    vk::PipelineStageFlagBits::eBottomOfPipe,
-            //    {},
-            //    nullptr,
-            //    nullptr,
-            //    nullptr
-            //);
-        }
-
-    
-        co_await _submissionThreadExecutionContext->AppendOneShotCommandBufferSubmission(
-            std::move(uploadCommandBuffer)
-        );
-
-        // record commands on the main thread for now
-        // we should only offload recording to other threads once it is necessary
-
-        // send the command buffer to the copy submit executor which will submit recorded copy commands at once
-
 
         DEBUGGER_TRACE("rendering thread fun - copy submitted and signaled as done");
 
         co_await concurrencpp::resume_on(*_poolExecutor); // temprary, release resources on pool thread
-        PROFILE_CATEGORIZED_SCOPE("Asset Loading Background release stuff", Profiling::Color::Black, Profiling::PROFILING_CATEGORY_RENDERING);
         LoadedModel res{};
 
         DEBUGGER_TRACE("loading done");
@@ -431,6 +414,8 @@ namespace eureka
     }
 
     
+
+
 
 
 } 
