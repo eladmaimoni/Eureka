@@ -9,6 +9,8 @@ target_link_libraries(
   Eigen3::Eigen
   glm::glm
   function2::function2
+  Boost::boost 
+  Boost::container
   )
 
 target_include_directories(Eureka.Precompiled PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} "${PROJECT_BINARY_DIR}")
@@ -60,6 +62,7 @@ target_precompile_headers(
     <function2/function2.hpp>
     <concurrencpp/concurrencpp.h>
     <global_definitions.hpp>
+    <boost/container/small_vector.hpp>
  )
 
 

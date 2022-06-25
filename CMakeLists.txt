@@ -6,6 +6,7 @@ project ("Eureka")
 ############################################################################
 #                            PACKAGES
 ############################################################################
+find_package(Boost REQUIRED COMPONENTS container)
 find_package(Catch2 CONFIG REQUIRED)
 find_package(concurrencpp CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)

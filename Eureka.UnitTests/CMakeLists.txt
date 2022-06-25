@@ -16,6 +16,12 @@ target_include_directories(
 
 set_compiler_flags(Eureka.UnitTests)   
 
+target_compile_definitions(
+   Eureka.UnitTests
+   PRIVATE
+   CATCH_CONFIG_ENABLE_BENCHMARKING
+)
+
 target_precompile_headers(Eureka.UnitTests REUSE_FROM Eureka.Precompiled)
 
 target_link_libraries(
