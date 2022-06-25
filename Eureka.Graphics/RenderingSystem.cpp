@@ -123,6 +123,8 @@ namespace eureka
 
         InitializeSwapChain(windowSurface);
 
+
+
         InitializeCommandPoolsAndBuffers();
 
         bool found = false;
@@ -165,14 +167,14 @@ namespace eureka
         //    );
         //}
 
-
+        _stageZone = HostWriteCombinedBuffer(
+            _deviceContext,
+            BufferConfig{ .byte_size = sizeof(mesh::COLORED_TRIANGLE_INDEX_DATA) + sizeof(mesh::COLORED_TRIANGLE_VERTEX_DATA) }
+        );
 
         _uploadDoneFence = _deviceContext.LogicalDevice()->createFence(vk::FenceCreateInfo{ .flags = vk::FenceCreateFlagBits::eSignaled });
      
-        _stageZone = HostWriteCombinedBuffer(
-            _deviceContext, 
-            BufferConfig { .byte_size = sizeof(mesh::COLORED_TRIANGLE_INDEX_DATA) + sizeof(mesh::COLORED_TRIANGLE_VERTEX_DATA)}        
-        );
+  
 
         _triangle = VertexAndIndexTransferableDeviceBuffer(
             _deviceContext,
@@ -199,6 +201,25 @@ namespace eureka
 
         _constantBufferSet.SetBinding(0, descType, descInfo);
 
+
+        auto oneShotCopyTriangleCommandBuffer = _submissionThreadExecutionContext->OneShotCopySubmitCommandPool().AllocatePrimaryCommandBuffer();
+
+
+        _stageZone.Assign(std::span(mesh::COLORED_TRIANGLE_INDEX_DATA), 0);
+        _stageZone.Assign(std::span(mesh::COLORED_TRIANGLE_VERTEX_DATA), sizeof(mesh::COLORED_TRIANGLE_INDEX_DATA));
+        {
+            ScopedCommands commands(oneShotCopyTriangleCommandBuffer);
+
+            oneShotCopyTriangleCommandBuffer.copyBuffer(
+                _stageZone.Buffer(),
+                _triangle.Buffer(),
+                { vk::BufferCopy{.srcOffset = 0, .dstOffset = 0, .size = _triangle.ByteSize()} }
+            );
+        }
+
+
+        _submissionThreadExecutionContext->AppendOneShotCommandBufferSubmission(std::move(oneShotCopyTriangleCommandBuffer));
+
     }
 
     void RenderingSystem::HandleSwapChainResize()
@@ -210,6 +231,12 @@ namespace eureka
         );
         auto renderArea = _swapChain->RenderArea();
         _camera.SetFullViewport(renderArea.offset.x, renderArea.offset.y, renderArea.extent.width, renderArea.extent.height);
+    
+        _pendingOneShotCopies.reserve(100);
+        _pendingOneShotsignalValues.reserve(100);
+        _pendingOneShotSignalSemaphores.reserve(100);
+
+
     }
 
     void RenderingSystem::Deinitialize()
@@ -235,66 +262,24 @@ namespace eureka
         //
         // wait for current frame to finish execution before we reset its command buffer (other frames can be in flight)
         //
-
         auto& currentFrameCommandRecord = _frameCommandBuffer[currentFrame];
-
         auto currentFrameFence = currentFrameCommandRecord.DoneFence();
-
-        // wait only for per frame fence, other things should be done using semaphores
-
         VK_CHECK(_deviceContext.LogicalDevice()->waitForFences(
-            { currentFrameFence, *_uploadDoneFence},
+            { currentFrameFence },
             VK_TRUE,
             UINT64_MAX
         ));
 
+        currentFrameCommandRecord.Reset();
 
         _deviceContext.LogicalDevice()->resetFences(
-            { currentFrameFence, *_uploadDoneFence }
+            { currentFrameFence }
         );
+        // wait only for per frame fence, other things should be done using semaphores
 
-        currentFrameCommandRecord.Reset();
-        _uploadPool.Reset();
-        {
-            // this section could happen in a different thread (upload thread)
-
-            _stageZone.Assign(std::span(mesh::COLORED_TRIANGLE_INDEX_DATA), 0);
-            _stageZone.Assign(std::span(mesh::COLORED_TRIANGLE_VERTEX_DATA), sizeof(mesh::COLORED_TRIANGLE_INDEX_DATA));
+   
 
 
-            {
-                ScopedCommands commands(_uploadCommandBuffer);
-
-                _uploadCommandBuffer.copyBuffer(
-                    _stageZone.Buffer(),
-                    _triangle.Buffer(),
-                    { vk::BufferCopy{.srcOffset = 0, .dstOffset = 0, .size = _triangle.ByteSize()} }
-                );
-            }
-
-  
-            vk::SubmitInfo uploadsSubmitInfo
-            {
-                .waitSemaphoreCount = 0,
-                .pWaitSemaphores = nullptr,
-                .pWaitDstStageMask = {},
-                .commandBufferCount = 1,
-                .pCommandBuffers = &*_uploadCommandBuffer,
-                .signalSemaphoreCount = 1,
-                .pSignalSemaphores = &*_uploadDoneSemaphore
-            };
-
-
-            _copyQueue->submit(uploadsSubmitInfo, *_uploadDoneFence);
-        }
-
-
-
- 
-
-        _pendingOneShotCopies.reserve(100);
-        _pendingOneShotsignalValues.reserve(100);
-        _pendingOneShotSignalSemaphores.reserve(100);
    
 
         auto submissionPending = _submissionThreadExecutionContext->OneShotCopySubmissionPacketsCount();
@@ -444,20 +429,20 @@ namespace eureka
         auto renderingDoneSemaphore = currentFrameCommandRecord.DoneSemaphore();
 
 
-        std::array<vk::Semaphore, 2> waitSemaphores
+        std::array<vk::Semaphore, 1> waitSemaphores
         {
-            *_uploadDoneSemaphore,imageReadySemaphore
+            /**_uploadDoneSemaphore,*/imageReadySemaphore
         };
 
 
-        std::array<vk::PipelineStageFlags, 2> waitStageMasks
+        std::array<vk::PipelineStageFlags, 1> waitStageMasks
         {
-            vk::PipelineStageFlagBits::eColorAttachmentOutput, vk::PipelineStageFlagBits::eVertexInput
+            vk::PipelineStageFlagBits::eColorAttachmentOutput/*, vk::PipelineStageFlagBits::eVertexInput*/
         };
 
         vk::SubmitInfo submitInfo
         {
-            .waitSemaphoreCount = 2,
+            .waitSemaphoreCount = static_cast<uint32_t>(waitSemaphores.size()),
             .pWaitSemaphores = waitSemaphores.data(),
             .pWaitDstStageMask = waitStageMasks.data(),
             .commandBufferCount = 1,
