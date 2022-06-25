@@ -5,7 +5,7 @@
 #include <Image.hpp>
 #include <Buffer.hpp>
 #include <basic_utils.hpp>
-
+#include <profiling_macros.hpp>
 
 namespace eureka
 {
@@ -131,6 +131,7 @@ namespace eureka
         const ModelLoadingConfig& config
     )
     {
+        PROFILE_CATEGORIZED_SCOPE("Asset Loading Background", Profiling::Color::Red, Profiling::PROFILING_CATEGORY_RENDERING);
         auto cancellationToken = config.cancel;
         bool expected = false;
         if (!_busy.compare_exchange_strong(expected, true))
@@ -267,6 +268,7 @@ namespace eureka
 
         
         {
+            PROFILE_CATEGORIZED_SCOPE("Asset Loading Command Recording", Profiling::Color::Green, Profiling::PROFILING_CATEGORY_RENDERING);
             auto& copyQueue = _submissionThreadExecutionContext->CopyQueue();
             auto& graphicsQueue = _submissionThreadExecutionContext->GraphicsQueue();
             ScopedCommands commands(uploadCommandBuffer);
@@ -407,7 +409,7 @@ namespace eureka
             //);
         }
 
-     
+    
         co_await _submissionThreadExecutionContext->AppendOneShotCommandBufferSubmission(
             std::move(uploadCommandBuffer)
         );
@@ -418,10 +420,13 @@ namespace eureka
         // send the command buffer to the copy submit executor which will submit recorded copy commands at once
 
 
-
         DEBUGGER_TRACE("rendering thread fun - copy submitted and signaled as done");
 
+        co_await concurrencpp::resume_on(*_poolExecutor); // temprary, release resources on pool thread
+        PROFILE_CATEGORIZED_SCOPE("Asset Loading Background release stuff", Profiling::Color::Black, Profiling::PROFILING_CATEGORY_RENDERING);
         LoadedModel res{};
+
+        DEBUGGER_TRACE("loading done");
         co_return res;
     }
 

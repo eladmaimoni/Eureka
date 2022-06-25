@@ -2,7 +2,7 @@
 #include "SwapChain.hpp"
 #include "RenderTarget.hpp"
 #include "GraphicsDefaults.hpp"
-
+#include <profiling_macros.hpp>
 namespace eureka
 {
 
@@ -252,8 +252,10 @@ namespace eureka
 
     static constexpr std::size_t MAX_COPY_SUBMITS_PER_FRAME = 10;
 
+
     void RenderingSystem::RunOne()
     {
+        PROFILE_CATEGORIZED_SCOPE("RunOne", Profiling::Color::Blue, Profiling::PROFILING_CATEGORY_RENDERING);
         _submissionThreadExecutionContext->Executor().loop_all(MAX_COPY_SUBMITS_PER_FRAME);
 
         auto [currentFrame, imageReadySemaphore] = _swapChain->AcquireNextAvailableImageAsync();

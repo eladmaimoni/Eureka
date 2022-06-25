@@ -17,6 +17,14 @@ find_package(unofficial-vulkan-memory-allocator CONFIG REQUIRED)
 find_program(glslc_executable NAMES glslc HINTS Vulkan::glslc)
 find_path(TINYGLTF_INCLUDE_DIRS "tiny_gltf.h")
 
+find_package(CUDAToolkit)
+if (CUDAToolkit_FOUND)
+    message("found cuda toolkit version ${CUDAToolkit_VERSION_MAJOR}.${CUDAToolkit_VERSION_MINOR}.${CUDAToolkit_VERSION_PATCH}")
+
+
+
+endif()
+
 #find_package(Boost REQUIRED COMPONENTS program_options)
 #find_package(glslang CONFIG REQUIRED)
 #find_package(SPIRV-Tools CONFIG REQUIRED)

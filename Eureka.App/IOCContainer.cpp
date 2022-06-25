@@ -4,7 +4,7 @@
 #include "../Eureka.Graphics/RenderingSystem.hpp"
 #include "../Eureka.Graphics/SubmissionThreadExecutionContext.hpp"
 #include "../Eureka.AssetLoading/AssetLoading.hpp"
-
+#include <profiling.hpp>
 namespace eureka
 {
     InstanceConfig CreateInstanceConfig(const GLFWRuntime& glfw)
@@ -44,6 +44,7 @@ namespace eureka
         //_copySubmitExecutor(_concurrencyRuntime.make_manual_executor()),
 
     {
+        Profiling::InitProfilingCategories();
         _deviceContext.Init(_instance, CreateDeviceContextConfig());
 
         _graphicsQueue = _deviceContext.CreateGraphicsQueue();
