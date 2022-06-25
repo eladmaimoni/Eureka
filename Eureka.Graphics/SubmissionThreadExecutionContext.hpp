@@ -19,6 +19,7 @@ namespace eureka
     private:
         DeviceContext&                             _deviceConetext;
         Queue                                      _copyQueue;
+        Queue                                      _graphicsQueue;
         SubmissionThreadExecutor                   _executor;
         CommandPool                                _oneShotCopyCommandPool;
         std::deque<OneShotCopySubmissionPacket>   _oneShotCopyCommandBuffers;
@@ -26,17 +27,27 @@ namespace eureka
         SubmissionThreadExecutionContext(
             DeviceContext& deviceContext,
             Queue copyQueue,
+            Queue graphicsQueue,
             SubmissionThreadExecutor executor
         )
             :
             _deviceConetext(deviceContext),
             _copyQueue(copyQueue),
+            _graphicsQueue(graphicsQueue),
             _executor(std::move(executor)),
             _oneShotCopyCommandPool(deviceContext.LogicalDevice(), CommandPoolDesc{ .type = CommandPoolType::eTransientResettableBuffers, .queue_family = _copyQueue.Family() })
         {
 
         }
 
+        Queue& CopyQueue()
+        {
+            return _copyQueue;
+        }
+        Queue& GraphicsQueue()
+        {
+            return _graphicsQueue;
+        }
         CommandPool& OneShotCopySubmitCommandPool()
         {
             // TODO assert correct thread

@@ -1,4 +1,5 @@
 #include "IOCContainer.hpp"
+#include <AssetLoading.hpp>
 
 namespace eureka
 {
@@ -9,6 +10,9 @@ namespace eureka
     public:
         App();
         ~App();
+
+        void CancelPendingOperations();
+
         void Run();
 
     private:
@@ -18,5 +22,7 @@ namespace eureka
     private:
         void Initialize();
 
-    }; 
+        std::stop_source      _cancellationSource;
+        result_t<LoadedModel> _pendingLoad;
+    };
 }    

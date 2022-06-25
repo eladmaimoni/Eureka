@@ -40,6 +40,10 @@ namespace eureka
     {
         auto supported_layers = context.enumerateInstanceLayerProperties();
 
+
+        //DEBUGGER_TRACE("instance layers: \n{}", supported_layers | std::views::transform([](const auto& v) {return std::string_view(v.layerName.data()); }));
+
+
         for (const auto& required_layer : desc.required_layers)
         {
             bool found = false;

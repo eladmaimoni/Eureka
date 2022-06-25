@@ -11,4 +11,11 @@ namespace eureka
         file_not_found_error(const std::string& what_arg) : std::runtime_error(what_arg) {}
         file_not_found_error(const std::filesystem::path& what_arg) : std::runtime_error(what_arg.string()) {}
     };
+
+    class operation_cancelled : public std::runtime_error
+    {
+    public:
+        operation_cancelled(const char* what_arg) : std::runtime_error(what_arg) {}
+        operation_cancelled(const std::string& what_arg) : std::runtime_error(what_arg) {}
+    };
 }

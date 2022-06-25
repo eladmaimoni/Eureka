@@ -87,9 +87,10 @@ namespace eureka
     
     struct Image2DUploadTransferDesc
     {
-        uint8_t*    src_ptr; // host temporary buffer containing data
-        std::size_t bytes;
+        dynamic_cspan<uint8_t> src_span;
+        uint64_t    stage_zone_offset;
         vk::Image   destination_image;
+        vk::Extent3D destination_image_extent;
     };
 
     struct BufferDataUploadTransferDesc
@@ -116,12 +117,21 @@ namespace eureka
 
     }
 
+    void ThrowOnCancelled(const std::stop_token& stopToken)
+    {
+        if (stopToken.stop_requested())
+        {
+            throw operation_cancelled("cancelled");
+        }
+
+    }
+
     result_t<LoadedModel> AssetLoader::LoadModel(
         const std::filesystem::path& path,
         const ModelLoadingConfig& config
     )
     {
-        
+        auto cancellationToken = config.cancel;
         bool expected = false;
         if (!_busy.compare_exchange_strong(expected, true))
         {
@@ -150,14 +160,14 @@ namespace eureka
             throw std::runtime_error("bad gltf");
         }
 
+        ThrowOnCancelled(cancellationToken);
+
         co_await concurrencpp::resume_on(*_poolExecutor);
-        
-        
 
         DEBUGGER_TRACE("pool thread fun");
 
-        std::vector<Image2DUploadTransferDesc> toStageBufferTransfers;
-        toStageBufferTransfers.reserve(gltfModel.images.size() + gltfModel.nodes.size());
+        std::vector<Image2DUploadTransferDesc> imageUploadDescs;
+        imageUploadDescs.reserve(gltfModel.images.size() + gltfModel.nodes.size());
 
         std::vector<SampledImage2D> images;
         images.reserve(gltfModel.images.size());
@@ -189,11 +199,21 @@ namespace eureka
                  .use_dedicated_memory_allocation = false // unlikely to be resized
             };
             auto& vulkanImage = images.emplace_back(_deviceContext, imageProps);
-            toStageBufferTransfers.emplace_back(Image2DUploadTransferDesc{ .src_ptr = glTFImage.image.data(), .bytes = glTFImage.image.size(), .destination_image = vulkanImage.Get()});
+            imageUploadDescs.emplace_back(
+                Image2DUploadTransferDesc
+                { 
+                    .src_span = dynamic_cspan<uint8_t>(glTFImage.image.data(), glTFImage.image.size()),
+                    .stage_zone_offset = totalImageMemory,
+                    .destination_image = vulkanImage.Get(),
+                    .destination_image_extent = vk::Extent3D{.width = imageProps.width, .height = imageProps.width, .depth = 1}
+                }
+            );
             totalImageMemory += glTFImage.image.size();
         }
 
         const tinygltf::Scene& scene = gltfModel.scenes.at(0);
+
+        std::size_t totalBufferMemory = 0;
 
         for (auto i = 0u; i < scene.nodes.size(); ++i)
         {
@@ -208,20 +228,27 @@ namespace eureka
                     auto primitiveView = ExtractPrimitiveData(gltfModel, mesh.primitives[j]);
 
                     // TODO: calculate buffer offsets
-                    indicesUploadDesc.emplace_back(to_raw_span(primitiveView.index_view));
-                    vertexDataUploadDesc.emplace_back(to_raw_span(primitiveView.position_view));
-                    vertexDataUploadDesc.emplace_back(to_raw_span(primitiveView.normal_view));
-                    vertexDataUploadDesc.emplace_back(to_raw_span(primitiveView.uv_view));
-                    vertexDataUploadDesc.emplace_back(to_raw_span(primitiveView.tangent_view));
+                    totalBufferMemory += indicesUploadDesc.emplace_back(to_raw_span(primitiveView.index_view)).size_bytes();
+                    totalBufferMemory += vertexDataUploadDesc.emplace_back(to_raw_span(primitiveView.position_view)).size_bytes();
+                    totalBufferMemory += vertexDataUploadDesc.emplace_back(to_raw_span(primitiveView.normal_view)).size_bytes();
+                    totalBufferMemory += vertexDataUploadDesc.emplace_back(to_raw_span(primitiveView.uv_view)).size_bytes();
+                    totalBufferMemory += vertexDataUploadDesc.emplace_back(to_raw_span(primitiveView.tangent_view)).size_bytes();
                 }
             }
         }
 
-        
+        VertexAndIndexTransferableDeviceBuffer deviceBuffer(_deviceContext, BufferConfig{ .byte_size = totalBufferMemory });
 
-        _stageZone.Reset();
-
+        _stageZone.Reset(); 
         // TODO check stage zone leftover
+        for (const auto& imageUploadDesc : imageUploadDescs)
+        {      
+            _stageZone.Assign(imageUploadDesc.src_span);
+        }
+
+        auto bufferCopyOffset = _stageZone.Position();
+
+  
         for (const auto& idxSpan : indicesUploadDesc)
         {
             _stageZone.Assign(idxSpan);
@@ -230,26 +257,157 @@ namespace eureka
         {
             _stageZone.Assign(vertexSpan);
         }
-        
-        VertexAndIndexTransferableDeviceBuffer deviceBuffer(_deviceContext, BufferConfig{ .byte_size = _stageZone.Position() });
 
+        ThrowOnCancelled(cancellationToken);
 
         co_await concurrencpp::resume_on(_submissionThreadExecutionContext->OneShotCopySubmitExecutor());
 
         DEBUGGER_TRACE("rendering thread fun - recording one shot copy");
         auto uploadCommandBuffer = _submissionThreadExecutionContext->OneShotCopySubmitCommandPool().AllocatePrimaryCommandBuffer();
 
+        
         {
+            auto& copyQueue = _submissionThreadExecutionContext->CopyQueue();
+            auto& graphicsQueue = _submissionThreadExecutionContext->GraphicsQueue();
             ScopedCommands commands(uploadCommandBuffer);
+
+            std::vector< vk::ImageMemoryBarrier> preTransferImageMemoryBarriers;
+            std::vector< vk::ImageMemoryBarrier> postTransferImageMemoryBarriers;
+
+            for (const auto& imageUploadDesc : imageUploadDescs)
+            {
+                vk::ImageSubresourceRange subresourceRange
+                {
+                    .aspectMask = vk::ImageAspectFlagBits::eColor,
+                    .baseMipLevel = 0,
+                    .levelCount = 1,
+                    .layerCount = 1
+                };
+
+                vk::ImageMemoryBarrier preTransferImageMemoryBarrier
+                {
+                    .srcAccessMask = vk::AccessFlagBits::eNoneKHR,
+                    .dstAccessMask = vk::AccessFlagBits::eTransferWrite,
+                    .oldLayout = vk::ImageLayout::eUndefined,
+                    .newLayout = vk::ImageLayout::eTransferDstOptimal,
+                    .srcQueueFamilyIndex = copyQueue.Family(),
+                    .dstQueueFamilyIndex = copyQueue.Family(),
+                    .image = imageUploadDesc.destination_image,
+                    .subresourceRange = subresourceRange
+                };
+
+                preTransferImageMemoryBarriers.emplace_back(preTransferImageMemoryBarrier);
+
+                vk::ImageMemoryBarrier postTransferImageMemoryBarrier
+                {
+                    .srcAccessMask = vk::AccessFlagBits::eTransferWrite,
+                    .dstAccessMask = vk::AccessFlagBits::eShaderRead,
+                    .oldLayout = vk::ImageLayout::eTransferDstOptimal,
+                    .newLayout = vk::ImageLayout::eShaderReadOnlyOptimal,
+                    .srcQueueFamilyIndex = copyQueue.Family(),
+                    .dstQueueFamilyIndex = graphicsQueue.Family(),
+                    .image = imageUploadDesc.destination_image,
+                    .subresourceRange = subresourceRange
+                };
+
+                postTransferImageMemoryBarriers.emplace_back(postTransferImageMemoryBarrier);
+            }
+
+            uploadCommandBuffer.pipelineBarrier(
+                vk::PipelineStageFlagBits::eTopOfPipe,
+                vk::PipelineStageFlagBits::eTransfer,
+                {},
+                nullptr,
+                nullptr,
+                preTransferImageMemoryBarriers
+            );
+
+            for (const auto& imageUploadDesc : imageUploadDescs)
+            {
+                vk::ImageSubresourceLayers subresourceLayers
+                {
+                    .aspectMask = vk::ImageAspectFlagBits::eColor,
+                    .mipLevel = 0,
+                    .baseArrayLayer = 0,
+                    .layerCount = 1
+                };
+
+                vk::BufferImageCopy region
+                {
+                    .bufferOffset = imageUploadDesc.stage_zone_offset,
+                    .imageSubresource = subresourceLayers,
+                    .imageExtent = imageUploadDesc.destination_image_extent
+                };
+
+                uploadCommandBuffer.copyBufferToImage(
+                    _stageZone.Buffer(),
+                    imageUploadDesc.destination_image,
+                    vk::ImageLayout::eTransferDstOptimal,
+                    { region }
+                );
+            }
 
             uploadCommandBuffer.copyBuffer(
                 _stageZone.Buffer(),
                 deviceBuffer.Buffer(),
-                { vk::BufferCopy{.srcOffset = 0, .dstOffset = 0, .size = _stageZone.Position()} }
+                { vk::BufferCopy{.srcOffset = bufferCopyOffset, .dstOffset = 0, .size = totalBufferMemory} }
             );
+
+            vk::BufferMemoryBarrier bufferMemoryBarrier
+            {
+                 .srcAccessMask = vk::AccessFlagBits::eTransferWrite,
+                 .dstAccessMask = vk::AccessFlagBits::eShaderRead,
+                 .srcQueueFamilyIndex = copyQueue.Family(),
+                 .dstQueueFamilyIndex = graphicsQueue.Family(),
+                 .buffer = deviceBuffer.Buffer(),
+                 .offset = 0,
+                 .size = deviceBuffer.ByteSize()
+            };
+
+            uploadCommandBuffer.pipelineBarrier(
+                vk::PipelineStageFlagBits::eTransfer,
+                vk::PipelineStageFlagBits::eBottomOfPipe,
+                {},
+                nullptr,
+                { bufferMemoryBarrier },
+                postTransferImageMemoryBarriers
+            );
+
+            //vk::BufferMemoryBarrier2KHR bufferMemoryBarrier
+            //{
+            //     .srcStageMask = vk::PipelineStageFlagBits2KHR::eTransfer,
+            //     .srcAccessMask = vk::AccessFlagBits2KHR::eTransferWrite,
+            //     .srcQueueFamilyIndex = copyQueue.Family(),
+            //     .dstQueueFamilyIndex = graphicsQueue.Family(),
+            //     .buffer = deviceBuffer.Buffer(),
+            //};
+
+            //vk::DependencyInfoKHR dependencyInfo
+            //{
+            //    .bufferMemoryBarrierCount = 1,
+            //    .pBufferMemoryBarriers = &bufferMemoryBarrier,
+            //};
+
+            //uploadCommandBuffer.pipelineBarrier2KHR(dependencyInfo);
+
+
+            /*
+                VULKAN_HPP_NAMESPACE::AccessFlags   srcAccessMask       = {};
+    VULKAN_HPP_NAMESPACE::AccessFlags   dstAccessMask       = {};
+            
+            */
+
+            //uploadCommandBuffer.pipelineBarrier(
+            //    vk::PipelineStageFlagBits::eTransfer,
+            //    vk::PipelineStageFlagBits::eBottomOfPipe,
+            //    {},
+            //    nullptr,
+            //    nullptr,
+            //    nullptr
+            //);
         }
 
-        // TODO co_await
+     
         co_await _submissionThreadExecutionContext->AppendOneShotCommandBufferSubmission(
             std::move(uploadCommandBuffer)
         );

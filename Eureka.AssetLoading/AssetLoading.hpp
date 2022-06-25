@@ -13,14 +13,14 @@ namespace eureka
 
     struct ModelLoadingConfig
     {
-       
+        std::stop_token cancel;
     };
     struct LoadedModel
     {
 
     };
 
-    inline constexpr uint64_t STAGE_ZONE_SIZE = 1024 * 1024 * 4; // 4MB
+    inline constexpr uint64_t STAGE_ZONE_SIZE = 1024 * 1024 * 400; // 20MB
 
     class AssetLoader
     {
@@ -33,7 +33,7 @@ namespace eureka
             PoolExecutor poolExecutor     
         );
 
-        result_t<LoadedModel> LoadModel(const std::filesystem::path& path, const ModelLoadingConfig& config = ModelLoadingConfig{});
+        result_t<LoadedModel> LoadModel(const std::filesystem::path& path, const ModelLoadingConfig& config);
 
         std::atomic_bool                                     _busy{ false };
         DeviceContext&                                       _deviceContext;
