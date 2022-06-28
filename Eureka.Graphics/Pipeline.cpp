@@ -3,6 +3,30 @@
 
 namespace eureka
 {
+    DescriptorPool::DescriptorPool(DeviceContext& deviceContext)
+        : _device(deviceContext.LogicalDevice())
+    {
+        // We need to tell the API the number of max. requested descriptors per type
+        std::array<vk::DescriptorPoolSize, 1> perTypeMaxCount{};
+        perTypeMaxCount[0] = vk::DescriptorPoolSize{ .type = vk::DescriptorType::eUniformBuffer, .descriptorCount = 1 };
+
+        // For additional types you need to add new entries in the type count list
+        // E.g. for two combined image samplers :
+        // typeCounts[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        // typeCounts[1].descriptorCount = 2;
+
+        // Create the global descriptor pool
+        // All descriptors used in this example are allocated from this pool
+        vk::DescriptorPoolCreateInfo descriptorPoolCreateInfo
+        {
+            .maxSets = 1,
+            .poolSizeCount = static_cast<uint32_t>(perTypeMaxCount.size()),
+            .pPoolSizes = perTypeMaxCount.data()
+        };
+        _pool = _device->createDescriptorPool(descriptorPoolCreateInfo);
+    }
+
+
     struct FixedPiplinePreset
     {
         vk::PipelineInputAssemblyStateCreateInfo input_assembly_create_info;
@@ -25,7 +49,6 @@ namespace eureka
 
         }
     };
-
 
     void SetupFixedPreset(MeshPipelinePreset& meshPipelinePreset)
     {
@@ -117,6 +140,13 @@ namespace eureka
         _descriptorSetLayout = deviceContext.LogicalDevice()->createDescriptorSetLayout(descriptorSetLayoutCreateInfo);
     }
 
+
+
+    //////////////////////////////////////////////////////////////////////////
+    //
+    //                        ColoredVertexMeshPipeline
+    // 
+    //////////////////////////////////////////////////////////////////////////
     ColoredVertexMeshPipeline::ColoredVertexMeshPipeline(
         DeviceContext& deviceContext, 
         std::shared_ptr<DepthColorRenderPass> renderPass,
@@ -136,8 +166,6 @@ namespace eureka
 
         Setup(deviceContext);
     }
-
-
 
     void ColoredVertexMeshPipeline::Setup(DeviceContext& deviceContext)
     {
@@ -236,27 +264,163 @@ namespace eureka
 
 
 
-    DescriptorPool::DescriptorPool(DeviceContext& deviceContext)
-        : _device(deviceContext.LogicalDevice())
+    //////////////////////////////////////////////////////////////////////////
+    //
+    //                    NormalMappedShadedMeshPipeline
+    // 
+    //////////////////////////////////////////////////////////////////////////
+
+
+    PhongShadedMeshWithNormalMapPipeline::PhongShadedMeshWithNormalMapPipeline(
+        DeviceContext& deviceContext, std::shared_ptr<DepthColorRenderPass> renderPass,
+        std::shared_ptr<PerFrameGeneralPurposeDescriptorSetLayout> descriptorSetLayout
+    ) :
+        _descriptorSetLayout(std::move(descriptorSetLayout)),
+        _renderPass(std::move(renderPass))
     {
-        // We need to tell the API the number of max. requested descriptors per type
-        std::array<vk::DescriptorPoolSize, 1> perTypeMaxCount{};
-        perTypeMaxCount[0] = vk::DescriptorPoolSize{ .type = vk::DescriptorType::eUniformBuffer, .descriptorCount = 1 };
-
-        // For additional types you need to add new entries in the type count list
-        // E.g. for two combined image samplers :
-        // typeCounts[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        // typeCounts[1].descriptorCount = 2;
-
-        // Create the global descriptor pool
-        // All descriptors used in this example are allocated from this pool
-        vk::DescriptorPoolCreateInfo descriptorPoolCreateInfo
+        auto layoutHandle = _descriptorSetLayout->Get();
+        vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo
         {
-            .maxSets = 1,
-            .poolSizeCount = static_cast<uint32_t>(perTypeMaxCount.size()),
-            .pPoolSizes = perTypeMaxCount.data()
+            .setLayoutCount = 1,
+            .pSetLayouts = &layoutHandle
         };
-        _pool = _device->createDescriptorPool(descriptorPoolCreateInfo);
+
+        _pipelineLayout = deviceContext.LogicalDevice()->createPipelineLayout(pipelineLayoutCreateInfo);
+
+        Setup(deviceContext);
+    }
+
+    void PhongShadedMeshWithNormalMapPipeline::Setup(DeviceContext& deviceContext)
+    {
+        //
+        // Vertex Attributes 
+        //
+
+        std::array<vk::VertexInputBindingDescription, 4> vertexInputBindings
+        {
+            vk::VertexInputBindingDescription
+            {
+                .binding = 0,
+                .stride = sizeof(Eigen::Vector3f),
+                .inputRate = vk::VertexInputRate::eVertex
+            },
+                vk::VertexInputBindingDescription
+            {
+                .binding = 1,
+                .stride = sizeof(Eigen::Vector3f),
+                .inputRate = vk::VertexInputRate::eVertex
+            },
+                vk::VertexInputBindingDescription
+            {
+                .binding = 2,
+                .stride = sizeof(Eigen::Vector2f),
+                .inputRate = vk::VertexInputRate::eVertex
+            },
+                vk::VertexInputBindingDescription
+            {
+                .binding = 3,
+                .stride = sizeof(Eigen::Vector3f),
+                .inputRate = vk::VertexInputRate::eVertex
+            }
+        };
+
+
+        std::array<vk::VertexInputAttributeDescription, 4> vertexInputAttributs
+        {
+
+            vk::VertexInputAttributeDescription
+            { // xyz position at shader location 0
+                .location = 0,
+                .binding = 0,
+                .format = vk::Format::eR32G32B32Sfloat,
+                .offset = 0
+            },
+            vk::VertexInputAttributeDescription
+            { // normal at shader location 1
+                .location = 1,
+                .binding = 1,
+                .format = vk::Format::eR32G32B32Sfloat,
+                .offset = 0
+            },
+                        vk::VertexInputAttributeDescription
+            {
+                // uv at shader location 2
+                .location = 2,
+                .binding = 2,
+                .format = vk::Format::eR32G32Sfloat,
+                .offset = 0
+            },
+            // rgb color at shader location 1
+            vk::VertexInputAttributeDescription
+            {
+                // tangent at shader location 3
+                .location = 3,
+                .binding = 3,
+                .format = vk::Format::eR32G32B32Sfloat,
+                .offset = 0
+            }
+        };
+
+        vk::PipelineVertexInputStateCreateInfo vertexInputState
+        {
+            .vertexBindingDescriptionCount = static_cast<uint32_t>(vertexInputBindings.size()),
+            .pVertexBindingDescriptions = vertexInputBindings.data(),
+            .vertexAttributeDescriptionCount = static_cast<uint32_t>(vertexInputAttributs.size()),
+            .pVertexAttributeDescriptions = vertexInputAttributs.data()
+        };
+
+        auto preset = CreateMeshPipelinePreset();
+        SetupFixedPreset(preset);
+
+        //
+        // Shaders
+        // 
+
+        auto vshader = deviceContext.Shaders()->LoadShaderModule(ShadedMeshWithNormalMapVS);
+        auto fshader = deviceContext.Shaders()->LoadShaderModule(PhongShadedMeshWithNormalMapFS);
+
+        std::array<vk::PipelineShaderStageCreateInfo, 2> shaderStages
+        {
+            vk::PipelineShaderStageCreateInfo
+            {
+                .stage = vk::ShaderStageFlagBits::eVertex,
+                .module = *vshader,
+                .pName = "main"
+            },
+            vk::PipelineShaderStageCreateInfo
+            {
+                .stage = vk::ShaderStageFlagBits::eFragment,
+                .module = *fshader,
+                .pName = "main"
+            }
+        };
+
+
+        //
+        // All Together
+        //
+
+        vk::GraphicsPipelineCreateInfo pipelineCreateInfo
+        {
+            .stageCount = static_cast<uint32_t>(shaderStages.size()),
+            .pStages = shaderStages.data(),
+            .pVertexInputState = &vertexInputState,
+            .pInputAssemblyState = &preset.fixed_preset.input_assembly_create_info,
+            .pTessellationState = nullptr,
+            .pViewportState = &preset.fixed_preset.viewport_state_create_info,
+            .pRasterizationState = &preset.fixed_preset.rasterization_state_create_info,
+            .pMultisampleState = &preset.fixed_preset.multisampling_state_create_info,
+            .pDepthStencilState = &preset.fixed_preset.depth_stencil_state_create_info,
+            .pColorBlendState = &preset.fixed_preset.color_blend_state_create_info,
+            .pDynamicState = &preset.fixed_preset.dynamic_state_create_info,
+            .layout = *_pipelineLayout,
+            .renderPass = _renderPass->Get()
+        };
+
+        _pipeline = deviceContext.LogicalDevice()->createGraphicsPipeline(
+            deviceContext.Shaders()->Cache(),
+            pipelineCreateInfo
+        );
     }
 
 }

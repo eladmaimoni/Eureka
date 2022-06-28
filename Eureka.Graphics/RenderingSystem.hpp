@@ -85,7 +85,7 @@ namespace eureka
 
         std::shared_ptr<PerFrameGeneralPurposeDescriptorSetLayout> _perFrameDescriptorSet;
         ColoredVertexMeshPipeline                                  _coloredVertexPipeline;
-
+        PhongShadedMeshWithNormalMapPipeline                       _phongPipeline;
 
         // this section should be a ring buffer of some sort
         uint32_t                                       _maxFramesInFlight{};

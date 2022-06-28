@@ -97,7 +97,11 @@ namespace eureka
         PerFrameGeneralPurposeDescriptorSetLayout(DeviceContext& deviceContext);
     };
 
-
+    //////////////////////////////////////////////////////////////////////////
+    //
+    //                        PipelineBase
+    // 
+    //////////////////////////////////////////////////////////////////////////
     class PipelineBase
     {
     protected:
@@ -120,6 +124,11 @@ namespace eureka
         }
     };
 
+    //////////////////////////////////////////////////////////////////////////
+    //
+    //                        ColoredVertexMeshPipeline
+    // 
+    //////////////////////////////////////////////////////////////////////////
     class ColoredVertexMeshPipeline : public PipelineBase
     {
         std::shared_ptr<DepthColorRenderPass>                _renderPass;
@@ -137,5 +146,20 @@ namespace eureka
         ColoredVertexMeshPipeline& operator=(ColoredVertexMeshPipeline&& rhs) = default;
     };
 
-
+    class PhongShadedMeshWithNormalMapPipeline : public PipelineBase
+    {
+        std::shared_ptr<DepthColorRenderPass>                _renderPass;
+        std::shared_ptr<PerFrameGeneralPurposeDescriptorSetLayout> _descriptorSetLayout;
+        void Setup(DeviceContext& deviceContext);
+    public:
+        PhongShadedMeshWithNormalMapPipeline(
+            DeviceContext& deviceContext,
+            std::shared_ptr<DepthColorRenderPass> renderPass,
+            std::shared_ptr<PerFrameGeneralPurposeDescriptorSetLayout> descriptorSetLayout
+        );
+        ~PhongShadedMeshWithNormalMapPipeline() = default;
+        PhongShadedMeshWithNormalMapPipeline() = default;
+        PhongShadedMeshWithNormalMapPipeline(PhongShadedMeshWithNormalMapPipeline&& that) = default;
+        PhongShadedMeshWithNormalMapPipeline& operator=(PhongShadedMeshWithNormalMapPipeline&& rhs) = default;
+    };
 }

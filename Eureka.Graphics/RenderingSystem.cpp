@@ -189,7 +189,7 @@ namespace eureka
 
         _perFrameDescriptorSet = std::make_shared<PerFrameGeneralPurposeDescriptorSetLayout>(_deviceContext);
         _coloredVertexPipeline = ColoredVertexMeshPipeline(_deviceContext, _renderPass, _perFrameDescriptorSet);
-
+        //_phongPipeline = PhongShadedMeshWithNormalMapPipeline(_deviceContext, _renderPass, _perFrameDescriptorSet);
 
         _camera.SetPosition(Eigen::Vector3f(0.0f, 0.0f, 2.5f));
         _camera.SetLookDirection(Eigen::Vector3f(0.0f, 0.0f, -1.0f));
