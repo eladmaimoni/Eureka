@@ -98,13 +98,42 @@ namespace eureka
     };
 
 
-
-    class ColoredVertexMeshPipeline
+    class PipelineBase
     {
-        std::shared_ptr<PerFrameGeneralPurposeDescriptorSetLayout> _descriptorSetLayout;
+    protected:
         std::shared_ptr<DepthColorRenderPass>                _renderPass;
-        vkr::PipelineLayout _pipelineLayout{nullptr};
-        vkr::Pipeline       _pipeline{nullptr};
+        std::shared_ptr<PerFrameGeneralPurposeDescriptorSetLayout> _descriptorSetLayout;
+        vkr::PipelineLayout _pipelineLayout{ nullptr };
+        vkr::Pipeline       _pipeline{ nullptr };
+
+        PipelineBase(
+            std::shared_ptr<DepthColorRenderPass> renderPass,
+            std::shared_ptr<PerFrameGeneralPurposeDescriptorSetLayout> descriptorSetLayout
+        ) :
+            _descriptorSetLayout(std::move(descriptorSetLayout)),
+            _renderPass(std::move(renderPass))
+        {
+
+        }
+        ~PipelineBase() = default;
+        PipelineBase() = default;
+        PipelineBase(PipelineBase&& that) = default;
+        PipelineBase& operator=(PipelineBase&& rhs) = default;
+
+    public:
+        vk::PipelineLayout Layout() const
+        {
+            return *_pipelineLayout;
+        }
+
+        vk::Pipeline Get() const
+        {
+            return *_pipeline;
+        }
+    };
+
+    class ColoredVertexMeshPipeline : public PipelineBase
+    {
         void Setup(DeviceContext& deviceContext);
     public:
         ColoredVertexMeshPipeline(
@@ -112,11 +141,11 @@ namespace eureka
             std::shared_ptr<DepthColorRenderPass> renderPass,
             std::shared_ptr<PerFrameGeneralPurposeDescriptorSetLayout> descriptorSetLayout
         );
+        ~ColoredVertexMeshPipeline() = default;
         ColoredVertexMeshPipeline() = default;
         ColoredVertexMeshPipeline(ColoredVertexMeshPipeline&& that) = default;
         ColoredVertexMeshPipeline& operator=(ColoredVertexMeshPipeline&& rhs) = default;
-        vk::PipelineLayout Layout() const;
-        vk::Pipeline Get() const;
+
 
     };
 }

@@ -19,6 +19,11 @@ namespace eureka
         vk::PipelineColorBlendAttachmentState color_blend_attachment_state;
         std::array<vk::DynamicState, 2>       enabled_dynamic_states{ vk::DynamicState::eViewport, vk::DynamicState::eScissor };
         FixedPiplinePreset                    fixed_preset;
+
+        void Setup()
+        {
+
+        }
     };
 
 
@@ -112,9 +117,11 @@ namespace eureka
         _descriptorSetLayout = deviceContext.LogicalDevice()->createDescriptorSetLayout(descriptorSetLayoutCreateInfo);
     }
 
-    ColoredVertexMeshPipeline::ColoredVertexMeshPipeline(DeviceContext& deviceContext, std::shared_ptr<DepthColorRenderPass> renderPass, std::shared_ptr<PerFrameGeneralPurposeDescriptorSetLayout> descriptorSetLayout) :
-        _descriptorSetLayout(descriptorSetLayout),
-        _renderPass(renderPass)
+    ColoredVertexMeshPipeline::ColoredVertexMeshPipeline(
+        DeviceContext& deviceContext, 
+        std::shared_ptr<DepthColorRenderPass> renderPass,
+        std::shared_ptr<PerFrameGeneralPurposeDescriptorSetLayout> descriptorSetLayout
+    ) : PipelineBase(std::move(renderPass), std::move(descriptorSetLayout))
     {
         auto layoutHandle = _descriptorSetLayout->Get();
         vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo
@@ -128,15 +135,7 @@ namespace eureka
         Setup(deviceContext);
     }
 
-    vk::PipelineLayout ColoredVertexMeshPipeline::Layout() const
-    {
-        return *_pipelineLayout;
-    }
 
-    vk::Pipeline ColoredVertexMeshPipeline::Get() const
-    {
-        return *_pipeline;
-    }
 
     void ColoredVertexMeshPipeline::Setup(DeviceContext& deviceContext)
     {
