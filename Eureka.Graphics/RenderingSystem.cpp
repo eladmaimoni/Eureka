@@ -263,15 +263,15 @@ namespace eureka
 
         auto [currentFrame, imageReadySemaphore] = _swapChain->AcquireNextAvailableImageAsync();
         
-
-
         // wait for current frame to finish execution before we reset its command buffer (other frames can be in flight)
         auto& currentFrameCommandRecord = _frameCommandBuffer[currentFrame];
         auto currentFrameFence = currentFrameCommandRecord.DoneFence();
         WaitForFrame(currentFrameFence); 
 
-        currentFrameCommandRecord.Reset();
-        auto& renderingCommandBuffer = currentFrameCommandRecord.CommandBuffer();  
+        currentFrameCommandRecord.Reset(); // reset pool
+        auto& renderingCommandBuffer = currentFrameCommandRecord.CommandBuffer();
+        // Record pre-frame here
+
         auto renderingDoneSemaphore = currentFrameCommandRecord.DoneSemaphore();
         RecordMainRenderPass(currentFrame,renderingCommandBuffer);       
         SubmitFrame(renderingCommandBuffer, imageReadySemaphore, renderingDoneSemaphore, currentFrameFence);

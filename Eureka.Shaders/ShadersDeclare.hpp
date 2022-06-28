@@ -30,6 +30,8 @@ extern const eureka::ShaderId IDENTIFIER;
 //////////////////////////////////////////////////////////////////////////
 EUREKA_SHADER_IDENTIFIER(ColoredVertexVS);
 EUREKA_SHADER_IDENTIFIER(ColoredVertexFS);
+EUREKA_SHADER_IDENTIFIER(ShadedMeshWithNormalMapVS);
+EUREKA_SHADER_IDENTIFIER(PhongShadedMeshWithNormalMapFS);
 EUREKA_SHADER_IDENTIFIER(TriangleVS);
 EUREKA_SHADER_IDENTIFIER(TriangleFS);
 

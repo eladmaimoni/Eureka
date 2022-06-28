@@ -3,7 +3,8 @@
 #include <ColoredVertexFS.spvhpp>
 #include <TriangleVS.spvhpp>
 #include <TriangleFS.spvhpp>
-
+#include <ShadedMeshWithNormalMapVS.spvhpp>
+#include <PhongShadedMeshWithNormalMapFS.spvhpp>
 
 #define EUREKA_DEFINE_SHADER_ID(IDENTIFIER, SHADER_FULL_NAME) \
 extern const eureka::ShaderId IDENTIFIER; \

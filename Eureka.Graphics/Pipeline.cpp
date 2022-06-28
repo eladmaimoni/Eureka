@@ -3,6 +3,87 @@
 
 namespace eureka
 {
+    struct FixedPiplinePreset
+    {
+        vk::PipelineInputAssemblyStateCreateInfo input_assembly_create_info;
+        vk::PipelineRasterizationStateCreateInfo rasterization_state_create_info;
+        vk::PipelineColorBlendStateCreateInfo    color_blend_state_create_info;
+        vk::PipelineViewportStateCreateInfo      viewport_state_create_info;
+        vk::PipelineDynamicStateCreateInfo       dynamic_state_create_info;
+        vk::PipelineDepthStencilStateCreateInfo  depth_stencil_state_create_info;
+        vk::PipelineMultisampleStateCreateInfo   multisampling_state_create_info;
+    };
+
+    struct MeshPipelinePreset
+    {
+        vk::PipelineColorBlendAttachmentState color_blend_attachment_state;
+        std::array<vk::DynamicState, 2>       enabled_dynamic_states{ vk::DynamicState::eViewport, vk::DynamicState::eScissor };
+        FixedPiplinePreset                    fixed_preset;
+    };
+
+
+    MeshPipelinePreset CreatePipelinePreset()
+    {
+        MeshPipelinePreset meshPipelinePreset
+        {
+            .color_blend_attachment_state = vk::PipelineColorBlendAttachmentState
+            {
+                .blendEnable = false,
+                .colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA
+            }
+        };
+
+
+        meshPipelinePreset.fixed_preset = FixedPiplinePreset
+        {
+            .input_assembly_create_info = vk::PipelineInputAssemblyStateCreateInfo
+            {
+                .topology = vk::PrimitiveTopology::eTriangleList
+            },
+            .rasterization_state_create_info = vk::PipelineRasterizationStateCreateInfo
+            {
+                .depthClampEnable = false,
+                .rasterizerDiscardEnable = false,
+                .polygonMode = vk::PolygonMode::eFill,
+                .cullMode = vk::CullModeFlagBits::eNone,
+                .frontFace = vk::FrontFace::eCounterClockwise,
+                .depthBiasEnable = false,
+                .lineWidth = 1.0f
+            },
+            .color_blend_state_create_info = vk::PipelineColorBlendStateCreateInfo
+            {
+                .attachmentCount = 1,
+                .pAttachments = &meshPipelinePreset.color_blend_attachment_state
+            },
+            .viewport_state_create_info = vk::PipelineViewportStateCreateInfo
+            {
+                .viewportCount = 1,
+                .scissorCount = 1
+            },
+            .dynamic_state_create_info = vk::PipelineDynamicStateCreateInfo 
+            {
+                .dynamicStateCount = static_cast<uint32_t>(meshPipelinePreset.enabled_dynamic_states.size()),
+                .pDynamicStates = meshPipelinePreset.enabled_dynamic_states.data()
+            },
+            .depth_stencil_state_create_info = vk::PipelineDepthStencilStateCreateInfo
+            {
+                .depthTestEnable = true,
+                .depthWriteEnable = true,
+                .depthCompareOp = vk::CompareOp::eLessOrEqual,
+                .depthBoundsTestEnable = false,
+                .stencilTestEnable = false,
+                .front = vk::StencilOpState{.failOp = vk::StencilOp::eKeep,.passOp = vk::StencilOp::eKeep, .depthFailOp = vk::StencilOp::eKeep, .compareOp = vk::CompareOp::eAlways },
+                .back = vk::StencilOpState{.failOp = vk::StencilOp::eKeep,.passOp = vk::StencilOp::eKeep, .depthFailOp = vk::StencilOp::eKeep, .compareOp = vk::CompareOp::eAlways }
+            },
+            .multisampling_state_create_info = vk::PipelineMultisampleStateCreateInfo 
+            {
+                .rasterizationSamples = vk::SampleCountFlagBits::e1,
+                .pSampleMask = nullptr
+            }            
+        };
+        
+        return meshPipelinePreset;
+    }
 
     PerFrameGeneralPurposeDescriptorSetLayout::PerFrameGeneralPurposeDescriptorSetLayout(DeviceContext& deviceContext)
     {
@@ -76,6 +157,8 @@ namespace eureka
             .lineWidth = 1.0f
         };
 
+       
+
         vk::PipelineColorBlendAttachmentState blendAttachments
         {
             .blendEnable = false,
@@ -113,6 +196,7 @@ namespace eureka
             .front = vk::StencilOpState{.failOp = vk::StencilOp::eKeep,.passOp = vk::StencilOp::eKeep, .depthFailOp = vk::StencilOp::eKeep, .compareOp = vk::CompareOp::eAlways },
             .back = vk::StencilOpState{.failOp = vk::StencilOp::eKeep,.passOp = vk::StencilOp::eKeep, .depthFailOp = vk::StencilOp::eKeep, .compareOp = vk::CompareOp::eAlways }
         };
+
 
         vk::PipelineMultisampleStateCreateInfo multisampleState
         {
