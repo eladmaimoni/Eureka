@@ -22,18 +22,8 @@ namespace eureka
     };
 
 
-    MeshPipelinePreset CreatePipelinePreset()
+    void SetupFixedPreset(MeshPipelinePreset& meshPipelinePreset)
     {
-        MeshPipelinePreset meshPipelinePreset
-        {
-            .color_blend_attachment_state = vk::PipelineColorBlendAttachmentState
-            {
-                .blendEnable = false,
-                .colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA
-            }
-        };
-
-
         meshPipelinePreset.fixed_preset = FixedPiplinePreset
         {
             .input_assembly_create_info = vk::PipelineInputAssemblyStateCreateInfo
@@ -60,7 +50,7 @@ namespace eureka
                 .viewportCount = 1,
                 .scissorCount = 1
             },
-            .dynamic_state_create_info = vk::PipelineDynamicStateCreateInfo 
+            .dynamic_state_create_info = vk::PipelineDynamicStateCreateInfo
             {
                 .dynamicStateCount = static_cast<uint32_t>(meshPipelinePreset.enabled_dynamic_states.size()),
                 .pDynamicStates = meshPipelinePreset.enabled_dynamic_states.data()
@@ -75,13 +65,26 @@ namespace eureka
                 .front = vk::StencilOpState{.failOp = vk::StencilOp::eKeep,.passOp = vk::StencilOp::eKeep, .depthFailOp = vk::StencilOp::eKeep, .compareOp = vk::CompareOp::eAlways },
                 .back = vk::StencilOpState{.failOp = vk::StencilOp::eKeep,.passOp = vk::StencilOp::eKeep, .depthFailOp = vk::StencilOp::eKeep, .compareOp = vk::CompareOp::eAlways }
             },
-            .multisampling_state_create_info = vk::PipelineMultisampleStateCreateInfo 
+            .multisampling_state_create_info = vk::PipelineMultisampleStateCreateInfo
             {
                 .rasterizationSamples = vk::SampleCountFlagBits::e1,
                 .pSampleMask = nullptr
-            }            
+            }
         };
-        
+    }
+
+    MeshPipelinePreset CreateMeshPipelinePreset()
+    {
+        MeshPipelinePreset meshPipelinePreset
+        {
+            .color_blend_attachment_state = vk::PipelineColorBlendAttachmentState
+            {
+                .blendEnable = false,
+                .colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA
+            },
+            .enabled_dynamic_states{ vk::DynamicState::eViewport, vk::DynamicState::eScissor }
+        };
+
         return meshPipelinePreset;
     }
 
@@ -138,73 +141,6 @@ namespace eureka
     void ColoredVertexMeshPipeline::Setup(DeviceContext& deviceContext)
     {
         //
-        // Setup States
-        //
-
-        vk::PipelineInputAssemblyStateCreateInfo inputAssemblyState
-        {
-            .topology = vk::PrimitiveTopology::eTriangleList
-        };
-
-        vk::PipelineRasterizationStateCreateInfo rasterizationState
-        {
-            .depthClampEnable = false,
-            .rasterizerDiscardEnable = false,
-            .polygonMode = vk::PolygonMode::eFill,
-            .cullMode = vk::CullModeFlagBits::eNone,
-            .frontFace = vk::FrontFace::eCounterClockwise,
-            .depthBiasEnable = false,
-            .lineWidth = 1.0f
-        };
-
-       
-
-        vk::PipelineColorBlendAttachmentState blendAttachments
-        {
-            .blendEnable = false,
-            .colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA
-        };
-
-        vk::PipelineColorBlendStateCreateInfo blendState
-        {
-            .attachmentCount = 1,
-            .pAttachments = &blendAttachments
-        };
-
-        vk::PipelineViewportStateCreateInfo viewportState // overriden by dynamic state
-        {
-            .viewportCount = 1,
-            .scissorCount = 1
-        };
-
-        std::array<vk::DynamicState, 2> enabledDynamicStates{ vk::DynamicState::eViewport, vk::DynamicState::eScissor };
-
-
-        vk::PipelineDynamicStateCreateInfo dynamicState
-        {
-            .dynamicStateCount = static_cast<uint32_t>(enabledDynamicStates.size()),
-            .pDynamicStates = enabledDynamicStates.data()
-        };
-
-        vk::PipelineDepthStencilStateCreateInfo depthStencilState
-        {
-            .depthTestEnable = true,
-            .depthWriteEnable = true,
-            .depthCompareOp = vk::CompareOp::eLessOrEqual,
-            .depthBoundsTestEnable = false,
-            .stencilTestEnable = false,
-            .front = vk::StencilOpState{.failOp = vk::StencilOp::eKeep,.passOp = vk::StencilOp::eKeep, .depthFailOp = vk::StencilOp::eKeep, .compareOp = vk::CompareOp::eAlways },
-            .back = vk::StencilOpState{.failOp = vk::StencilOp::eKeep,.passOp = vk::StencilOp::eKeep, .depthFailOp = vk::StencilOp::eKeep, .compareOp = vk::CompareOp::eAlways }
-        };
-
-
-        vk::PipelineMultisampleStateCreateInfo multisampleState
-        {
-            .rasterizationSamples = vk::SampleCountFlagBits::e1,
-            .pSampleMask = nullptr
-        };
-
-        //
         // Vertex Attributes 
         //
 
@@ -243,6 +179,9 @@ namespace eureka
             .pVertexAttributeDescriptions = vertexInputAttributs.data()
         };
 
+        auto preset = CreateMeshPipelinePreset();
+        SetupFixedPreset(preset);
+
         //
         // Shaders
         // 
@@ -276,14 +215,14 @@ namespace eureka
             .stageCount = static_cast<uint32_t>(shaderStages.size()),
             .pStages = shaderStages.data(),
             .pVertexInputState = &vertexInputState,
-            .pInputAssemblyState = &inputAssemblyState,
+            .pInputAssemblyState = &preset.fixed_preset.input_assembly_create_info,
             .pTessellationState = nullptr,
-            .pViewportState = &viewportState,
-            .pRasterizationState = &rasterizationState,
-            .pMultisampleState = &multisampleState,
-            .pDepthStencilState = &depthStencilState,
-            .pColorBlendState = &blendState,
-            .pDynamicState = &dynamicState,
+            .pViewportState = &preset.fixed_preset.viewport_state_create_info,
+            .pRasterizationState = &preset.fixed_preset.rasterization_state_create_info,
+            .pMultisampleState = &preset.fixed_preset.multisampling_state_create_info,
+            .pDepthStencilState = &preset.fixed_preset.depth_stencil_state_create_info,
+            .pColorBlendState = &preset.fixed_preset.color_blend_state_create_info,
+            .pDynamicState = &preset.fixed_preset.dynamic_state_create_info,
             .layout = *_pipelineLayout,
             .renderPass = _renderPass->Get()
         };
