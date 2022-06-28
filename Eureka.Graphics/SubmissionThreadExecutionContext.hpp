@@ -101,10 +101,11 @@ namespace eureka
             return _oneShotCopyCommandBuffers.size();
         }
 
-        std::vector<OneShotCopySubmissionPacket> RetrieveOneShotCopySubmissionPackets(std::size_t count)
-        {  
+        auto RetrieveOneShotCopySubmissionPackets(std::size_t count)
+        {
             // TODO assert correct thread
-            std::vector<OneShotCopySubmissionPacket> pkts(count);
+            svec10<OneShotCopySubmissionPacket> pkts(count);
+            // std::ranges::move(_oneShotCopyCommandBuffers | std::ranges::views::take(count), std::back_inserter(pkts));
 
             // TODO probably a better way to move the first count elements
             for (auto i = 0; i < count; ++i)
@@ -112,7 +113,7 @@ namespace eureka
                 pkts[i] = std::move(_oneShotCopyCommandBuffers.front());
                 _oneShotCopyCommandBuffers.pop_front();
             }
-    
+
             return pkts;
         }
     };

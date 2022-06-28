@@ -58,11 +58,8 @@ target_precompile_headers(
     <vulkan/vulkan.hpp>
     #<vulkan/vulkan_raii.hpp> # this messes up the pdb files !!!
     <Eigen/Core>
-    <glm/glm.hpp>
     <function2/function2.hpp>
-    <concurrencpp/concurrencpp.h>
     <global_definitions.hpp>
-    <boost/container/small_vector.hpp>
  )
 
 

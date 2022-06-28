@@ -42,10 +42,10 @@ namespace eureka
         ~RenderingSystem();
 
         void RunOne();
+
+
         void Initialize();
-
         void HandleSwapChainResize();
-
         void Deinitialize();
         
         void HandleResize(uint32_t width, uint32_t height);
@@ -103,5 +103,20 @@ namespace eureka
         std::vector<vk::CommandBuffer>           _pendingOneShotCommandBuffers;
 
         //std::vector<PendingSubmitFence>          _pendingSubmits;
+
+
+        void WaitForFrame(vk::Fence currentFrameFence);
+
+
+        void SubmitFrame(
+            const vkr::CommandBuffer& renderingCommandBuffer,
+            vk::Semaphore imageReadySemaphore,
+            vk::Semaphore renderingDoneSemaphore,
+            vk::Fence renderingDoneFence
+        );
+
+        void PollDoneOneShotSubmissions();
+        void PollPendingOneShotSubmissions();
+        void RecordMainRenderPass(uint32_t currentFrame, vkr::CommandBuffer& renderingCommandBuffer);
     };
 }

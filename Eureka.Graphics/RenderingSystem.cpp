@@ -258,32 +258,165 @@ namespace eureka
         PROFILE_CATEGORIZED_SCOPE("RunOne", Profiling::Color::Blue, Profiling::PROFILING_CATEGORY_RENDERING);
         _submissionThreadExecutionContext->Executor().loop_all(MAX_COPY_SUBMITS_PER_FRAME);
 
+        PollPendingOneShotSubmissions();
+        PollDoneOneShotSubmissions();
+
         auto [currentFrame, imageReadySemaphore] = _swapChain->AcquireNextAvailableImageAsync();
         
 
-        //
+
         // wait for current frame to finish execution before we reset its command buffer (other frames can be in flight)
-        //
         auto& currentFrameCommandRecord = _frameCommandBuffer[currentFrame];
         auto currentFrameFence = currentFrameCommandRecord.DoneFence();
+        WaitForFrame(currentFrameFence); 
+
+        currentFrameCommandRecord.Reset();
+        auto& renderingCommandBuffer = currentFrameCommandRecord.CommandBuffer();  
+        auto renderingDoneSemaphore = currentFrameCommandRecord.DoneSemaphore();
+        RecordMainRenderPass(currentFrame,renderingCommandBuffer);       
+        SubmitFrame(renderingCommandBuffer, imageReadySemaphore, renderingDoneSemaphore, currentFrameFence);
+
+        auto result = _swapChain->PresentLastAcquiredImageAsync(renderingDoneSemaphore);
+
+        if (result != vk::Result::eSuccess)
+        {
+            DEBUGGER_TRACE("result = {}", result);
+        }
+    }
+
+
+    void RenderingSystem::WaitForFrame(vk::Fence currentFrameFence)
+    {
         VK_CHECK(_deviceContext.LogicalDevice()->waitForFences(
             { currentFrameFence },
             VK_TRUE,
             UINT64_MAX
         ));
 
-        currentFrameCommandRecord.Reset();
-
         _deviceContext.LogicalDevice()->resetFences(
             { currentFrameFence }
         );
-        // wait only for per frame fence, other things should be done using semaphores
+    }
 
-   
+    void RenderingSystem::SubmitFrame(const vkr::CommandBuffer& renderingCommandBuffer, vk::Semaphore imageReadySemaphore, vk::Semaphore renderingDoneSemaphore, vk::Fence renderingDoneFence)
+    {
+        std::array<vk::Semaphore, 1> waitSemaphores
+        {
+            imageReadySemaphore
+        };
+
+        std::array<vk::PipelineStageFlags, 1> waitStageMasks
+        {
+            vk::PipelineStageFlagBits::eColorAttachmentOutput
+        };
+
+        vk::SubmitInfo submitInfo
+        {
+            .waitSemaphoreCount = static_cast<uint32_t>(waitSemaphores.size()),
+            .pWaitSemaphores = waitSemaphores.data(),
+            .pWaitDstStageMask = waitStageMasks.data(),
+            .commandBufferCount = 1,
+            .pCommandBuffers = &*renderingCommandBuffer,
+            .signalSemaphoreCount = 1,
+            .pSignalSemaphores = &renderingDoneSemaphore
+        };
+
+        _graphicsQueue->submit(
+            { submitInfo },
+            renderingDoneFence
+        );
+    }
+
+    void RenderingSystem::RecordMainRenderPass(uint32_t currentFrame, vkr::CommandBuffer& renderingCommandBuffer)
+    {
+        ScopedCommands sc(renderingCommandBuffer);
+
+        renderingCommandBuffer.beginRenderPass(_renderTargets[currentFrame].BeginInfo(), vk::SubpassContents::eInline);
 
 
-   
+        renderingCommandBuffer.setViewport(0, { _camera.Viewport() });
+        renderingCommandBuffer.setScissor(0, { _swapChain->RenderArea() });
 
+        renderingCommandBuffer.bindDescriptorSets(
+            vk::PipelineBindPoint::eGraphics,
+            _coloredVertexPipeline.Layout(),
+            0,
+            { _constantBufferSet.Get() },
+            nullptr
+        );
+
+
+        renderingCommandBuffer.bindPipeline(
+            vk::PipelineBindPoint::eGraphics,
+            _coloredVertexPipeline.Get()
+        );
+
+        renderingCommandBuffer.bindVertexBuffers(
+            0,
+            { _triangle.Buffer() },
+            { sizeof(mesh::COLORED_TRIANGLE_INDEX_DATA) }
+        );
+        renderingCommandBuffer.bindIndexBuffer(
+            _triangle.Buffer(),
+            0,
+            vk::IndexType::eUint32
+        );
+
+        renderingCommandBuffer.drawIndexed(3, 1, 0, 0, 1);
+
+        renderingCommandBuffer.endRenderPass();
+    }
+
+    void RenderingSystem::PollDoneOneShotSubmissions()
+    {
+        if (!_pendingOneShotCopies.empty())
+        {
+            svec5<vk::Semaphore> waitSemaphores;
+            auto totalPending = 0;
+            auto totalDone = 0;
+            for (auto i = 0; i < _pendingOneShotCopies.size(); ++i)
+            {
+                if (_pendingOneShotsignalValues[i] == 1)
+                {
+                    ++totalPending;
+                    vk::SemaphoreWaitInfo waitInfo
+                    {
+                        .semaphoreCount = 1,
+                        .pSemaphores = &_pendingOneShotSignalSemaphores[i],
+                        .pValues = &_pendingOneShotsignalValues[i]
+                    };
+
+                    auto result = _deviceContext.LogicalDevice()->waitSemaphores(waitInfo, 0);
+
+                    if (result == vk::Result::eTimeout)
+                    {
+                        DEBUGGER_TRACE("pending semaphore {} not yet finished", i);
+                    }
+                    else if (result == vk::Result::eSuccess)
+                    {
+                        ++totalDone;
+                        DEBUGGER_TRACE("pending semaphore {} done", i);
+
+                        _pendingOneShotCopies[i].done_promise.set_result();
+                        _pendingOneShotsignalValues[i] = 0;
+                        _pendingOneShotCopies[i] = {}; // destroy
+                    }
+
+                }
+            }
+
+            if (totalPending == totalDone)
+            {
+                _pendingOneShotCopies.clear();
+                _pendingOneShotsignalValues.clear();
+                _pendingOneShotSignalSemaphores.clear();
+                _pendingOneShotCommandBuffers.clear();
+            }
+        }
+    }
+
+    void RenderingSystem::PollPendingOneShotSubmissions()
+    {
         auto submissionPending = _submissionThreadExecutionContext->OneShotCopySubmissionPacketsCount();
 
         if (submissionPending > 0)
@@ -293,7 +426,7 @@ namespace eureka
             auto addedPendingCount = static_cast<uint32_t>(std::min(submissionPending, _pendingOneShotCopies.capacity()));
 
             auto oneShotCopies = _submissionThreadExecutionContext->RetrieveOneShotCopySubmissionPackets(addedPendingCount);
-                         
+
             for (auto& pending : oneShotCopies)
             {
                 _pendingOneShotsignalValues.emplace_back(1);
@@ -323,149 +456,7 @@ namespace eureka
             _copyQueue->submit(uploadsSubmitInfo, nullptr);
             DEBUGGER_TRACE("submitted {} one shot copies", addedPendingCount);
         }
-
-        if (!_pendingOneShotCopies.empty())
-        {
-            std::vector<vk::Semaphore> waitSemaphores;
-            auto totalPending = 0;
-            auto totalDone = 0;
-            for (auto i = 0; i < _pendingOneShotCopies.size(); ++i)
-            {
-                if (_pendingOneShotsignalValues[i] == 1)
-                {
-                    ++totalPending;
-                    vk::SemaphoreWaitInfo waitInfo
-                    {
-                        .semaphoreCount = 1,
-                        .pSemaphores = &_pendingOneShotSignalSemaphores[i],
-                        .pValues = &_pendingOneShotsignalValues[i]
-                    };
-
-                    auto result = _deviceContext.LogicalDevice()->waitSemaphores(waitInfo, 0);
-
-                    if (result == vk::Result::eTimeout)
-                    {
-                        DEBUGGER_TRACE("pending semaphore {} not yet finished", i);
-                    }
-                    else if (result == vk::Result::eSuccess)
-                    {
-                        ++totalDone;
-                        DEBUGGER_TRACE("pending semaphore {} done", i);
-                        
-                        _pendingOneShotCopies[i].done_promise.set_result();
-                        _pendingOneShotsignalValues[i] = 0;
-                        _pendingOneShotCopies[i] = {}; // destroy
-                    }
-
-                }
-            }
-
-            if (totalPending == totalDone)
-            {
-                _pendingOneShotCopies.clear();
-                _pendingOneShotsignalValues.clear();
-                _pendingOneShotSignalSemaphores.clear();
-                _pendingOneShotCommandBuffers.clear();
-            }
-        }
-
-       
-        auto now = std::chrono::high_resolution_clock::now();
-
-        //DEBUGGER_TRACE("current frame = {}, interval = {}ms", currentFrame, std::chrono::duration_cast<std::chrono::milliseconds>(now - _lastFrameTime).count());
-
-        _lastFrameTime = now;
-
-
-
-        //
-        // record frame
-        //
-
-        auto& renderingCommandBuffer = currentFrameCommandRecord.CommandBuffer();
-
-        {
-            ScopedCommands sc(renderingCommandBuffer);
-
-            renderingCommandBuffer.beginRenderPass(_renderTargets[currentFrame].BeginInfo(), vk::SubpassContents::eInline);
-
-
-            renderingCommandBuffer.setViewport(0, { _camera.Viewport() });
-            renderingCommandBuffer.setScissor(0, { _swapChain->RenderArea() });
-
-            renderingCommandBuffer.bindDescriptorSets(
-                vk::PipelineBindPoint::eGraphics,
-                _coloredVertexPipeline.Layout(),
-                0,
-                { _constantBufferSet.Get() },
-                nullptr
-            );
-
-
-            renderingCommandBuffer.bindPipeline(
-                vk::PipelineBindPoint::eGraphics,
-                _coloredVertexPipeline.Get()
-            );
-
-            renderingCommandBuffer.bindVertexBuffers(
-                0,
-                {_triangle.Buffer()},
-                {sizeof(mesh::COLORED_TRIANGLE_INDEX_DATA)}
-            );
-            renderingCommandBuffer.bindIndexBuffer(
-                _triangle.Buffer(),
-                0, 
-                vk::IndexType::eUint32
-            );
-
-            renderingCommandBuffer.drawIndexed(3, 1, 0, 0, 1);
-
-            renderingCommandBuffer.endRenderPass();
-        }
-
-
-        //
-        // submit rendering
-        //
-
-        auto renderingDoneSemaphore = currentFrameCommandRecord.DoneSemaphore();
-
-
-        std::array<vk::Semaphore, 1> waitSemaphores
-        {
-            /**_uploadDoneSemaphore,*/imageReadySemaphore
-        };
-
-
-        std::array<vk::PipelineStageFlags, 1> waitStageMasks
-        {
-            vk::PipelineStageFlagBits::eColorAttachmentOutput/*, vk::PipelineStageFlagBits::eVertexInput*/
-        };
-
-        vk::SubmitInfo submitInfo
-        {
-            .waitSemaphoreCount = static_cast<uint32_t>(waitSemaphores.size()),
-            .pWaitSemaphores = waitSemaphores.data(),
-            .pWaitDstStageMask = waitStageMasks.data(),
-            .commandBufferCount = 1,
-            .pCommandBuffers = &*renderingCommandBuffer,
-            .signalSemaphoreCount = 1,
-            .pSignalSemaphores = &renderingDoneSemaphore
-        };
-
-        _graphicsQueue->submit(
-            { submitInfo },
-            currentFrameFence
-        );
-
-        auto result = _swapChain->PresentLastAcquiredImageAsync(renderingDoneSemaphore);
-
-        if (result != vk::Result::eSuccess)
-        {
-            DEBUGGER_TRACE("result = {}", result);
-        }
     }
-
 
     void RenderingSystem::InitializeSwapChain(GLFWVulkanSurface& windowSurface)
     {

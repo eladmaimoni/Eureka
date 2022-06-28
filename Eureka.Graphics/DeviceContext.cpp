@@ -13,7 +13,7 @@ namespace eureka
 
         auto availableExtentions = device.enumerateDeviceExtensionProperties();
 
-        DEBUGGER_TRACE("device extentions: \n{}", availableExtentions | std::views::transform([](const auto& v) {return std::string_view(v.extensionName); }) );
+        //DEBUGGER_TRACE("device extentions: \n{}", availableExtentions | std::views::transform([](const auto& v) {return std::string_view(v.extensionName); }) );
 
         for (const auto& requestedExtension : desc.required_extentions)
         {

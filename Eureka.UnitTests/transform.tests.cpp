@@ -3,6 +3,7 @@
 #include <debugger_trace.hpp>
 #include <eigen_graphics.hpp>
 #include <Camera.hpp>
+#include <glm/glm.hpp>
 #include <glm/ext.hpp>
 
 TEST_CASE("perspective", "[transofmations]")

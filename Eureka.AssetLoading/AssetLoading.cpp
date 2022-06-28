@@ -10,9 +10,7 @@
 namespace eureka
 {
 
-    template<typename T> using svec10 = boost::container::small_vector<T, 10>;
-    template<typename T> using svec15 = boost::container::small_vector<T, 15>;
-    template<typename T> using svec20 = boost::container::small_vector<T, 20>;
+
 
     struct PrimitiveDataView
     {
