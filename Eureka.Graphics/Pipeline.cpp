@@ -121,7 +121,9 @@ namespace eureka
         DeviceContext& deviceContext, 
         std::shared_ptr<DepthColorRenderPass> renderPass,
         std::shared_ptr<PerFrameGeneralPurposeDescriptorSetLayout> descriptorSetLayout
-    ) : PipelineBase(std::move(renderPass), std::move(descriptorSetLayout))
+    ) : 
+        _descriptorSetLayout(std::move(descriptorSetLayout)),
+        _renderPass(std::move(renderPass))
     {
         auto layoutHandle = _descriptorSetLayout->Get();
         vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo

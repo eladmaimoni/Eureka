@@ -101,25 +101,13 @@ namespace eureka
     class PipelineBase
     {
     protected:
-        std::shared_ptr<DepthColorRenderPass>                _renderPass;
-        std::shared_ptr<PerFrameGeneralPurposeDescriptorSetLayout> _descriptorSetLayout;
         vkr::PipelineLayout _pipelineLayout{ nullptr };
         vkr::Pipeline       _pipeline{ nullptr };
 
-        PipelineBase(
-            std::shared_ptr<DepthColorRenderPass> renderPass,
-            std::shared_ptr<PerFrameGeneralPurposeDescriptorSetLayout> descriptorSetLayout
-        ) :
-            _descriptorSetLayout(std::move(descriptorSetLayout)),
-            _renderPass(std::move(renderPass))
-        {
-
-        }
         ~PipelineBase() = default;
         PipelineBase() = default;
         PipelineBase(PipelineBase&& that) = default;
         PipelineBase& operator=(PipelineBase&& rhs) = default;
-
     public:
         vk::PipelineLayout Layout() const
         {
@@ -134,6 +122,8 @@ namespace eureka
 
     class ColoredVertexMeshPipeline : public PipelineBase
     {
+        std::shared_ptr<DepthColorRenderPass>                _renderPass;
+        std::shared_ptr<PerFrameGeneralPurposeDescriptorSetLayout> _descriptorSetLayout;
         void Setup(DeviceContext& deviceContext);
     public:
         ColoredVertexMeshPipeline(
@@ -145,7 +135,7 @@ namespace eureka
         ColoredVertexMeshPipeline() = default;
         ColoredVertexMeshPipeline(ColoredVertexMeshPipeline&& that) = default;
         ColoredVertexMeshPipeline& operator=(ColoredVertexMeshPipeline&& rhs) = default;
-
-
     };
+
+
 }
