@@ -78,7 +78,7 @@ namespace eureka
             .pBindings = &descriptorSetLayoutBinding
         };
 
-        _descriptorSetLayout = deviceContext.LogicalDevice()->createDescriptorSetLayout(descriptorSetLayoutCreateInfo);
+        _perViewDescriptorSetLayout = deviceContext.LogicalDevice()->createDescriptorSetLayout(descriptorSetLayoutCreateInfo);
     }
 
 
@@ -90,17 +90,17 @@ namespace eureka
         {
             vk::DescriptorSetLayoutBinding
             {
-            .binding = 0, // shader side index (why not named location??)
-            .descriptorType = vk::DescriptorType::eUniformBuffer,
-            .descriptorCount = 1, // a single constant buffer
-            .stageFlags = vk::ShaderStageFlagBits::eVertex
+            .binding = 0, 
+            .descriptorType = vk::DescriptorType::eCombinedImageSampler,
+            .descriptorCount = 1,
+            .stageFlags = vk::ShaderStageFlagBits::eFragment
             },
             vk::DescriptorSetLayoutBinding
             {
-            .binding = 0, // shader side index (why not named location??)
-            .descriptorType = vk::DescriptorType::eUniformBuffer,
-            .descriptorCount = 1, // a single constant buffer
-            .stageFlags = vk::ShaderStageFlagBits::eVertex
+            .binding = 1,
+            .descriptorType = vk::DescriptorType::eCombinedImageSampler,
+            .descriptorCount = 1, 
+            .stageFlags = vk::ShaderStageFlagBits::eFragment
             }
         };
 
@@ -110,7 +110,7 @@ namespace eureka
             .pBindings = descriptorSetLayoutBindings.data()
         };
 
-        _descriptorSetLayout = deviceContext.LogicalDevice()->createDescriptorSetLayout(descriptorSetLayoutCreateInfo);
+        _perViewDescriptorSetLayout = deviceContext.LogicalDevice()->createDescriptorSetLayout(descriptorSetLayoutCreateInfo);
     }
 
 }

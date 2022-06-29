@@ -43,7 +43,7 @@ namespace eureka
     class ColoredVertexMeshPipeline : public PipelineBase
     {
         std::shared_ptr<DepthColorRenderPass>                _renderPass;
-        std::shared_ptr<PerViewDescriptorSetLayout> _descriptorSetLayout;
+        std::shared_ptr<PerViewDescriptorSetLayout> _perViewDescriptorSetLayout;
         void Setup(DeviceContext& deviceContext);
     public:
         ColoredVertexMeshPipeline(
@@ -56,14 +56,16 @@ namespace eureka
 
     class PhongShadedMeshWithNormalMapPipeline : public PipelineBase
     {
-        std::shared_ptr<DepthColorRenderPass>                _renderPass;
-        std::shared_ptr<PerViewDescriptorSetLayout> _descriptorSetLayout;
+        std::shared_ptr<DepthColorRenderPass>                    _renderPass;
+        std::shared_ptr<PerViewDescriptorSetLayout>              _perViewDescriptorSetLayout;
+        std::shared_ptr<PerNormalMappedModelDescriptorSetLayout> _perNormalMappedModelDescriptorSetLayout;
         void Setup(DeviceContext& deviceContext);
     public:
         PhongShadedMeshWithNormalMapPipeline(
             DeviceContext& deviceContext,
             std::shared_ptr<DepthColorRenderPass> renderPass,
-            std::shared_ptr<PerViewDescriptorSetLayout> descriptorSetLayout
+            std::shared_ptr<PerViewDescriptorSetLayout> perViewDescriptorSetLayout,
+            std::shared_ptr<PerNormalMappedModelDescriptorSetLayout> perNormalMappedModelDescriptorSetLayout
         );
         EUREKA_DEFAULT_MOVEABLE(PhongShadedMeshWithNormalMapPipeline);
     };

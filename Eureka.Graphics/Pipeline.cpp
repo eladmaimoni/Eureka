@@ -108,10 +108,10 @@ namespace eureka
         std::shared_ptr<DepthColorRenderPass> renderPass,
         std::shared_ptr<PerViewDescriptorSetLayout> descriptorSetLayout
     ) : 
-        _descriptorSetLayout(std::move(descriptorSetLayout)),
+        _perViewDescriptorSetLayout(std::move(descriptorSetLayout)),
         _renderPass(std::move(renderPass))
     {
-        auto layoutHandle = _descriptorSetLayout->Get();
+        auto layoutHandle = _perViewDescriptorSetLayout->Get();
         vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo
         {
             .setLayoutCount = 1,
@@ -229,16 +229,34 @@ namespace eureka
 
     PhongShadedMeshWithNormalMapPipeline::PhongShadedMeshWithNormalMapPipeline(
         DeviceContext& deviceContext, std::shared_ptr<DepthColorRenderPass> renderPass,
-        std::shared_ptr<PerViewDescriptorSetLayout> descriptorSetLayout
+        std::shared_ptr<PerViewDescriptorSetLayout> perViewDescriptorSetLayout,
+        std::shared_ptr<PerNormalMappedModelDescriptorSetLayout> perNormalMappedModelDescriptorSetLayout
     ) :
-        _descriptorSetLayout(std::move(descriptorSetLayout)),
+        _perViewDescriptorSetLayout(std::move(perViewDescriptorSetLayout)),
+        _perNormalMappedModelDescriptorSetLayout(std::move(perNormalMappedModelDescriptorSetLayout)),
         _renderPass(std::move(renderPass))
     {
-        auto layoutHandle = _descriptorSetLayout->Get();
+   
+
+        std::array<vk::DescriptorSetLayout, 2> setLayouts
+        {
+            _perViewDescriptorSetLayout->Get(),
+            _perNormalMappedModelDescriptorSetLayout->Get(),
+        };
+
+        vk::PushConstantRange pushConstantsRange
+        {
+            .stageFlags = vk::ShaderStageFlagBits::eVertex,
+            .offset = 0,
+            .size = sizeof(Eigen::Matrix4f)
+        };
+
         vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo
         {
-            .setLayoutCount = 1,
-            .pSetLayouts = &layoutHandle
+            .setLayoutCount = static_cast<uint32_t>(setLayouts.size()),
+            .pSetLayouts = setLayouts.data(),
+            .pushConstantRangeCount = 1,
+            .pPushConstantRanges = &pushConstantsRange
         };
 
         _pipelineLayout = deviceContext.LogicalDevice()->createPipelineLayout(pipelineLayoutCreateInfo);

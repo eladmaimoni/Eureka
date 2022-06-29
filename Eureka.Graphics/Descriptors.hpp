@@ -56,10 +56,10 @@ namespace eureka
     class DescriptorSetLayout
     {
     protected:
-        vkr::DescriptorSetLayout _descriptorSetLayout{ nullptr };
+        vkr::DescriptorSetLayout _perViewDescriptorSetLayout{ nullptr };
         EUREKA_DEFAULT_MOVEABLE(DescriptorSetLayout);
     public:
-        vk::DescriptorSetLayout Get() const { return *_descriptorSetLayout; }
+        vk::DescriptorSetLayout Get() const { return *_perViewDescriptorSetLayout; }
    
     };
 
