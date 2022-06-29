@@ -51,42 +51,42 @@ namespace eureka
         void HandleResize(uint32_t width, uint32_t height);
         GLFWwindow* WindowHandle() { return _window.get(); }
     private:
-        Instance& _instance;
-        DeviceContext& _deviceContext;
-        GLFWRuntime&   _glfw;
+        Instance&                                                  _instance;
+        DeviceContext&                                             _deviceContext;
+        GLFWRuntime&                                               _glfw;
+                                                                   
+        std::shared_ptr<SubmissionThreadExecutionContext>          _submissionThreadExecutionContext;
+                                                                   
+        Queue                                                      _presentationQueue;
+        Queue                                                      _graphicsQueue;
+        Queue                                                      _copyQueue;
+        GLFWWindowPtr                                              _window; // TODO should remove
+        std::unique_ptr<SwapChain>                                 _swapChain;
+        std::shared_ptr<DepthColorRenderPass>                      _renderPass;
+        std::vector<DepthColorRenderTarget>                        _renderTargets;
+                                                                   
+                                                                   
+        //                                                         
+        // upload - temporary                                      
+        //                                                         
+        vkr::Semaphore                                             _uploadDoneSemaphore{ nullptr };
+        vkr::Fence                                                 _uploadDoneFence{ nullptr };
+        CommandPool                                                _uploadPool; // TODO upload thread of some sort
+        vkr::CommandBuffer                                         _uploadCommandBuffer{ nullptr };
+        HostWriteCombinedBuffer                                    _stageZone;
+                                                                   
+                                                                   
+        DescriptorPool                                             _descPool;
+        DescriptorSet                                              _constantBufferSet;
+                                                                   
+        // triangle stuff                                          
+        PerspectiveCamera                                          _camera;
+        VertexAndIndexTransferableDeviceBuffer                     _triangle;
 
-        std::shared_ptr<SubmissionThreadExecutionContext>    _submissionThreadExecutionContext;
+        std::shared_ptr<PiplineCache>                              _pipelineCache;
 
-
-        GLFWWindowPtr                                        _window; // TODO should remove
-        std::unique_ptr<SwapChain>                           _swapChain;
-        std::shared_ptr<DepthColorRenderPass>                _renderPass;
-        std::vector<DepthColorRenderTarget>                  _renderTargets;
-        Queue                                                _presentationQueue;
-        Queue                                                _graphicsQueue;
-        Queue                                                _copyQueue;
-
-        //
-        // upload
-        //
-        vkr::Semaphore                                       _uploadDoneSemaphore{ nullptr };
-        vkr::Fence                                           _uploadDoneFence{ nullptr };
-        CommandPool                                          _uploadPool; // TODO upload thread of some sort
-        vkr::CommandBuffer                                   _uploadCommandBuffer{ nullptr };
-        HostWriteCombinedBuffer                              _stageZone;
-        
-
-        DescriptorPool                                       _descPool;
-        DescriptorSet                                        _constantBufferSet;
-
-        // triangle stuff
-        PerspectiveCamera                                    _camera;
-        VertexAndIndexTransferableDeviceBuffer               _triangle;
-
-        std::shared_ptr<PerViewDescriptorSetLayout> _perFrameDescriptorSet;
-        std::shared_ptr<PerNormalMappedModelDescriptorSetLayout> _perNormalMappedModelDescriptorSetLayout;
-        ColoredVertexMeshPipeline                                  _coloredVertexPipeline;
-        PhongShadedMeshWithNormalMapPipeline                       _phongPipeline;
+        std::shared_ptr<ColoredVertexMeshPipeline>                 _coloredVertexPipeline;
+        std::shared_ptr<PhongShadedMeshWithNormalMapPipeline>      _phongPipeline;
 
         // this section should be a ring buffer of some sort
         uint32_t                                       _maxFramesInFlight{};

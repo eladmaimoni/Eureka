@@ -187,16 +187,16 @@ namespace eureka
        
         _lastFrameTime = std::chrono::high_resolution_clock::now();
 
-        _perFrameDescriptorSet = std::make_shared<PerViewDescriptorSetLayout>(_deviceContext);
-        _perNormalMappedModelDescriptorSetLayout = std::make_shared<PerNormalMappedModelDescriptorSetLayout>(_deviceContext);
-        _coloredVertexPipeline = ColoredVertexMeshPipeline(_deviceContext, _renderPass, _perFrameDescriptorSet);
-        _phongPipeline = PhongShadedMeshWithNormalMapPipeline(_deviceContext, _renderPass, _perFrameDescriptorSet, _perNormalMappedModelDescriptorSetLayout);
+        _pipelineCache = std::make_shared<PiplineCache>(_deviceContext, _renderPass);
+
+        _coloredVertexPipeline = _pipelineCache->GetColoredVertexMeshPipeline();
+        _phongPipeline = _pipelineCache->GetPhongShadedMeshWithNormalMapPipeline();
 
         _camera.SetPosition(Eigen::Vector3f(0.0f, 0.0f, 2.5f));
         _camera.SetLookDirection(Eigen::Vector3f(0.0f, 0.0f, -1.0f));
         _camera.SetVerticalFov(3.14f / 4.0f);
 
-        _constantBufferSet = _descPool.AllocateSet(_perFrameDescriptorSet->Get());
+        _constantBufferSet = _descPool.AllocateSet(_coloredVertexPipeline->GetPerViewLayout());
 
         auto [descType, descInfo] = _camera.DescriptorInfo();
 
@@ -340,7 +340,7 @@ namespace eureka
 
         renderingCommandBuffer.bindDescriptorSets(
             vk::PipelineBindPoint::eGraphics,
-            _coloredVertexPipeline.Layout(),
+            _coloredVertexPipeline->Layout(),
             0,
             { _constantBufferSet.Get() },
             nullptr
@@ -349,7 +349,7 @@ namespace eureka
 
         renderingCommandBuffer.bindPipeline(
             vk::PipelineBindPoint::eGraphics,
-            _coloredVertexPipeline.Get()
+            _coloredVertexPipeline->Get()
         );
 
         renderingCommandBuffer.bindVertexBuffers(

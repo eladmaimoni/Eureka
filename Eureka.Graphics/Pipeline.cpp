@@ -105,25 +105,23 @@ namespace eureka
     //////////////////////////////////////////////////////////////////////////
     ColoredVertexMeshPipeline::ColoredVertexMeshPipeline(
         DeviceContext& deviceContext, 
-        std::shared_ptr<DepthColorRenderPass> renderPass,
-        std::shared_ptr<PerViewDescriptorSetLayout> descriptorSetLayout
-    ) : 
-        _perViewDescriptorSetLayout(std::move(descriptorSetLayout)),
-        _renderPass(std::move(renderPass))
+        const DepthColorRenderPass& renderPass,
+        const PerViewDescriptorSetLayout& descriptorSetLayout
+    ) 
     {
-        auto layoutHandle = _perViewDescriptorSetLayout->Get();
+        _perViewLayout = descriptorSetLayout.Get();
         vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo
         {
             .setLayoutCount = 1,
-            .pSetLayouts = &layoutHandle
+            .pSetLayouts = &_perViewLayout
         };
 
         _pipelineLayout = deviceContext.LogicalDevice()->createPipelineLayout(pipelineLayoutCreateInfo);
 
-        Setup(deviceContext);
+        Setup(deviceContext, renderPass.Get());
     }
 
-    void ColoredVertexMeshPipeline::Setup(DeviceContext& deviceContext)
+    void ColoredVertexMeshPipeline::Setup(DeviceContext& deviceContext, vk::RenderPass renderPass)
     {
         //
         // Vertex Attributes 
@@ -209,7 +207,7 @@ namespace eureka
             .pColorBlendState = &preset.fixed_preset.color_blend_state_create_info,
             .pDynamicState = &preset.fixed_preset.dynamic_state_create_info,
             .layout = *_pipelineLayout,
-            .renderPass = _renderPass->Get()
+            .renderPass = renderPass
         };
 
         _pipeline = deviceContext.LogicalDevice()->createGraphicsPipeline(
@@ -228,20 +226,18 @@ namespace eureka
 
 
     PhongShadedMeshWithNormalMapPipeline::PhongShadedMeshWithNormalMapPipeline(
-        DeviceContext& deviceContext, std::shared_ptr<DepthColorRenderPass> renderPass,
-        std::shared_ptr<PerViewDescriptorSetLayout> perViewDescriptorSetLayout,
-        std::shared_ptr<PerNormalMappedModelDescriptorSetLayout> perNormalMappedModelDescriptorSetLayout
-    ) :
-        _perViewDescriptorSetLayout(std::move(perViewDescriptorSetLayout)),
-        _perNormalMappedModelDescriptorSetLayout(std::move(perNormalMappedModelDescriptorSetLayout)),
-        _renderPass(std::move(renderPass))
+        DeviceContext& deviceContext, 
+        const DepthColorRenderPass& renderPass,
+        const PerViewDescriptorSetLayout& perViewDescriptorSetLayout,
+        const PerNormalMappedModelDescriptorSetLayout& perNormalMappedModelDescriptorSetLayout
+    )
     {
    
 
         std::array<vk::DescriptorSetLayout, 2> setLayouts
         {
-            _perViewDescriptorSetLayout->Get(),
-            _perNormalMappedModelDescriptorSetLayout->Get(),
+            perViewDescriptorSetLayout.Get(),
+            perNormalMappedModelDescriptorSetLayout.Get(),
         };
 
         vk::PushConstantRange pushConstantsRange
@@ -261,10 +257,10 @@ namespace eureka
 
         _pipelineLayout = deviceContext.LogicalDevice()->createPipelineLayout(pipelineLayoutCreateInfo);
 
-        Setup(deviceContext);
+        Setup(deviceContext, renderPass.Get());
     }
 
-    void PhongShadedMeshWithNormalMapPipeline::Setup(DeviceContext& deviceContext)
+    void PhongShadedMeshWithNormalMapPipeline::Setup(DeviceContext& deviceContext, vk::RenderPass renderPass)
     {
         //
         // Vertex Attributes 
@@ -388,7 +384,7 @@ namespace eureka
             .pColorBlendState = &preset.fixed_preset.color_blend_state_create_info,
             .pDynamicState = &preset.fixed_preset.dynamic_state_create_info,
             .layout = *_pipelineLayout,
-            .renderPass = _renderPass->Get()
+            .renderPass = renderPass
         };
 
         _pipeline = deviceContext.LogicalDevice()->createGraphicsPipeline(
