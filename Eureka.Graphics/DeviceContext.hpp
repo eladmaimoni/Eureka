@@ -1,8 +1,8 @@
 #pragma once
 #include "Instance.hpp"
 #include "vk_mem_alloc.h"
+#include <macros.hpp>
 
-#include "UpdateQueue.hpp"
 
 namespace eureka
 {

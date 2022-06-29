@@ -5,3 +5,10 @@
 #endif
 
 
+#ifndef EUREKA_DEFAULT_MOVEABLE
+#define EUREKA_DEFAULT_MOVEABLE(ObjType) \
+    ~ObjType() = default; \
+    ObjType() = default; \
+    ObjType(ObjType&& that) = default; \
+    ObjType& operator=(ObjType&& rhs) = default;
+#endif

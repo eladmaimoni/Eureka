@@ -83,7 +83,7 @@ namespace eureka
         PerspectiveCamera                                    _camera;
         VertexAndIndexTransferableDeviceBuffer               _triangle;
 
-        std::shared_ptr<PerFrameGeneralPurposeDescriptorSetLayout> _perFrameDescriptorSet;
+        std::shared_ptr<PerViewDescriptorSetLayout> _perFrameDescriptorSet;
         ColoredVertexMeshPipeline                                  _coloredVertexPipeline;
         PhongShadedMeshWithNormalMapPipeline                       _phongPipeline;
 

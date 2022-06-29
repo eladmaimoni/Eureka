@@ -57,18 +57,19 @@ namespace eureka
 
     //////////////////////////////////////////////////////////////////////////
     //
-    // This is the set of constant buffers the shader receives
-    // the shader expects a single set of descriptors with only one entry ('binding')
+    // A single UBO aimed to contain view & projection matrix and perhaps other 
+    // per view parameters such as view direction and viewport size
     // 
     //////////////////////////////////////////////////////////////////////////
-    class PerFrameGeneralPurposeDescriptorSetLayout
+    class PerViewDescriptorSetLayout
     {
         vkr::DescriptorSetLayout _descriptorSetLayout{ nullptr };
     public:
         vk::DescriptorSetLayout Get() const { return *_descriptorSetLayout; }
-        PerFrameGeneralPurposeDescriptorSetLayout() = default;
-        PerFrameGeneralPurposeDescriptorSetLayout(PerFrameGeneralPurposeDescriptorSetLayout&& that) = default;
-        PerFrameGeneralPurposeDescriptorSetLayout& operator=(PerFrameGeneralPurposeDescriptorSetLayout&& that) = default;
-        PerFrameGeneralPurposeDescriptorSetLayout(DeviceContext& deviceContext);
+
+        PerViewDescriptorSetLayout(DeviceContext& deviceContext);
+        EUREKA_DEFAULT_MOVEABLE(PerViewDescriptorSetLayout);
     };
+
+
 }

@@ -187,7 +187,7 @@ namespace eureka
        
         _lastFrameTime = std::chrono::high_resolution_clock::now();
 
-        _perFrameDescriptorSet = std::make_shared<PerFrameGeneralPurposeDescriptorSetLayout>(_deviceContext);
+        _perFrameDescriptorSet = std::make_shared<PerViewDescriptorSetLayout>(_deviceContext);
         _coloredVertexPipeline = ColoredVertexMeshPipeline(_deviceContext, _renderPass, _perFrameDescriptorSet);
         //_phongPipeline = PhongShadedMeshWithNormalMapPipeline(_deviceContext, _renderPass, _perFrameDescriptorSet);
 

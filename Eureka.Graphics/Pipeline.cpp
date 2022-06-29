@@ -96,7 +96,7 @@ namespace eureka
         return meshPipelinePreset;
     }
 
-    PerFrameGeneralPurposeDescriptorSetLayout::PerFrameGeneralPurposeDescriptorSetLayout(DeviceContext& deviceContext)
+    PerViewDescriptorSetLayout::PerViewDescriptorSetLayout(DeviceContext& deviceContext)
     {
         // describe the relation between the shader indices (set 0, binding 0)
         // to the host indices 
@@ -130,7 +130,7 @@ namespace eureka
     ColoredVertexMeshPipeline::ColoredVertexMeshPipeline(
         DeviceContext& deviceContext, 
         std::shared_ptr<DepthColorRenderPass> renderPass,
-        std::shared_ptr<PerFrameGeneralPurposeDescriptorSetLayout> descriptorSetLayout
+        std::shared_ptr<PerViewDescriptorSetLayout> descriptorSetLayout
     ) : 
         _descriptorSetLayout(std::move(descriptorSetLayout)),
         _renderPass(std::move(renderPass))
@@ -253,7 +253,7 @@ namespace eureka
 
     PhongShadedMeshWithNormalMapPipeline::PhongShadedMeshWithNormalMapPipeline(
         DeviceContext& deviceContext, std::shared_ptr<DepthColorRenderPass> renderPass,
-        std::shared_ptr<PerFrameGeneralPurposeDescriptorSetLayout> descriptorSetLayout
+        std::shared_ptr<PerViewDescriptorSetLayout> descriptorSetLayout
     ) :
         _descriptorSetLayout(std::move(descriptorSetLayout)),
         _renderPass(std::move(renderPass))

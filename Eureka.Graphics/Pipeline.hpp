@@ -22,10 +22,7 @@ namespace eureka
         vkr::PipelineLayout _pipelineLayout{ nullptr };
         vkr::Pipeline       _pipeline{ nullptr };
 
-        ~PipelineBase() = default;
-        PipelineBase() = default;
-        PipelineBase(PipelineBase&& that) = default;
-        PipelineBase& operator=(PipelineBase&& rhs) = default;
+        EUREKA_DEFAULT_MOVEABLE(PipelineBase);
     public:
         vk::PipelineLayout Layout() const
         {
@@ -46,34 +43,28 @@ namespace eureka
     class ColoredVertexMeshPipeline : public PipelineBase
     {
         std::shared_ptr<DepthColorRenderPass>                _renderPass;
-        std::shared_ptr<PerFrameGeneralPurposeDescriptorSetLayout> _descriptorSetLayout;
+        std::shared_ptr<PerViewDescriptorSetLayout> _descriptorSetLayout;
         void Setup(DeviceContext& deviceContext);
     public:
         ColoredVertexMeshPipeline(
             DeviceContext& deviceContext, 
             std::shared_ptr<DepthColorRenderPass> renderPass,
-            std::shared_ptr<PerFrameGeneralPurposeDescriptorSetLayout> descriptorSetLayout
+            std::shared_ptr<PerViewDescriptorSetLayout> descriptorSetLayout
         );
-        ~ColoredVertexMeshPipeline() = default;
-        ColoredVertexMeshPipeline() = default;
-        ColoredVertexMeshPipeline(ColoredVertexMeshPipeline&& that) = default;
-        ColoredVertexMeshPipeline& operator=(ColoredVertexMeshPipeline&& rhs) = default;
+        EUREKA_DEFAULT_MOVEABLE(ColoredVertexMeshPipeline);
     };
 
     class PhongShadedMeshWithNormalMapPipeline : public PipelineBase
     {
         std::shared_ptr<DepthColorRenderPass>                _renderPass;
-        std::shared_ptr<PerFrameGeneralPurposeDescriptorSetLayout> _descriptorSetLayout;
+        std::shared_ptr<PerViewDescriptorSetLayout> _descriptorSetLayout;
         void Setup(DeviceContext& deviceContext);
     public:
         PhongShadedMeshWithNormalMapPipeline(
             DeviceContext& deviceContext,
             std::shared_ptr<DepthColorRenderPass> renderPass,
-            std::shared_ptr<PerFrameGeneralPurposeDescriptorSetLayout> descriptorSetLayout
+            std::shared_ptr<PerViewDescriptorSetLayout> descriptorSetLayout
         );
-        ~PhongShadedMeshWithNormalMapPipeline() = default;
-        PhongShadedMeshWithNormalMapPipeline() = default;
-        PhongShadedMeshWithNormalMapPipeline(PhongShadedMeshWithNormalMapPipeline&& that) = default;
-        PhongShadedMeshWithNormalMapPipeline& operator=(PhongShadedMeshWithNormalMapPipeline&& rhs) = default;
+        EUREKA_DEFAULT_MOVEABLE(PhongShadedMeshWithNormalMapPipeline);
     };
 }
