@@ -53,7 +53,15 @@ namespace eureka
         vkr::DescriptorSet AllocateSet(vk::DescriptorSetLayout layout);
     };
 
-
+    class DescriptorSetLayout
+    {
+    protected:
+        vkr::DescriptorSetLayout _descriptorSetLayout{ nullptr };
+        EUREKA_DEFAULT_MOVEABLE(DescriptorSetLayout);
+    public:
+        vk::DescriptorSetLayout Get() const { return *_descriptorSetLayout; }
+   
+    };
 
     //////////////////////////////////////////////////////////////////////////
     //
@@ -61,15 +69,17 @@ namespace eureka
     // per view parameters such as view direction and viewport size
     // 
     //////////////////////////////////////////////////////////////////////////
-    class PerViewDescriptorSetLayout
+    class PerViewDescriptorSetLayout : public DescriptorSetLayout
     {
-        vkr::DescriptorSetLayout _descriptorSetLayout{ nullptr };
     public:
-        vk::DescriptorSetLayout Get() const { return *_descriptorSetLayout; }
-
         PerViewDescriptorSetLayout(DeviceContext& deviceContext);
         EUREKA_DEFAULT_MOVEABLE(PerViewDescriptorSetLayout);
     };
 
-
+    class PerNormalMappedModelDescriptorSetLayout : public DescriptorSetLayout
+    {
+    public:
+        PerNormalMappedModelDescriptorSetLayout(DeviceContext& deviceContext);
+        EUREKA_DEFAULT_MOVEABLE(PerNormalMappedModelDescriptorSetLayout);
+    };
 }
