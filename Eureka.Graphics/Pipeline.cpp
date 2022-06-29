@@ -1,30 +1,10 @@
 #include "Pipeline.hpp"
 #include <ShadersCache.hpp>
 
+
 namespace eureka
 {
-    DescriptorPool::DescriptorPool(DeviceContext& deviceContext)
-        : _device(deviceContext.LogicalDevice())
-    {
-        // We need to tell the API the number of max. requested descriptors per type
-        std::array<vk::DescriptorPoolSize, 1> perTypeMaxCount{};
-        perTypeMaxCount[0] = vk::DescriptorPoolSize{ .type = vk::DescriptorType::eUniformBuffer, .descriptorCount = 1 };
 
-        // For additional types you need to add new entries in the type count list
-        // E.g. for two combined image samplers :
-        // typeCounts[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        // typeCounts[1].descriptorCount = 2;
-
-        // Create the global descriptor pool
-        // All descriptors used in this example are allocated from this pool
-        vk::DescriptorPoolCreateInfo descriptorPoolCreateInfo
-        {
-            .maxSets = 1,
-            .poolSizeCount = static_cast<uint32_t>(perTypeMaxCount.size()),
-            .pPoolSizes = perTypeMaxCount.data()
-        };
-        _pool = _device->createDescriptorPool(descriptorPoolCreateInfo);
-    }
 
 
     struct FixedPiplinePreset

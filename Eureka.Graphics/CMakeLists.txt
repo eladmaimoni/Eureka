@@ -22,6 +22,8 @@ set_source_group(
     "Instance.cpp"
     "Commands.hpp" 
     "Commands.cpp" 
+    "Descriptors.hpp"
+    "Descriptors.cpp"
     "SwapChain.hpp" 
     "SwapChain.cpp" 
     "Pipeline.hpp" 
