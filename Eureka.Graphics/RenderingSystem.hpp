@@ -55,19 +55,24 @@ namespace eureka
     private:
         Instance&                                                  _instance;
         DeviceContext&                                             _deviceContext;
-        GLFWRuntime&                                               _glfw;
-                                                                   
-        std::shared_ptr<SubmissionThreadExecutionContext>          _submissionThreadExecutionContext;
-                                                                   
+        GLFWRuntime&                                               _glfw;             
         Queue                                                      _presentationQueue;
         Queue                                                      _graphicsQueue;
         Queue                                                      _copyQueue;
+
+        std::shared_ptr<SubmissionThreadExecutionContext>          _submissionThreadExecutionContext;
+        std::shared_ptr<OneShotCopySubmissionHandler>              _oneShotCopySubmissionHandler;
+
         GLFWWindowPtr                                              _window; // TODO should remove
         std::unique_ptr<SwapChain>                                 _swapChain;
+
         std::shared_ptr<DepthColorRenderPass>                      _renderPass;
         std::vector<DepthColorRenderTarget>                        _renderTargets;
-                                                                   
-                                                                   
+        std::vector<FrameCommands>                                 _frameCommandBuffer;
+
+        DescriptorPool                                             _descPool;
+        std::shared_ptr<PiplineCache>                              _pipelineCache;
+
         //                                                         
         // upload - temporary                                      
         //                                                         
@@ -77,37 +82,26 @@ namespace eureka
         vkr::CommandBuffer                                         _uploadCommandBuffer{ nullptr };
         HostWriteCombinedBuffer                                    _stageZone;
                                                                    
-        DescriptorPool                                             _descPool;
         DescriptorSet                                              _constantBufferSet;
                                                                    
         // triangle stuff                                          
         PerspectiveCamera                                          _camera;
         VertexAndIndexTransferableDeviceBuffer                     _triangle;
 
-        std::shared_ptr<PiplineCache>                              _pipelineCache;
 
         std::shared_ptr<ColoredVertexMeshPipeline>                 _coloredVertexPipeline;
         std::shared_ptr<PhongShadedMeshWithNormalMapPipeline>      _phongPipeline;
 
         // this section should be a ring buffer of some sort
         uint32_t                                                   _maxFramesInFlight{};
-        std::vector<FrameCommands>                                 _frameCommandBuffer;
+
         std::chrono::high_resolution_clock::time_point             _lastFrameTime;
      
         void InitializeSwapChain(GLFWVulkanSurface& windowSurface);
         void InitializeCommandPoolsAndBuffers();
 
-        // TODO separate class to handle one shot submission
-
-        std::shared_ptr<OneShotCopySubmissionHandler>              _oneShotCopySubmissionHandler;
-        //std::vector<OneShotCopySubmissionPacket>                   _pendingOneShotCopies;
-        //std::vector<uint64_t>                                      _pendingOneShotsignalValues;
-        //std::vector<vk::Semaphore>                                 _pendingOneShotSignalSemaphores;
-        //std::vector<vk::CommandBuffer>                             _pendingOneShotCommandBuffers;
-
 
         void WaitForFrame(vk::Fence currentFrameFence);
-
 
         void SubmitFrame(
             const vkr::CommandBuffer& renderingCommandBuffer,
@@ -116,8 +110,6 @@ namespace eureka
             vk::Fence renderingDoneFence
         );
 
-        void PollDoneOneShotSubmissions();
-        void PollPendingOneShotSubmissions();
         void RecordMainRenderPass(uint32_t currentFrame, vkr::CommandBuffer& renderingCommandBuffer);
     };
 }
