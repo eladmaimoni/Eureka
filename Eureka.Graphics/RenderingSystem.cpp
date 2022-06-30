@@ -66,6 +66,7 @@ namespace eureka
         DeviceContext& deviceContext,
         GLFWRuntime& glfw,
         std::shared_ptr<SubmissionThreadExecutionContext> submissionThreadExecutionContext,
+        std::shared_ptr<OneShotCopySubmissionHandler> oneShotCopySubmissionHandler,
         Queue graphicsQueue,
         Queue copyQueue
     )
@@ -74,6 +75,7 @@ namespace eureka
         _instance(instance),
         _deviceContext(deviceContext),
         _submissionThreadExecutionContext(/*std::move(*/submissionThreadExecutionContext/*)*/), // TODO
+        _oneShotCopySubmissionHandler(std::move(oneShotCopySubmissionHandler)),
         _descPool(deviceContext),
         _camera(deviceContext, /*std::move(*/submissionThreadExecutionContext/*)*/),  // TODO
         _graphicsQueue(graphicsQueue),
@@ -95,7 +97,7 @@ namespace eureka
 
     void RenderingSystem::Initialize()
     {
-
+        _submissionThreadExecutionContext->SetCurrentThreadAsRenderingThread();
         //
         // this section should be moved to some sort of window class
         //
@@ -218,8 +220,8 @@ namespace eureka
             );
         }
 
+        _oneShotCopySubmissionHandler->AppendOneShotCommandBufferSubmission(std::move(oneShotCopyTriangleCommandBuffer));
 
-        _submissionThreadExecutionContext->AppendOneShotCommandBufferSubmission(std::move(oneShotCopyTriangleCommandBuffer));
 
     }
 
@@ -233,9 +235,7 @@ namespace eureka
         auto renderArea = _swapChain->RenderArea();
         _camera.SetFullViewport(renderArea.offset.x, renderArea.offset.y, renderArea.extent.width, renderArea.extent.height);
     
-        _pendingOneShotCopies.reserve(100);
-        _pendingOneShotsignalValues.reserve(100);
-        _pendingOneShotSignalSemaphores.reserve(100);
+
 
 
     }
@@ -259,8 +259,9 @@ namespace eureka
         PROFILE_CATEGORIZED_SCOPE("RunOne", Profiling::Color::Blue, Profiling::PROFILING_CATEGORY_RENDERING);
         _submissionThreadExecutionContext->Executor().loop_all(MAX_COPY_SUBMITS_PER_FRAME);
 
-        PollPendingOneShotSubmissions();
-        PollDoneOneShotSubmissions();
+        _oneShotCopySubmissionHandler->PollPendingOneShotSubmissions();
+        _oneShotCopySubmissionHandler->PollDoneOneShotSubmissions();
+    
 
         auto [currentFrame, imageReadySemaphore] = _swapChain->AcquireNextAvailableImageAsync();
         
@@ -370,93 +371,94 @@ namespace eureka
 
     void RenderingSystem::PollDoneOneShotSubmissions()
     {
-        if (!_pendingOneShotCopies.empty())
-        {
-            svec5<vk::Semaphore> waitSemaphores;
-            auto totalPending = 0;
-            auto totalDone = 0;
-            for (auto i = 0; i < _pendingOneShotCopies.size(); ++i)
-            {
-                if (_pendingOneShotsignalValues[i] == 1)
-                {
-                    ++totalPending;
-                    vk::SemaphoreWaitInfo waitInfo
-                    {
-                        .semaphoreCount = 1,
-                        .pSemaphores = &_pendingOneShotSignalSemaphores[i],
-                        .pValues = &_pendingOneShotsignalValues[i]
-                    };
+        //if (!_pendingOneShotCopies.empty())
+        //{
+        //    svec5<vk::Semaphore> waitSemaphores;
+        //    auto totalPending = 0;
+        //    auto totalDone = 0;
+        //    for (auto i = 0; i < _pendingOneShotCopies.size(); ++i)
+        //    {
+        //        if (_pendingOneShotsignalValues[i] == 1)
+        //        {
+        //            ++totalPending;
+        //            vk::SemaphoreWaitInfo waitInfo
+        //            {
+        //                .semaphoreCount = 1,
+        //                .pSemaphores = &_pendingOneShotSignalSemaphores[i],
+        //                .pValues = &_pendingOneShotsignalValues[i]
+        //            };
 
-                    auto result = _deviceContext.LogicalDevice()->waitSemaphores(waitInfo, 0);
+        //            auto result = _deviceContext.LogicalDevice()->waitSemaphores(waitInfo, 0);
 
-                    if (result == vk::Result::eTimeout)
-                    {
-                        DEBUGGER_TRACE("pending semaphore {} not yet finished", i);
-                    }
-                    else if (result == vk::Result::eSuccess)
-                    {
-                        ++totalDone;
-                        DEBUGGER_TRACE("pending semaphore {} done", i);
+        //            if (result == vk::Result::eTimeout)
+        //            {
+        //                DEBUGGER_TRACE("pending semaphore {} not yet finished", i);
+        //            }
+        //            else if (result == vk::Result::eSuccess)
+        //            {
+        //                ++totalDone;
+        //                DEBUGGER_TRACE("pending semaphore {} done", i);
 
-                        _pendingOneShotCopies[i].done_promise.set_result();
-                        _pendingOneShotsignalValues[i] = 0;
-                        _pendingOneShotCopies[i] = {}; // destroy
-                    }
+        //                _pendingOneShotCopies[i].done_promise.set_result();
+        //                _pendingOneShotsignalValues[i] = 0;
+        //                _pendingOneShotCopies[i] = {}; // destroy
+        //            }
 
-                }
-            }
+        //        }
+        //    }
 
-            if (totalPending == totalDone)
-            {
-                _pendingOneShotCopies.clear();
-                _pendingOneShotsignalValues.clear();
-                _pendingOneShotSignalSemaphores.clear();
-                _pendingOneShotCommandBuffers.clear();
-            }
-        }
+        //    if (totalPending == totalDone)
+        //    {
+        //        _pendingOneShotCopies.clear();
+        //        _pendingOneShotsignalValues.clear();
+        //        _pendingOneShotSignalSemaphores.clear();
+        //        _pendingOneShotCommandBuffers.clear();
+        //    }
+        //}
     }
 
     void RenderingSystem::PollPendingOneShotSubmissions()
     {
-        auto submissionPending = _submissionThreadExecutionContext->OneShotCopySubmissionPacketsCount();
+      
+        //auto submissionPending = _submissionThreadExecutionContext->OneShotCopySubmissionPacketsCount();
 
-        if (submissionPending > 0)
-        {
-            // TODO: find the first linear range that can be reused
-            auto currentPendingCount = _pendingOneShotCopies.size();
-            auto addedPendingCount = static_cast<uint32_t>(std::min(submissionPending, _pendingOneShotCopies.capacity()));
+        //if (submissionPending > 0)
+        //{
+        //    // TODO: find the first linear range that can be reused
+        //    auto currentPendingCount = _pendingOneShotCopies.size();
+        //    auto addedPendingCount = static_cast<uint32_t>(std::min(submissionPending, _pendingOneShotCopies.capacity()));
 
-            auto oneShotCopies = _submissionThreadExecutionContext->RetrieveOneShotCopySubmissionPackets(addedPendingCount);
+        //    auto oneShotCopies = _submissionThreadExecutionContext->RetrieveOneShotCopySubmissionPackets(addedPendingCount);
 
-            for (auto& pending : oneShotCopies)
-            {
-                _pendingOneShotsignalValues.emplace_back(1);
-                _pendingOneShotSignalSemaphores.emplace_back(*pending.done_timeline_semaphore);
-                _pendingOneShotCommandBuffers.emplace_back(*pending.command_buffer);
-                _pendingOneShotCopies.emplace_back(std::move(pending));
-            }
+        //    for (auto& pending : oneShotCopies)
+        //    {
+        //        _pendingOneShotsignalValues.emplace_back(1);
+        //        _pendingOneShotSignalSemaphores.emplace_back(*pending.done_timeline_semaphore);
+        //        _pendingOneShotCommandBuffers.emplace_back(*pending.command_buffer);
+        //        _pendingOneShotCopies.emplace_back(std::move(pending));
+        //    }
 
-            vk::TimelineSemaphoreSubmitInfo timelineInfo
-            {
-                .signalSemaphoreValueCount = addedPendingCount,
-                .pSignalSemaphoreValues = _pendingOneShotsignalValues.data() + currentPendingCount,
-            };
+        //    vk::TimelineSemaphoreSubmitInfo timelineInfo
+        //    {
+        //        .signalSemaphoreValueCount = addedPendingCount,
+        //        .pSignalSemaphoreValues = _pendingOneShotsignalValues.data() + currentPendingCount,
+        //    };
 
-            vk::SubmitInfo uploadsSubmitInfo
-            {
-                .pNext = &timelineInfo,
-                .waitSemaphoreCount = 0,
-                .pWaitSemaphores = nullptr,
-                .pWaitDstStageMask = {},
-                .commandBufferCount = addedPendingCount,
-                .pCommandBuffers = _pendingOneShotCommandBuffers.data() + currentPendingCount,
-                .signalSemaphoreCount = addedPendingCount,
-                .pSignalSemaphores = _pendingOneShotSignalSemaphores.data() + currentPendingCount
-            };
+        //    vk::SubmitInfo uploadsSubmitInfo
+        //    {
+        //        .pNext = &timelineInfo,
+        //        .waitSemaphoreCount = 0,
+        //        .pWaitSemaphores = nullptr,
+        //        .pWaitDstStageMask = {},
+        //        .commandBufferCount = addedPendingCount,
+        //        .pCommandBuffers = _pendingOneShotCommandBuffers.data() + currentPendingCount,
+        //        .signalSemaphoreCount = addedPendingCount,
+        //        .pSignalSemaphores = _pendingOneShotSignalSemaphores.data() + currentPendingCount
+        //    };
 
-            _copyQueue->submit(uploadsSubmitInfo, nullptr);
-            DEBUGGER_TRACE("submitted {} one shot copies", addedPendingCount);
-        }
+        //    _copyQueue->submit(uploadsSubmitInfo, nullptr);
+        //    DEBUGGER_TRACE("submitted {} one shot copies", addedPendingCount);
+        //}
     }
 
     void RenderingSystem::InitializeSwapChain(GLFWVulkanSurface& windowSurface)

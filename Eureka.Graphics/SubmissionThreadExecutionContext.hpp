@@ -3,16 +3,12 @@
 #include "SubmissionThreadExecutor.hpp"
 #include "Commands.hpp"
 
+
 namespace eureka
 {
     using SubmissionThreadExecutor = std::shared_ptr<submission_thread_executor>;
 
-    struct OneShotCopySubmissionPacket
-    {
-        vkr::CommandBuffer                 command_buffer{ nullptr };
-        vkr::Semaphore                     done_timeline_semaphore{ nullptr };
-        concurrencpp::result_promise<void> done_promise;
-    };
+    inline thread_local bool tls_is_rendering_thread = false;
 
     class SubmissionThreadExecutionContext
     {
@@ -22,7 +18,9 @@ namespace eureka
         Queue                                      _graphicsQueue;
         SubmissionThreadExecutor                   _executor;
         CommandPool                                _oneShotCopyCommandPool;
-        std::deque<OneShotCopySubmissionPacket>   _oneShotCopyCommandBuffers;
+        //std::deque<OneShotCopySubmissionPacket>    _oneShotCopyCommandBuffers;
+
+        
     public:
         SubmissionThreadExecutionContext(
             DeviceContext& deviceContext,
@@ -54,32 +52,17 @@ namespace eureka
             return _oneShotCopyCommandPool;
         }
 
-        concurrencpp::result<void> AppendOneShotCommandBufferSubmission(vkr::CommandBuffer buffer)
-        {
-            vk::SemaphoreTypeCreateInfo semaphoreTypeCreateInfo
-            {
-                .semaphoreType = vk::SemaphoreType::eTimeline,
-                .initialValue = 0
-            };
+        //concurrencpp::result<void> AppendOneShotCommandBufferSubmission(vkr::CommandBuffer buffer)
+        //{
 
-            vk::SemaphoreCreateInfo semaphoreCreateInfo
-            { 
-                .pNext = &semaphoreTypeCreateInfo
-            };
 
-            // TODO assert correct thread
-            OneShotCopySubmissionPacket sumbissionPacket
-            {
-                .command_buffer = std::move(buffer),
-                .done_timeline_semaphore = _deviceConetext.LogicalDevice()->createSemaphore(semaphoreCreateInfo)               
-            };
+        //    auto result = sumbissionPacket.done_promise.get_result();
 
-            auto result = sumbissionPacket.done_promise.get_result();
+        //    _oneShotCopySumbissionHandler->AppendSumbissionPacket(std::move(sumbissionPacket));
+        //    _oneShotCopyCommandBuffers.emplace_back(std::move(sumbissionPacket));
 
-            _oneShotCopyCommandBuffers.emplace_back(std::move(sumbissionPacket));
-
-            return result;
-        }
+        //    return result;
+        //}
 
         submission_thread_sub_executor& OneShotCopySubmitExecutor()
         {
@@ -95,26 +78,31 @@ namespace eureka
         // Rendering thread accessors
         //
 
-        std::size_t OneShotCopySubmissionPacketsCount()
+        void SetCurrentThreadAsRenderingThread()
         {
-            // TODO assert correct thread
-            return _oneShotCopyCommandBuffers.size();
+            tls_is_rendering_thread = true;
         }
 
-        auto RetrieveOneShotCopySubmissionPackets(std::size_t count)
-        {
-            // TODO assert correct thread
-            svec10<OneShotCopySubmissionPacket> pkts(count);
-            // std::ranges::move(_oneShotCopyCommandBuffers | std::ranges::views::take(count), std::back_inserter(pkts));
+        //std::size_t OneShotCopySubmissionPacketsCount()
+        //{
+        //    assert(tls_is_rendering_thread);
+        //    //return _oneShotCopyCommandBuffers.size();
+        //}
 
-            // TODO probably a better way to move the first count elements
-            for (auto i = 0; i < count; ++i)
-            {
-                pkts[i] = std::move(_oneShotCopyCommandBuffers.front());
-                _oneShotCopyCommandBuffers.pop_front();
-            }
+        //auto RetrieveOneShotCopySubmissionPackets(std::size_t count)
+        //{
+        //    assert(tls_is_rendering_thread);
+        //    svec10<OneShotCopySubmissionPacket> pkts(count);
+        //    // std::ranges::move(_oneShotCopyCommandBuffers | std::ranges::views::take(count), std::back_inserter(pkts));
 
-            return pkts;
-        }
+        //    // TODO probably a better way to move the first count elements
+        //    for (auto i = 0; i < count; ++i)
+        //    {
+        //        pkts[i] = std::move(_oneShotCopyCommandBuffers.front());
+        //        _oneShotCopyCommandBuffers.pop_front();
+        //    }
+
+        //    return pkts;
+        //}
     };
 }

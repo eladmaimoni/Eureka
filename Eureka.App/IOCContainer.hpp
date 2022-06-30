@@ -9,6 +9,7 @@ namespace eureka
     class RenderingSystem;
     class AssetLoader;
     class SubmissionThreadExecutionContext;
+    class OneShotCopySubmissionHandler;
 
     class IOCContainer
     {
@@ -28,11 +29,6 @@ namespace eureka
                                                           
         concurrencpp::runtime                              _concurrencyRuntime;
         std::shared_ptr<SubmissionThreadExecutionContext>  _submissionThreadExecutionContext;
-        
-
-
-
-
-
+        std::shared_ptr<OneShotCopySubmissionHandler>      _oneShotCopySubmissionHandler;
     };
 }

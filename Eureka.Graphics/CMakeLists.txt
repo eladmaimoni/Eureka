@@ -46,8 +46,6 @@ set_source_group(
     "RenderingSystem.cpp"
     "Camera.hpp"
     "Camera.cpp"      
-    "UpdateQueue.hpp"
-    "UpdateQueue.cpp"
     "SecondaryCommandRecorder.hpp"
     "SecondaryCommandRecorder.cpp"
     "SubmissionThreadExecutor.hpp"

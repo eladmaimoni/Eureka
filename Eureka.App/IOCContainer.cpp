@@ -3,6 +3,7 @@
 
 #include "../Eureka.Graphics/RenderingSystem.hpp"
 #include "../Eureka.Graphics/SubmissionThreadExecutionContext.hpp"
+#include "../Eureka.Graphics/OneShotCopySubmission.hpp"
 #include "../Eureka.AssetLoading/AssetLoading.hpp"
 #include <profiling.hpp>
 namespace eureka
@@ -52,6 +53,8 @@ namespace eureka
 
         auto submissionThreadExecutor = _concurrencyRuntime.make_executor<submission_thread_executor>();
 
+        _oneShotCopySubmissionHandler = std::make_shared<OneShotCopySubmissionHandler>(_deviceContext, _copyQueue);
+
         _submissionThreadExecutionContext = std::make_shared<SubmissionThreadExecutionContext>(
             _deviceContext,
             _copyQueue,
@@ -72,6 +75,7 @@ namespace eureka
             _deviceContext,
             _glfw,
             _submissionThreadExecutionContext,
+            _oneShotCopySubmissionHandler,
             _graphicsQueue,
             _copyQueue
             );
@@ -85,6 +89,7 @@ namespace eureka
             _deviceContext,
             _copyQueue,
             _submissionThreadExecutionContext,
+            _oneShotCopySubmissionHandler,
             _concurrencyRuntime.background_executor(),
             _concurrencyRuntime.thread_pool_executor()
             );

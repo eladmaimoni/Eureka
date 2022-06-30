@@ -83,11 +83,13 @@ namespace eureka
         DeviceContext& deviceContext, 
         Queue queue, 
         std::shared_ptr<SubmissionThreadExecutionContext> submissionThreadExecutionContext,
+        std::shared_ptr<OneShotCopySubmissionHandler>     oneShotCopySubmissionHandler,
         IOExecutor ioExecutor, PoolExecutor poolExecutor
     ) :
         _deviceContext(deviceContext),
         _copyQueue(queue),
         _submissionThreadExecutionContext(std::move(submissionThreadExecutionContext)),
+        _oneShotCopySubmissionHandler(std::move(oneShotCopySubmissionHandler)),
         _ioExecutor(std::move(ioExecutor)),
         _poolExecutor(std::move(poolExecutor)),
         _stageZone(deviceContext, StageZoneConfig{ .bytes_capacity = STAGE_ZONE_SIZE }),
@@ -402,7 +404,7 @@ namespace eureka
 
         auto uploadCommandBuffer = RecordUploadCommands(imageUploadDescs, bufferUploadDesc);
 
-        co_await _submissionThreadExecutionContext->AppendOneShotCommandBufferSubmission(std::move(uploadCommandBuffer));
+        co_await _oneShotCopySubmissionHandler->AppendOneShotCommandBufferSubmission(std::move(uploadCommandBuffer));
         
 
         DEBUGGER_TRACE("rendering thread fun - copy submitted and signaled as done");
