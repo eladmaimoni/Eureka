@@ -1,5 +1,6 @@
 ﻿
 
+set_source_group(utils "macros.hpp" "basic_utils.hpp")
 set_source_group(compiler "compiler.hpp")
 set_source_group(concepts "basic_concepts.hpp")
 set_source_group(debugging "debugger_trace.hpp" "debugger_trace_impl.hpp" "debugger_trace_impl.cpp")
@@ -19,7 +20,7 @@ add_library(
     ${error}
     ${formatting}
     ${profiling}
-    "basic_utils.hpp"
+    ${utils}
 )
 
 set_compiler_flags(Eureka.Core) 

@@ -1,4 +1,3 @@
-#include <macros.hpp>
 
 namespace eureka
 {

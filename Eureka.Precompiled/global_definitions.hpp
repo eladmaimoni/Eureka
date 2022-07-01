@@ -1,6 +1,7 @@
 #include <boost/container/small_vector.hpp>
 #include <concurrencpp/concurrencpp.h>
 #include <compiler.hpp>
+#include <macros.hpp>
 EUREKA_MSVC_WARNING_PUSH_DISABLE(5054 4127)
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -26,7 +27,8 @@ namespace eureka
 
     template<typename T> using promise_t = concurrencpp::result_promise<T>;
     template<typename T> using future_t = concurrencpp::result<T>;
-
   
+    template<typename T> using dynamic_span = std::span<T, std::dynamic_extent>; 
+    template<typename T> using dynamic_cspan = std::span<const T, std::dynamic_extent>;
     
 }
