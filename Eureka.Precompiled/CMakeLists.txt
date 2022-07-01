@@ -1,10 +1,13 @@
 add_library(Eureka.Precompiled STATIC "precompiled.cpp" "global_definitions.hpp")
 
 set_compiler_flags(Eureka.Precompiled)   
-
+if (MSVC)
+    target_compile_options(Eureka.Precompiled  PRIVATE /wd4324)
+endif()
 target_link_libraries(
   Eureka.Precompiled
   PUBLIC
+  Eureka.Core
   Vulkan::Vulkan
   Eigen3::Eigen
   glm::glm
@@ -57,7 +60,6 @@ target_precompile_headers(
     <vector> 
     <vulkan/vulkan.hpp>
     #<vulkan/vulkan_raii.hpp> # this messes up the pdb files !!!
-    <Eigen/Core>
     <function2/function2.hpp>
     <global_definitions.hpp>
  )

@@ -1,9 +1,15 @@
 #include <boost/container/small_vector.hpp>
 #include <concurrencpp/concurrencpp.h>
+#include <compiler.hpp>
+EUREKA_MSVC_WARNING_PUSH_DISABLE(5054 4127)
+#include <Eigen/Core>
+#include <Eigen/Geometry>
+#include <Eigen/Dense>
+EUREKA_MSVC_WARNING_POP
 
 namespace vk::raii {}
 namespace fu2 {}
-namespace concurrencpp {};
+
 
 using namespace std::chrono_literals;
 namespace vkr = vk::raii;
@@ -16,4 +22,11 @@ namespace eureka
     template<typename T> using svec10 = boost::container::small_vector<T, 10>;
     template<typename T> using svec15 = boost::container::small_vector<T, 15>;
     template<typename T> using svec20 = boost::container::small_vector<T, 20>;
+
+
+    template<typename T> using promise_t = concurrencpp::result_promise<T>;
+    template<typename T> using future_t = concurrencpp::result<T>;
+
+  
+    
 }
