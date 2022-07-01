@@ -34,6 +34,20 @@ namespace eureka
         vk::DescriptorBufferInfo DescriptorInfo() const;
     };
 
+    class PoolAllocatedBuffer : public AllocatedBuffer
+    {
+    protected:
+        VmaPool _pool{ nullptr };
+        PoolAllocatedBuffer(DeviceContext& deviceContext) : AllocatedBuffer(deviceContext) {}
+        PoolAllocatedBuffer() = default;
+        ~PoolAllocatedBuffer();
+
+        PoolAllocatedBuffer& operator=(PoolAllocatedBuffer&& rhs);
+        PoolAllocatedBuffer(PoolAllocatedBuffer&& that);
+        PoolAllocatedBuffer& operator=(const PoolAllocatedBuffer& rhs) = delete;
+        PoolAllocatedBuffer(const PoolAllocatedBuffer& that) = delete;
+    };
+
     //////////////////////////////////////////////////////////////////////////
     //
     //                        HostMappedAllocatedBuffer

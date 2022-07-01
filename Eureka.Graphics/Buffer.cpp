@@ -233,4 +233,26 @@ namespace eureka
 
 
 
+    PoolAllocatedBuffer::~PoolAllocatedBuffer()
+    {
+        if (_pool)
+        {
+            vmaDestroyPool(_allocator, _pool);
+        }
+    }
+
+    PoolAllocatedBuffer::PoolAllocatedBuffer(PoolAllocatedBuffer&& that)
+        : AllocatedBuffer(std::move(that)), _pool(that._pool)
+    {
+        that._pool = nullptr;
+    }
+
+    PoolAllocatedBuffer& PoolAllocatedBuffer::PoolAllocatedBuffer::operator=(PoolAllocatedBuffer&& rhs)
+    {
+        AllocatedBuffer::operator=(std::move(rhs));
+        _pool = rhs._pool;
+        rhs._pool = nullptr;
+        return *this;
+    }
+
 }
