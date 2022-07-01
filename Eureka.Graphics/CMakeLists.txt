@@ -2,14 +2,12 @@
 
 set_source_group(
     core 
-    "VkHelpers.hpp"
-    "vk_error_handling.hpp"
-    "vk_error_handling.cpp"
+
 )
 
 set_source_group(
     infrastructure 
-    "VkMemAllocator.cpp"
+
     "GraphicsDefaults.hpp"
     "UploadRingBuffer.hpp"
     "UploadRingBuffer.cpp"
@@ -22,8 +20,11 @@ set_source_group(
 )
 
 set_source_group(
-    wrappers 
-
+    vulkan 
+    "VkHelpers.hpp"
+    "vk_error_handling.hpp"
+    "vk_error_handling.cpp"
+    "VkMemAllocator.cpp"
     "Instance.hpp" 
     "Instance.cpp"
     "Commands.hpp" 
@@ -44,6 +45,8 @@ set_source_group(
     "RenderTarget.cpp"
     "Buffer.hpp"
     "Buffer.cpp"
+    "Pool.hpp"
+    "Pool.cpp"
 )
 
 set_source_group(
@@ -80,6 +83,7 @@ add_library(
     ${wrappers}
     ${windowing}
     ${objects}
+    ${vulkan}
  )
 
 

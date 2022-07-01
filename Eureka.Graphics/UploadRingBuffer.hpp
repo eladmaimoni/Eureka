@@ -1,7 +1,7 @@
 #pragma once
 #include "SubmissionThreadExecutionContext.hpp"
 #include "Buffer.hpp"
-
+#include "Pool.hpp"
 
 namespace eureka
 {

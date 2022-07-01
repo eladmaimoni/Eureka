@@ -4,69 +4,7 @@
 
 namespace eureka
 {
-    //////////////////////////////////////////////////////////////////////////
-    //
-    //                        HostWriteCombinedRingPool
-    //
-    //////////////////////////////////////////////////////////////////////////
-    class HostWriteCombinedRingPool
-    {
-        VmaAllocator  _allocator{ nullptr };
-        VmaPool       _pool{ nullptr };
-        uint64_t      _byteSize;
-    public:
-        HostWriteCombinedRingPool(DeviceContext& deviceContext, uint64_t byteSize);
-        ~HostWriteCombinedRingPool();
-        VmaPool Get() const { return _pool; }    
-        uint64_t Size() const { return _byteSize; }
 
-        bool TryAllocate(uint64_t byteSize)
-        {
-            if (byteSize > _byteSize)
-            {
-                throw std::invalid_argument("bad");
-            }
-            
-
-            vk::BufferCreateInfo bufferCreateInfo
-            {
-                .size = byteSize,
-                .usage = vk::BufferUsageFlagBits::eTransferSrc
-            };
-
-            VmaAllocationCreateInfo allocationCreateInfo
-            {
-                .flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
-                .usage = VMA_MEMORY_USAGE_AUTO
-            };
-
-
-            VmaAllocationInfo allocationInfo{};
-            VmaAllocation allocation{};
-            vk::Buffer buffer{};
-            vk::Result result = static_cast<vk::Result>(vmaCreateBuffer(
-                _allocator,
-                &reinterpret_cast<VkBufferCreateInfo&>(bufferCreateInfo),
-                &allocationCreateInfo,
-                &reinterpret_cast<VkBuffer&>(buffer),
-                &allocation,
-                &allocationInfo
-            ));
-
-            if (result != vk::Result::eSuccess)
-            {
-                //assert(result == vk::Result::emem)
-                return false;
-            }
-            auto ptr = allocationInfo.pMappedData;
-            //auto byteSize = bufferCreateInfo.size;
-            assert(ptr);
-
-
-
-
-        }
-    };
 
 
     struct BufferConfig
@@ -119,17 +57,10 @@ namespace eureka
     class PoolAllocatedBuffer : public AllocatedBufferBase
     {
     protected:
-        VmaAllocator             _allocator{ nullptr };
-        VmaAllocation            _allocation{ nullptr };
-        vk::Buffer               _buffer{ nullptr };
-        uint64_t                 _byteSize{ 0 };
         fu::function<void(void)> _releaseCallback;
-
-        VmaPool _pool{ nullptr };
-        PoolAllocatedBuffer(DeviceContext& deviceContext) : AllocatedBufferBase(deviceContext) {}
+        PoolAllocatedBuffer(DeviceContext& deviceContext, fu::function<void(void)> releaseCallback) : AllocatedBufferBase(deviceContext), _releaseCallback(std::move(releaseCallback)) {}
         PoolAllocatedBuffer() = default;
         ~PoolAllocatedBuffer();
-
         PoolAllocatedBuffer& operator=(PoolAllocatedBuffer&& rhs);
         PoolAllocatedBuffer(PoolAllocatedBuffer&& that);
         PoolAllocatedBuffer& operator=(const PoolAllocatedBuffer& rhs) = delete;
@@ -147,7 +78,9 @@ namespace eureka
     {
     protected:
         void* _ptr{ nullptr };
-        HostMappedBuffer(DeviceContext& deviceContext) : BaseBuffer(deviceContext) {}
+
+        template<typename ... Args >
+        HostMappedBuffer(Args&& ... args) : BaseBuffer(std::forward<Args>(args)...) {}
         ~HostMappedBuffer() = default; 
         HostMappedBuffer() = default;  
         HostMappedBuffer& operator=(HostMappedBuffer&& rhs)
@@ -217,17 +150,31 @@ namespace eureka
         EUREKA_DEFAULT_MOVEONLY(HostWriteCombinedBuffer);
     };
 
-    class HostWriteCombinedPoolBuffer : public HostMappedBuffer<AllocatedBuffer>
+    class HostWriteCombinedPoolBuffer : public HostMappedBuffer<PoolAllocatedBuffer>
     {
-       
-
         friend class HostWriteCombinedRingPool;
-    public:
-        ~HostWriteCombinedPoolBuffer()
-        {
 
+        HostWriteCombinedPoolBuffer(
+            DeviceContext&    deviceContext,
+            VmaAllocation     allocation,
+            vk::Buffer        buffer,
+            uint64_t          byteSize,
+            void* ptr,
+            fu::function<void(void)> releaseCallback
+        ) : HostMappedBuffer<PoolAllocatedBuffer>(deviceContext,std::move(releaseCallback))
+            
+            //_allocation(allocation),
+            //_buffer(buffer),
+            //_byteSize(byteSize), ????
+            //_ptr(ptr)
+        {
+            _allocation = allocation;
+            _buffer = buffer;
+            _byteSize = byteSize;
+            _ptr = ptr;
         }
-        HostWriteCombinedPoolBuffer() = default;
+    public:
+        EUREKA_DEFAULT_MOVEONLY(HostWriteCombinedPoolBuffer);
     };
 
     //////////////////////////////////////////////////////////////////////////
