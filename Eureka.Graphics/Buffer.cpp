@@ -82,11 +82,11 @@ namespace eureka
 
     PoolAllocatedBuffer::~PoolAllocatedBuffer()
     {
-        auto ii = instances.fetch_sub(1);
-        DEBUGGER_TRACE("PoolAllocatedBuffer::~PoolAllocatedBuffer() buffer id {} live instances = {}", _id, ii - 1);
+        //auto ii = instances.fetch_sub(1);
+        //DEBUGGER_TRACE("PoolAllocatedBuffer::~PoolAllocatedBuffer() buffer id {} live instances = {}", _id, ii - 1);
         if (_buffer)
         { 
-            DEBUGGER_TRACE("PoolAllocatedBuffer::~PoolAllocatedBuffer() deallocate pool buffer {}", _id);
+            //DEBUGGER_TRACE("PoolAllocatedBuffer::~PoolAllocatedBuffer() deallocate pool buffer {}", _id);
             vmaDestroyBuffer(_allocator, _buffer, _allocation);
             _releaseCallback();
             _buffer = nullptr;
@@ -100,11 +100,8 @@ namespace eureka
         //_releaseCallback(std::move(that._releaseCallback))
     {
         _releaseCallback = std::move(that._releaseCallback);
-        //assert(_releaseCallback);
-        //assert(!that._releaseCallback);
-        that._releaseCallback = [] {};
-        _id = instances.fetch_add(1);
-        DEBUGGER_TRACE("PoolAllocatedBuffer(PoolAllocatedBuffer&& that) id {} instances = {}", _id, _id + 1);
+        //_id = instances.fetch_add(1);
+        //DEBUGGER_TRACE("PoolAllocatedBuffer(PoolAllocatedBuffer&& that) id {} instances = {}", _id, _id + 1);
         assert(!that._buffer);
     }
 

@@ -425,7 +425,7 @@ namespace eureka
 
         DEBUGGER_TRACE("rendering thread fun - copy submitted and signaled as done");
 
-        co_await concurrencpp::resume_on(*_poolExecutor); // temprary, release resources on pool thread
+        co_await concurrencpp::resume_on(*_poolExecutor); // temporary, release resources on pool thread
         LoadedModel res{};
 
         DEBUGGER_TRACE("loading done");

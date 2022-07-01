@@ -270,6 +270,7 @@ namespace eureka
         auto currentFrameFence = currentFrameCommandRecord.DoneFence();
         WaitForFrame(currentFrameFence); 
 
+        PROFILE_CATEGORIZED_SCOPE("Record Submit", Profiling::Color::DarkGray, Profiling::PROFILING_CATEGORY_RENDERING);
         currentFrameCommandRecord.Reset(); // reset pool
         auto& renderingCommandBuffer = currentFrameCommandRecord.CommandBuffer();
         // Record pre-frame here
@@ -278,6 +279,7 @@ namespace eureka
         RecordMainRenderPass(currentFrame,renderingCommandBuffer);       
         SubmitFrame(renderingCommandBuffer, imageReadySemaphore, renderingDoneSemaphore, currentFrameFence);
 
+        PROFILE_CATEGORIZED_SCOPE("Present", Profiling::Color::Gray, Profiling::PROFILING_CATEGORY_RENDERING);
         auto result = _swapChain->PresentLastAcquiredImageAsync(renderingDoneSemaphore);
 
         if (result != vk::Result::eSuccess)
@@ -289,6 +291,7 @@ namespace eureka
 
     void RenderingSystem::WaitForFrame(vk::Fence currentFrameFence)
     {
+        PROFILE_CATEGORIZED_SCOPE("WaitForFrame", Profiling::Color::DarkSeaGreen, Profiling::PROFILING_CATEGORY_RENDERING);
         VK_CHECK(_deviceContext.LogicalDevice()->waitForFences(
             { currentFrameFence },
             VK_TRUE,

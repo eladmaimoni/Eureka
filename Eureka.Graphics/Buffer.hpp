@@ -56,29 +56,29 @@ namespace eureka
     //////////////////////////////////////////////////////////////////////////
     
     
-    inline std::atomic_int instances = 0;
+    //inline std::atomic_int instances = 0;
 
     class PoolAllocatedBuffer : public AllocatedBufferBase
     {
-        int _id{};
+        //int _id{};
     protected:
         fu::function<void(void)> _releaseCallback;
         PoolAllocatedBuffer(DeviceContext& deviceContext, fu::function<void(void)> releaseCallback) 
             : AllocatedBufferBase(deviceContext), _releaseCallback(std::move(releaseCallback)) 
         {
-            _id = instances.fetch_add(1);
-            DEBUGGER_TRACE("PoolAllocatedBuffer(DeviceContext& deviceContext, fu::function<void(void)> releaseCallback) {} instances = {}", _id, _id + 1);
+            //_id = instances.fetch_add(1);
+            //DEBUGGER_TRACE("PoolAllocatedBuffer(DeviceContext& deviceContext, fu::function<void(void)> releaseCallback) {} instances = {}", _id, _id + 1);
         
         }
         PoolAllocatedBuffer(DeviceContext& deviceContext) : AllocatedBufferBase(deviceContext) 
         {
-            _id = instances.fetch_add(1);
-            DEBUGGER_TRACE("pool buffer {} instances = {}", _id, _id + 1);
+            //_id = instances.fetch_add(1);
+            //DEBUGGER_TRACE("pool buffer {} instances = {}", _id, _id + 1);
         }
         PoolAllocatedBuffer()
         {
-            _id = instances.fetch_add(1);
-            DEBUGGER_TRACE("pool buffer {} instances = {}", _id, _id + 1);
+            //_id = instances.fetch_add(1);
+            //DEBUGGER_TRACE("pool buffer {} instances = {}", _id, _id + 1);
         }
         ~PoolAllocatedBuffer();
         PoolAllocatedBuffer& operator=(PoolAllocatedBuffer&& rhs) noexcept;

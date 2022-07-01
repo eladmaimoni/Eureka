@@ -80,7 +80,6 @@ namespace eureka
         std::shared_ptr<OneShotCopySubmissionHandler>        _oneShotCopySubmissionHandler;
         IOExecutor                                           _ioExecutor;
         PoolExecutor                                         _poolExecutor;
-        //SequentialStageZone                                  _stageZone;
         std::shared_ptr<HostWriteCombinedRingPool>           _uploadPool;
         CommandPool                                          _uploadCommandPool;
 
