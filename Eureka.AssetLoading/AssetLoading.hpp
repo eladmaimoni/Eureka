@@ -6,6 +6,7 @@
 #include <Commands.hpp>
 #include <SubmissionThreadExecutionContext.hpp>
 #include <OneShotCopySubmission.hpp>
+#include <UploadRingBuffer.hpp>
 
 namespace eureka
 {

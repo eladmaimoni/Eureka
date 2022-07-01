@@ -11,13 +11,19 @@ set_source_group(
     infrastructure 
     "VkMemAllocator.cpp"
     "GraphicsDefaults.hpp"
-
+    "UploadRingBuffer.hpp"
+    "UploadRingBuffer.cpp"
+    "SecondaryCommandRecorder.hpp"
+    "SecondaryCommandRecorder.cpp"
+    "SubmissionThreadExecutor.hpp"
+    "SubmissionThreadExecutor.cpp"
+    "SubmissionThreadExecutionContext.hpp"
+    "SubmissionThreadExecutionContext.cpp"
 )
 
 set_source_group(
     wrappers 
-    "Mesh.hpp"
-    "Mesh.cpp"
+
     "Instance.hpp" 
     "Instance.cpp"
     "Commands.hpp" 
@@ -41,17 +47,19 @@ set_source_group(
 )
 
 set_source_group(
+    objects 
+    "Mesh.hpp"
+    "Mesh.cpp"
+    "Camera.hpp"
+    "Camera.cpp" 
+)
+
+set_source_group(
     rendering 
     "RenderingSystem.hpp" 
     "RenderingSystem.cpp"
-    "Camera.hpp"
-    "Camera.cpp"      
-    "SecondaryCommandRecorder.hpp"
-    "SecondaryCommandRecorder.cpp"
-    "SubmissionThreadExecutor.hpp"
-    "SubmissionThreadExecutor.cpp"
-    "SubmissionThreadExecutionContext.hpp"
-    "SubmissionThreadExecutionContext.cpp"
+     
+
 )
 
 set_source_group(
@@ -61,10 +69,7 @@ set_source_group(
 
 )
 
-set_source_group(
-    objects 
- 
-)
+
 
 
 add_library(
