@@ -61,12 +61,13 @@ namespace eureka
         uint64_t                _front{ 0 };
 
     public:
-        PoolSequentialStageZone(HostWriteCombinedPoolBuffer buffer)
-            : _buffer(std::move(_buffer))
+        PoolSequentialStageZone(HostWriteCombinedPoolBuffer&& buffer)
+            : _buffer(std::move(buffer))
         {
 
+            //assert(_buffer.Ptr<uint8_t>());
         }
-
+        
     
         //EUREKA_DEFAULT_MOVEONLY(PoolSequentialStageZone);
 

@@ -54,7 +54,10 @@ namespace eureka
     //                        PoolAllocatedBuffer
     //
     //////////////////////////////////////////////////////////////////////////
-    inline static int instances = 0;
+    
+    
+    inline std::atomic_int instances = 0;
+
     class PoolAllocatedBuffer : public AllocatedBufferBase
     {
         int _id{};
@@ -63,19 +66,19 @@ namespace eureka
         PoolAllocatedBuffer(DeviceContext& deviceContext, fu::function<void(void)> releaseCallback) 
             : AllocatedBufferBase(deviceContext), _releaseCallback(std::move(releaseCallback)) 
         {
-            _id = instances++;
-            DEBUGGER_TRACE("pool buffer {}", _id);
+            _id = instances.fetch_add(1);
+            DEBUGGER_TRACE("PoolAllocatedBuffer(DeviceContext& deviceContext, fu::function<void(void)> releaseCallback) {} instances = {}", _id, _id + 1);
         
         }
         PoolAllocatedBuffer(DeviceContext& deviceContext) : AllocatedBufferBase(deviceContext) 
         {
-            _id = instances++;
-            DEBUGGER_TRACE("pool buffer {}", _id);
+            _id = instances.fetch_add(1);
+            DEBUGGER_TRACE("pool buffer {} instances = {}", _id, _id + 1);
         }
         PoolAllocatedBuffer()
         {
-            _id = instances++;
-            DEBUGGER_TRACE("pool buffer {}", _id);
+            _id = instances.fetch_add(1);
+            DEBUGGER_TRACE("pool buffer {} instances = {}", _id, _id + 1);
         }
         ~PoolAllocatedBuffer();
         PoolAllocatedBuffer& operator=(PoolAllocatedBuffer&& rhs) noexcept;
@@ -214,7 +217,7 @@ namespace eureka
 
         ~HostWriteCombinedPoolBuffer() noexcept
         {
-            DEBUGGER_TRACE("destroying pool buffer with {} bytes", _byteSize);
+  
         }
     };
 

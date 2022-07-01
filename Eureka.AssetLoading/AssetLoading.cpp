@@ -381,9 +381,10 @@ namespace eureka
 
         VertexAndIndexTransferableDeviceBuffer deviceBuffer(_deviceContext, BufferConfig{ .byte_size = totalBufferMemory });
 
+ 
         auto stageBuffer = co_await _uploadPool->EnqueueAllocation(totalBufferMemory + totalImageMemory);
 
-        DEBUGGER_TRACE("stage buffe allocated");
+        DEBUGGER_TRACE("stage buffer allocated");
 
         PoolSequentialStageZone stageZone(std::move(stageBuffer));
 
