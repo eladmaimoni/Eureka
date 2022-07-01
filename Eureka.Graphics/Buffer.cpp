@@ -77,41 +77,41 @@ namespace eureka
     //
     //////////////////////////////////////////////////////////////////////////
 
-    HostMappedAllocatedBuffer::~HostMappedAllocatedBuffer()
-    {
+    //HostMappedBuffer::~HostMappedBuffer()
+    //{
 
-    }
+    //}
 
-    HostMappedAllocatedBuffer::HostMappedAllocatedBuffer(DeviceContext& deviceContext)
-        : AllocatedBuffer(deviceContext)
-    {
+    //HostMappedBuffer::HostMappedBuffer(DeviceContext& deviceContext)
+    //    : AllocatedBuffer(deviceContext)
+    //{
 
-    }
+    //}
 
-    HostMappedAllocatedBuffer::HostMappedAllocatedBuffer(HostMappedAllocatedBuffer&& that) 
-        : AllocatedBuffer(std::move(that)),
-        _ptr(that._ptr)
-    {
-        that._ptr = nullptr;
-    }
+    //HostMappedBuffer::HostMappedBuffer(HostMappedBuffer&& that) 
+    //    : AllocatedBuffer(std::move(that)),
+    //    _ptr(that._ptr)
+    //{
+    //    that._ptr = nullptr;
+    //}
 
-    HostMappedAllocatedBuffer& HostMappedAllocatedBuffer::operator=(HostMappedAllocatedBuffer&& rhs)
-    {
-        AllocatedBuffer::operator=(std::move(rhs));
-        _ptr = rhs._ptr;
-        rhs._ptr = nullptr;
-        return *this;
-    }
+    //HostMappedBuffer& HostMappedBuffer::operator=(HostMappedBuffer&& rhs)
+    //{
+    //    AllocatedBuffer::operator=(std::move(rhs));
+    //    _ptr = rhs._ptr;
+    //    rhs._ptr = nullptr;
+    //    return *this;
+    //}
 
-    void HostMappedAllocatedBuffer::InvalidateCachesBeforeHostRead()
-    {
-        VK_CHECK(vmaInvalidateAllocation(_allocator, _allocation, 0, _byteSize));
-    }
+    //void HostMappedBuffer::InvalidateCachesBeforeHostRead()
+    //{
+    //    VK_CHECK(vmaInvalidateAllocation(_allocator, _allocation, 0, _byteSize));
+    //}
 
-    void HostMappedAllocatedBuffer::FlushCachesBeforeDeviceRead()
-    {
-        VK_CHECK(vmaFlushAllocation(_allocator, _allocation, 0, _byteSize));
-    }
+    //void HostMappedBuffer::FlushCachesBeforeDeviceRead()
+    //{
+    //    VK_CHECK(vmaFlushAllocation(_allocator, _allocation, 0, _byteSize));
+    //}
 
 
     //////////////////////////////////////////////////////////////////////////
@@ -120,7 +120,7 @@ namespace eureka
     //
     //////////////////////////////////////////////////////////////////////////
 
-    HostWriteCombinedBuffer::HostWriteCombinedBuffer(DeviceContext& deviceContext, const BufferConfig& config) : HostMappedAllocatedBuffer(deviceContext)
+    HostWriteCombinedBuffer::HostWriteCombinedBuffer(DeviceContext& deviceContext, const BufferConfig& config) : HostMappedBuffer(deviceContext)
     {
         vk::BufferCreateInfo bufferCreateInfo
         {
@@ -158,7 +158,7 @@ namespace eureka
     //////////////////////////////////////////////////////////////////////////
 
     HostVisibleDeviceConstantBuffer::HostVisibleDeviceConstantBuffer(DeviceContext& deviceContext, const BufferConfig& config)
-        : HostMappedAllocatedBuffer(deviceContext)
+        : HostMappedBuffer(deviceContext)
     {
         // see 'Advanced data uploading'
         // https://gpuopen-librariesandsdks.github.io/VulkanMemoryAllocator/html/usage_patterns.html

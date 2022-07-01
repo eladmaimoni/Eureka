@@ -40,15 +40,27 @@ namespace eureka
     //
     //////////////////////////////////////////////////////////////////////////
 
-    class HostMappedAllocatedBuffer : public AllocatedBuffer
+    template<typename BaseBuffer>
+    class HostMappedBuffer : public BaseBuffer
     {
     protected:
         void* _ptr{ nullptr };
-        HostMappedAllocatedBuffer(DeviceContext& deviceContext);
-        ~HostMappedAllocatedBuffer(); // NOTE: non virtual and protected
-        HostMappedAllocatedBuffer() = default;  
-        HostMappedAllocatedBuffer& operator=(HostMappedAllocatedBuffer&& rhs);
-        HostMappedAllocatedBuffer(HostMappedAllocatedBuffer&& that);
+        HostMappedBuffer(DeviceContext& deviceContext) : BaseBuffer(deviceContext) {}
+        ~HostMappedBuffer() = default; 
+        HostMappedBuffer() = default;  
+        HostMappedBuffer& operator=(HostMappedBuffer&& rhs)
+        {
+            BaseBuffer::operator=(std::move(rhs));
+            _ptr = rhs._ptr;
+            rhs._ptr = nullptr;
+            return *this;
+        }
+        HostMappedBuffer(HostMappedBuffer&& that)
+            : BaseBuffer(std::move(that)),
+            _ptr(that._ptr)
+        {
+            that._ptr = nullptr;
+        }
 
     public:
         template<typename T>
@@ -61,7 +73,7 @@ namespace eureka
         template<typename T, std::size_t COUNT>
         void Assign(std::span<T, COUNT> s, uint64_t byte_offset = 0)
         {
-            assert((s.size_bytes() + byte_offset) <= _byteSize);
+            assert((s.size_bytes() + byte_offset) <= BaseBuffer::_byteSize);
             std::memcpy(
                 Ptr<uint8_t>() + byte_offset,
                 s.data(),
@@ -72,7 +84,7 @@ namespace eureka
         template<typename T>
         void Assign(const T& data, uint64_t byte_offset = 0)
         {
-            assert((sizeof(T) + byte_offset) <= _byteSize);
+            assert((sizeof(T) + byte_offset) <= BaseBuffer::_byteSize);
             std::memcpy(
                 Ptr<uint8_t>() + byte_offset,
                 &data,
@@ -80,8 +92,14 @@ namespace eureka
             );
         }
 
-        void InvalidateCachesBeforeHostRead();
-        void FlushCachesBeforeDeviceRead();
+        void InvalidateCachesBeforeHostRead()
+        {
+            VK_CHECK(vmaInvalidateAllocation(BaseBuffer::_allocator, BaseBuffer::_allocation, 0, BaseBuffer::_byteSize));
+        }
+        void FlushCachesBeforeDeviceRead()
+        {
+            VK_CHECK(vmaFlushAllocation(BaseBuffer::_allocator, BaseBuffer::_allocation, 0, BaseBuffer::_byteSize));
+        }
     };
 
     //////////////////////////////////////////////////////////////////////////
@@ -90,7 +108,7 @@ namespace eureka
     //
     //////////////////////////////////////////////////////////////////////////
 
-    class HostWriteCombinedBuffer : public HostMappedAllocatedBuffer
+    class HostWriteCombinedBuffer : public HostMappedBuffer<AllocatedBuffer>
     {
     public:
         HostWriteCombinedBuffer() = default;
@@ -103,7 +121,7 @@ namespace eureka
     //
     //////////////////////////////////////////////////////////////////////////
 
-    class HostVisibleDeviceConstantBuffer : public HostMappedAllocatedBuffer
+    class HostVisibleDeviceConstantBuffer : public HostMappedBuffer<AllocatedBuffer>
     {
     public:
         HostVisibleDeviceConstantBuffer() = default;
