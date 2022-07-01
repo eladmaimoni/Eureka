@@ -3,9 +3,15 @@
 include(utility.cmake)
 project ("Eureka")
 
+
+
+
 ############################################################################
 #                            PACKAGES
 ############################################################################
+add_compile_definitions(Boost_NO_WARN_NEW_VERSIONS=1)
+set(nlohmann-json_IMPLICIT_CONVERSIONS OFF)
+
 find_package(Boost REQUIRED COMPONENTS container)
 find_package(Catch2 CONFIG REQUIRED)
 find_package(concurrencpp CONFIG REQUIRED)
@@ -45,7 +51,6 @@ message("=======================================================================
 
 set(dxc_executable "$ENV{VULKAN_SDK}/Bin/dxc.exe")
 configure_default_output_directories()
-
 
 message("Eureka: dxc_executable = ${dxc_executable}")
 message("Eureka: glslc_executable = ${glslc_executable}")

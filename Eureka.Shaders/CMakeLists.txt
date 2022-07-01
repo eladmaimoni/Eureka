@@ -15,6 +15,7 @@
 function(configure_glsl_shader_compilation shader_file)
     get_source_file_property(shader_type ${shader_file} ShaderType)    
     get_filename_component(shader_name ${shader_file} NAME_WE)
+    
     message("raw shader file = ${shader_file}")
     message("shader name = ${shader_name}")
     message("shader type = ${shader_type}")
@@ -84,7 +85,11 @@ endfunction()
 
 function(configure_hlsl_shaders_compilation)
     message("dxc_executable = ${dxc_executable}")
+    # prevent visual studio hlsl compilation
+    # https://stackoverflow.com/questions/43739539/cmake-avoid-compilation-of-hlsl-shader-files-on-visual-studio
+    set_source_files_properties(${ARGN} PROPERTIES VS_TOOL_OVERRIDE "None")
     foreach(shader IN LISTS ARGN)
+        #set_source_files_properties(${shader} PROPERTIES VS_TOOL_OVERRIDE "None")
         configure_hlsl_shader_compilation(${shader})
     endforeach()
 endfunction()

@@ -7,11 +7,17 @@
         "catch2",
         "concurrencpp",
         "eigen3",
-        "glm",
-        "glfw3",
-        "vulkan",
         "function2",
+        "glfw3",
+        "glm",
+        {
+            "name": "imgui",
+            "default-features": true,
+            "features": [ "docking-experimental" ]
+        },
+        "nlohmann-json",
         "tinygltf",
+        "vulkan",
         "vulkan-headers",
         "vulkan-memory-allocator"
     ]
