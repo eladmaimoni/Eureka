@@ -101,18 +101,13 @@ namespace eureka
 
 
 
-    struct PendingAllocation
-    {
-
-    };
-
 
 
 
     class UploadAllocationQueue
     {
         HostWriteCombinedRingPool _pool;
-        
+        std::mutex _mtx;
 
         UploadAllocationQueue(DeviceContext& deviceContext, uint64_t byteSize)
             : _pool(deviceContext, byteSize)
@@ -120,15 +115,7 @@ namespace eureka
 
         }
 
-        //future_t<HostWriteCombinedBuffer> EnqueueAllocation(uint64_t byteSize)
-        //{
-        //    if (byteSize > _pool.Size())
-        //    {
-        //        throw std::invalid_argument("bad");
-        //    }
 
-        //    
-        //}
     };
 
 }

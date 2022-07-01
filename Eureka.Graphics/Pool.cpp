@@ -44,5 +44,25 @@ namespace eureka
         }
     }
 
+    void HostWriteCombinedRingPool::PollPending()
+    {
+        std::unique_lock lk(_mtx);
+
+        while (!_pending.empty())
+        {
+            auto pending = std::move(_pending.front());     _pending.pop_front();
+            lk.unlock();
+            auto allocaton = TryAllocate(pending.byte_size);
+            lk.lock();
+            if (!allocaton)
+            {
+                // serve fifo order
+                _pending.emplace_front(std::move(pending));
+                break; 
+            }
+            pending.pr.set_result(std::move(*allocaton));
+        }
+    }
+
 }
 

@@ -3,6 +3,13 @@
 
 namespace eureka
 {
+
+    struct PendingAllocation
+    {
+        uint64_t                               byte_size;
+        promise_t<HostWriteCombinedPoolBuffer> pr;
+    };
+
     //////////////////////////////////////////////////////////////////////////
     //
     //                        HostWriteCombinedRingPool
@@ -10,10 +17,12 @@ namespace eureka
     //////////////////////////////////////////////////////////////////////////
     class HostWriteCombinedRingPool
     {
-        DeviceContext& _deviceContext;
-        VmaAllocator  _allocator{ nullptr };
-        VmaPool       _pool{ nullptr };
-        uint64_t      _byteSize;
+        DeviceContext&                _deviceContext;
+        VmaAllocator                  _allocator{ nullptr };
+        VmaPool                       _pool{ nullptr };
+        uint64_t                      _byteSize;
+        std::mutex                    _mtx;
+        std::deque<PendingAllocation> _pending;
     public:
         HostWriteCombinedRingPool(DeviceContext& deviceContext, uint64_t byteSize);
         ~HostWriteCombinedRingPool();
@@ -66,10 +75,42 @@ namespace eureka
                 buffer,
                 bufferCreateInfo.size,
                 allocationInfo.pMappedData,
-                []() {}
+                [this] { PollPending(); }
             );
 
         }
+
+
+        future_t<HostWriteCombinedPoolBuffer> EnqueueAllocation(uint64_t byteSize)
+        {
+            if (byteSize > Size())
+            {
+                throw std::invalid_argument("bad");
+            }
+
+            std::unique_lock lk(_mtx);
+
+            if (_pending.empty()) // serve fifo order, may be violated slightly during allocation when lock is released
+            {
+                lk.unlock();
+                auto buf = TryAllocate(byteSize);
+
+                if (buf)
+                {
+                    return concurrencpp::make_ready_result<HostWriteCombinedPoolBuffer>(std::move(*buf));
+                }
+                else
+                {
+                    lk.lock();
+                }
+            }
+
+            auto& pending = _pending.emplace_back();
+            pending.byte_size = byteSize;
+            return pending.pr.get_result();
+        }
+    private:
+        void PollPending();
     };
 
 }

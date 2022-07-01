@@ -7,10 +7,10 @@
 
 #ifndef EUREKA_DEFAULT_MOVEABLE
 #define EUREKA_DEFAULT_MOVEABLE(ObjType) \
-    ~ObjType() = default; \
+    ~ObjType() noexcept = default; \
     ObjType() = default; \
-    ObjType(ObjType&& that) = default; \
-    ObjType& operator=(ObjType&& rhs) = default;
+    ObjType(ObjType&& that) noexcept = default; \
+    ObjType& operator=(ObjType&& rhs) noexcept = default;
 #endif
 
 #ifndef EUREKA_DEFAULT_MOVEONLY

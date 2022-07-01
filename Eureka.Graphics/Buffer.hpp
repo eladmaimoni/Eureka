@@ -28,8 +28,8 @@ namespace eureka
         AllocatedBufferBase(DeviceContext& deviceContext);
         AllocatedBufferBase() = default;
         ~AllocatedBufferBase() = default;
-        AllocatedBufferBase& operator=(AllocatedBufferBase&& rhs);
-        AllocatedBufferBase(AllocatedBufferBase&& that);
+        AllocatedBufferBase& operator=(AllocatedBufferBase&& rhs) noexcept;
+        AllocatedBufferBase(AllocatedBufferBase&& that) noexcept;
         AllocatedBufferBase& operator=(const AllocatedBufferBase& rhs) = delete;
         AllocatedBufferBase(const AllocatedBufferBase& that) = delete;
     public:
@@ -44,8 +44,8 @@ namespace eureka
         AllocatedBuffer(DeviceContext& deviceContext) : AllocatedBufferBase(deviceContext) {}
         ~AllocatedBuffer();
         AllocatedBuffer() = default;
-        AllocatedBuffer& operator=(AllocatedBuffer&& rhs) = default;
-        AllocatedBuffer(AllocatedBuffer&& that) = default;
+        AllocatedBuffer& operator=(AllocatedBuffer&& rhs) noexcept = default;
+        AllocatedBuffer(AllocatedBuffer&& that) noexcept = default;
     };
 
     //////////////////////////////////////////////////////////////////////////
@@ -61,8 +61,8 @@ namespace eureka
         PoolAllocatedBuffer(DeviceContext& deviceContext, fu::function<void(void)> releaseCallback) : AllocatedBufferBase(deviceContext), _releaseCallback(std::move(releaseCallback)) {}
         PoolAllocatedBuffer() = default;
         ~PoolAllocatedBuffer();
-        PoolAllocatedBuffer& operator=(PoolAllocatedBuffer&& rhs);
-        PoolAllocatedBuffer(PoolAllocatedBuffer&& that);
+        PoolAllocatedBuffer& operator=(PoolAllocatedBuffer&& rhs) noexcept;
+        PoolAllocatedBuffer(PoolAllocatedBuffer&& that) noexcept;
         PoolAllocatedBuffer& operator=(const PoolAllocatedBuffer& rhs) = delete;
         PoolAllocatedBuffer(const PoolAllocatedBuffer& that) = delete;
     };
@@ -83,14 +83,14 @@ namespace eureka
         HostMappedBuffer(Args&& ... args) : BaseBuffer(std::forward<Args>(args)...) {}
         ~HostMappedBuffer() = default; 
         HostMappedBuffer() = default;  
-        HostMappedBuffer& operator=(HostMappedBuffer&& rhs)
+        HostMappedBuffer& operator=(HostMappedBuffer&& rhs) noexcept
         {
             BaseBuffer::operator=(std::move(rhs));
             _ptr = rhs._ptr;
             rhs._ptr = nullptr;
             return *this;
         }
-        HostMappedBuffer(HostMappedBuffer&& that)
+        HostMappedBuffer(HostMappedBuffer&& that) noexcept
             : BaseBuffer(std::move(that)),
             _ptr(that._ptr)
         {

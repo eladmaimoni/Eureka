@@ -26,7 +26,7 @@ namespace eureka
 
     }
 
-    AllocatedBufferBase::AllocatedBufferBase(AllocatedBufferBase&& that)
+    AllocatedBufferBase::AllocatedBufferBase(AllocatedBufferBase&& that) noexcept
         :
         _allocator(that._allocator),
         _allocation(that._allocation),
@@ -39,7 +39,7 @@ namespace eureka
         that._byteSize = { 0 };
     }
 
-    AllocatedBufferBase& AllocatedBufferBase::operator=(AllocatedBufferBase&& rhs)
+    AllocatedBufferBase& AllocatedBufferBase::operator=(AllocatedBufferBase&& rhs) noexcept
     {
         if (_buffer)
         {
@@ -90,14 +90,14 @@ namespace eureka
     
     }
 
-    PoolAllocatedBuffer::PoolAllocatedBuffer(PoolAllocatedBuffer&& that)
+    PoolAllocatedBuffer::PoolAllocatedBuffer(PoolAllocatedBuffer&& that) noexcept
         : AllocatedBufferBase(std::move(that)), 
         _releaseCallback(std::move(that._releaseCallback))
     {
 
     }
 
-    PoolAllocatedBuffer& PoolAllocatedBuffer::PoolAllocatedBuffer::operator=(PoolAllocatedBuffer&& rhs)
+    PoolAllocatedBuffer& PoolAllocatedBuffer::PoolAllocatedBuffer::operator=(PoolAllocatedBuffer&& rhs) noexcept
     {
         AllocatedBufferBase::operator=(std::move(rhs));
         _releaseCallback = std::move(rhs._releaseCallback);     
