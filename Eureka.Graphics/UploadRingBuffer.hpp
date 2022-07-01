@@ -14,7 +14,7 @@ namespace eureka
     {
     private:
         HostWriteCombinedBuffer _buffer;
-        uint64_t                _position{ 0 };
+        uint64_t                _front{ 0 };
 
     public:
         SequentialStageZone(DeviceContext& deviceContext, StageZoneConfig config)
@@ -25,24 +25,70 @@ namespace eureka
         }
         uint64_t Position() const
         {
-            return _position;
+            return _front;
         }
         uint64_t LeftoverBytes() const
         {
-            return _buffer.ByteSize() - _position;
+            return _buffer.ByteSize() - _front;
         }
 
         template<typename T, std::size_t COUNT>
         void Assign(std::span<T, COUNT> s)
         {
             assert(s.size_bytes() <= LeftoverBytes());
-            _buffer.Assign(s, _position);
-            _position += s.size_bytes();
+            _buffer.Assign(s, _front);
+            _front += s.size_bytes();
         }
 
         void Reset()
         {
-            _position = 0;
+            _front = 0;
+        }
+
+        vk::Buffer Buffer() const
+        {
+            return _buffer.Buffer();
+        }
+    };
+
+
+
+
+    class PoolSequentialStageZone
+    {
+    private:
+        HostWriteCombinedBuffer _buffer;
+        uint64_t                _front{ 0 };
+
+        PoolSequentialStageZone(DeviceContext& deviceContext, StageZoneConfig config)
+            : _buffer(deviceContext, BufferConfig{ .byte_size = config.bytes_capacity })
+        {
+
+
+        }
+
+    public:
+
+        uint64_t Position() const
+        {
+            return _front;
+        }
+        uint64_t LeftoverBytes() const
+        {
+            return _buffer.ByteSize() - _front;
+        }
+
+        template<typename T, std::size_t COUNT>
+        void Assign(std::span<T, COUNT> s)
+        {
+            assert(s.size_bytes() <= LeftoverBytes());
+            _buffer.Assign(s, _front);
+            _front += s.size_bytes();
+        }
+
+        void Reset()
+        {
+            _front = 0;
         }
 
         vk::Buffer Buffer() const
@@ -54,12 +100,35 @@ namespace eureka
     };
 
 
-    class UploadRingBuffer
+
+    struct PendingAllocation
     {
-        UploadRingBuffer(std::shared_ptr<SubmissionThreadExecutionContext> sumbissionContext)
+
+    };
+
+
+
+
+    class UploadAllocationQueue
+    {
+        HostWriteCombinedRingPool _pool;
+        
+
+        UploadAllocationQueue(DeviceContext& deviceContext, uint64_t byteSize)
+            : _pool(deviceContext, byteSize)
         {
 
         }
+
+        //future_t<HostWriteCombinedBuffer> EnqueueAllocation(uint64_t byteSize)
+        //{
+        //    if (byteSize > _pool.Size())
+        //    {
+        //        throw std::invalid_argument("bad");
+        //    }
+
+        //    
+        //}
     };
 
 }

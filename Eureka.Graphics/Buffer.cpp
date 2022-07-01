@@ -3,19 +3,69 @@
 
 namespace eureka
 {
+
+    HostWriteCombinedRingPool::HostWriteCombinedRingPool(DeviceContext& deviceContext, uint64_t byteSize) : _allocator(deviceContext.Allocator())
+    {
+        vk::BufferCreateInfo bufferCreateInfo // unused, just for deducing memory index
+        {
+            .size = byteSize,
+            .usage = vk::BufferUsageFlagBits::eTransferSrc
+        };
+
+        VmaAllocationCreateInfo allocationCreateInfo
+        {
+            .flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
+            .usage = VMA_MEMORY_USAGE_AUTO
+        };
+
+        uint32_t memTypeIndex;
+        VK_CHECK(vmaFindMemoryTypeIndexForBufferInfo(
+            _allocator,
+            &static_cast<VkBufferCreateInfo&>(bufferCreateInfo),
+            &allocationCreateInfo,
+            &memTypeIndex
+        ));
+
+        VmaPoolCreateInfo poolCreateInfo = {};
+        poolCreateInfo.flags = VMA_POOL_CREATE_LINEAR_ALGORITHM_BIT;
+        poolCreateInfo.memoryTypeIndex = memTypeIndex;
+        poolCreateInfo.blockSize = byteSize;
+        poolCreateInfo.maxBlockCount = 1;
+
+        VK_CHECK(vmaCreatePool(_allocator, &poolCreateInfo, &_pool));
+
+        _byteSize = byteSize;
+    }
+
+    HostWriteCombinedRingPool::~HostWriteCombinedRingPool()
+    {
+        if (_pool)
+        {
+            vmaDestroyPool(_allocator, _pool);
+        }
+    }
+
     //////////////////////////////////////////////////////////////////////////
     //
     //                        AllocatedBuffer
     //
     //////////////////////////////////////////////////////////////////////////
 
-    AllocatedBuffer::AllocatedBuffer(DeviceContext& deviceContext) 
+    AllocatedBuffer::~AllocatedBuffer()
+    {
+        if (_buffer)
+        {
+            vmaDestroyBuffer(_allocator, _buffer, _allocation);
+        }
+    }
+
+    AllocatedBufferBase::AllocatedBufferBase(DeviceContext& deviceContext)
         : _allocator(deviceContext.Allocator())
     {
 
     }
 
-    AllocatedBuffer::AllocatedBuffer(AllocatedBuffer&& that)
+    AllocatedBufferBase::AllocatedBufferBase(AllocatedBufferBase&& that)
         :
         _allocator(that._allocator),
         _allocation(that._allocation),
@@ -28,15 +78,7 @@ namespace eureka
         that._byteSize = { 0 };
     }
 
-    AllocatedBuffer::~AllocatedBuffer()
-    {
-        if (_buffer)
-        {
-            vmaDestroyBuffer(_allocator, _buffer, _allocation);
-        }
-    }
-
-    AllocatedBuffer& AllocatedBuffer::operator=(AllocatedBuffer&& rhs)
+    AllocatedBufferBase& AllocatedBufferBase::operator=(AllocatedBufferBase&& rhs)
     {
         if (_buffer)
         {
@@ -55,12 +97,12 @@ namespace eureka
         return *this;
     }
 
-    uint64_t AllocatedBuffer::ByteSize() const
+    uint64_t AllocatedBufferBase::ByteSize() const
     {
         return _byteSize;
     }
 
-    vk::DescriptorBufferInfo AllocatedBuffer::DescriptorInfo() const
+    vk::DescriptorBufferInfo AllocatedBufferBase::DescriptorInfo() const
     {
         return vk::DescriptorBufferInfo
         {
@@ -73,45 +115,35 @@ namespace eureka
 
     //////////////////////////////////////////////////////////////////////////
     //
-    //                        HostMappedAllocatedBuffer
+    //                        PoolAllocatedBuffer
     //
     //////////////////////////////////////////////////////////////////////////
 
-    //HostMappedBuffer::~HostMappedBuffer()
-    //{
+    PoolAllocatedBuffer::~PoolAllocatedBuffer()
+    {
+        if (_buffer)
+        {
+            vmaDestroyBuffer(_allocator, _buffer, _allocation);
+            _releaseCallback();
+        }
+    
+    }
 
-    //}
+    PoolAllocatedBuffer::PoolAllocatedBuffer(PoolAllocatedBuffer&& that)
+        : AllocatedBufferBase(std::move(that)), 
+        _releaseCallback(std::move(that._releaseCallback))
+    {
 
-    //HostMappedBuffer::HostMappedBuffer(DeviceContext& deviceContext)
-    //    : AllocatedBuffer(deviceContext)
-    //{
+    }
 
-    //}
+    PoolAllocatedBuffer& PoolAllocatedBuffer::PoolAllocatedBuffer::operator=(PoolAllocatedBuffer&& rhs)
+    {
+        AllocatedBufferBase::operator=(std::move(rhs));
+        _releaseCallback = std::move(rhs._releaseCallback);     
+        return *this;
+    }
 
-    //HostMappedBuffer::HostMappedBuffer(HostMappedBuffer&& that) 
-    //    : AllocatedBuffer(std::move(that)),
-    //    _ptr(that._ptr)
-    //{
-    //    that._ptr = nullptr;
-    //}
 
-    //HostMappedBuffer& HostMappedBuffer::operator=(HostMappedBuffer&& rhs)
-    //{
-    //    AllocatedBuffer::operator=(std::move(rhs));
-    //    _ptr = rhs._ptr;
-    //    rhs._ptr = nullptr;
-    //    return *this;
-    //}
-
-    //void HostMappedBuffer::InvalidateCachesBeforeHostRead()
-    //{
-    //    VK_CHECK(vmaInvalidateAllocation(_allocator, _allocation, 0, _byteSize));
-    //}
-
-    //void HostMappedBuffer::FlushCachesBeforeDeviceRead()
-    //{
-    //    VK_CHECK(vmaFlushAllocation(_allocator, _allocation, 0, _byteSize));
-    //}
 
 
     //////////////////////////////////////////////////////////////////////////
@@ -120,8 +152,15 @@ namespace eureka
     //
     //////////////////////////////////////////////////////////////////////////
 
-    HostWriteCombinedBuffer::HostWriteCombinedBuffer(DeviceContext& deviceContext, const BufferConfig& config) : HostMappedBuffer(deviceContext)
+
+
+    HostWriteCombinedBuffer::HostWriteCombinedBuffer(
+        DeviceContext& deviceContext, 
+        const BufferConfig& config
+    ) 
+        : HostMappedBuffer(deviceContext)
     {
+
         vk::BufferCreateInfo bufferCreateInfo
         {
             .size = config.byte_size,
@@ -136,7 +175,7 @@ namespace eureka
 
 
         VmaAllocationInfo allocationInfo{};
-
+     
         VK_CHECK(vmaCreateBuffer(
             _allocator,
             &reinterpret_cast<VkBufferCreateInfo&>(bufferCreateInfo),
@@ -233,26 +272,8 @@ namespace eureka
 
 
 
-    PoolAllocatedBuffer::~PoolAllocatedBuffer()
-    {
-        if (_pool)
-        {
-            vmaDestroyPool(_allocator, _pool);
-        }
-    }
 
-    PoolAllocatedBuffer::PoolAllocatedBuffer(PoolAllocatedBuffer&& that)
-        : AllocatedBuffer(std::move(that)), _pool(that._pool)
-    {
-        that._pool = nullptr;
-    }
 
-    PoolAllocatedBuffer& PoolAllocatedBuffer::PoolAllocatedBuffer::operator=(PoolAllocatedBuffer&& rhs)
-    {
-        AllocatedBuffer::operator=(std::move(rhs));
-        _pool = rhs._pool;
-        rhs._pool = nullptr;
-        return *this;
-    }
+
 
 }

@@ -1,8 +1,74 @@
 #pragma once
 #include "DeviceContext.hpp"
+#include "vk_error_handling.hpp"
 
 namespace eureka
 {
+    //////////////////////////////////////////////////////////////////////////
+    //
+    //                        HostWriteCombinedRingPool
+    //
+    //////////////////////////////////////////////////////////////////////////
+    class HostWriteCombinedRingPool
+    {
+        VmaAllocator  _allocator{ nullptr };
+        VmaPool       _pool{ nullptr };
+        uint64_t      _byteSize;
+    public:
+        HostWriteCombinedRingPool(DeviceContext& deviceContext, uint64_t byteSize);
+        ~HostWriteCombinedRingPool();
+        VmaPool Get() const { return _pool; }    
+        uint64_t Size() const { return _byteSize; }
+
+        bool TryAllocate(uint64_t byteSize)
+        {
+            if (byteSize > _byteSize)
+            {
+                throw std::invalid_argument("bad");
+            }
+            
+
+            vk::BufferCreateInfo bufferCreateInfo
+            {
+                .size = byteSize,
+                .usage = vk::BufferUsageFlagBits::eTransferSrc
+            };
+
+            VmaAllocationCreateInfo allocationCreateInfo
+            {
+                .flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
+                .usage = VMA_MEMORY_USAGE_AUTO
+            };
+
+
+            VmaAllocationInfo allocationInfo{};
+            VmaAllocation allocation{};
+            vk::Buffer buffer{};
+            vk::Result result = static_cast<vk::Result>(vmaCreateBuffer(
+                _allocator,
+                &reinterpret_cast<VkBufferCreateInfo&>(bufferCreateInfo),
+                &allocationCreateInfo,
+                &reinterpret_cast<VkBuffer&>(buffer),
+                &allocation,
+                &allocationInfo
+            ));
+
+            if (result != vk::Result::eSuccess)
+            {
+                //assert(result == vk::Result::emem)
+                return false;
+            }
+            auto ptr = allocationInfo.pMappedData;
+            //auto byteSize = bufferCreateInfo.size;
+            assert(ptr);
+
+
+
+
+        }
+    };
+
+
     struct BufferConfig
     {
         uint64_t byte_size;
@@ -14,31 +80,53 @@ namespace eureka
     //
     //////////////////////////////////////////////////////////////////////////
 
-    class AllocatedBuffer
+    class AllocatedBufferBase
     {
     protected:
         VmaAllocator      _allocator{ nullptr };
         VmaAllocation     _allocation{ nullptr };
         vk::Buffer        _buffer{ nullptr };
         uint64_t          _byteSize{ 0 };
-        AllocatedBuffer(DeviceContext& deviceContext);
-        AllocatedBuffer() = default;    
-        ~AllocatedBuffer(); // NOTE: non virtual and protected
-        AllocatedBuffer& operator=(AllocatedBuffer&& rhs);
-        AllocatedBuffer& operator=(const AllocatedBuffer& rhs) = delete;
-        AllocatedBuffer(AllocatedBuffer&& that);
-        AllocatedBuffer(const AllocatedBuffer& that) = delete;
+        AllocatedBufferBase(DeviceContext& deviceContext);
+        AllocatedBufferBase() = default;
+        ~AllocatedBufferBase() = default;
+        AllocatedBufferBase& operator=(AllocatedBufferBase&& rhs);
+        AllocatedBufferBase(AllocatedBufferBase&& that);
+        AllocatedBufferBase& operator=(const AllocatedBufferBase& rhs) = delete;
+        AllocatedBufferBase(const AllocatedBufferBase& that) = delete;
     public:
         uint64_t ByteSize() const;
         vk::Buffer Buffer() const { return _buffer; }
         vk::DescriptorBufferInfo DescriptorInfo() const;
     };
 
-    class PoolAllocatedBuffer : public AllocatedBuffer
+    class AllocatedBuffer : public AllocatedBufferBase
     {
     protected:
+        AllocatedBuffer(DeviceContext& deviceContext) : AllocatedBufferBase(deviceContext) {}
+        ~AllocatedBuffer();
+        AllocatedBuffer() = default;
+        AllocatedBuffer& operator=(AllocatedBuffer&& rhs) = default;
+        AllocatedBuffer(AllocatedBuffer&& that) = default;
+    };
+
+    //////////////////////////////////////////////////////////////////////////
+    //
+    //                        PoolAllocatedBuffer
+    //
+    //////////////////////////////////////////////////////////////////////////
+
+    class PoolAllocatedBuffer : public AllocatedBufferBase
+    {
+    protected:
+        VmaAllocator             _allocator{ nullptr };
+        VmaAllocation            _allocation{ nullptr };
+        vk::Buffer               _buffer{ nullptr };
+        uint64_t                 _byteSize{ 0 };
+        fu::function<void(void)> _releaseCallback;
+
         VmaPool _pool{ nullptr };
-        PoolAllocatedBuffer(DeviceContext& deviceContext) : AllocatedBuffer(deviceContext) {}
+        PoolAllocatedBuffer(DeviceContext& deviceContext) : AllocatedBufferBase(deviceContext) {}
         PoolAllocatedBuffer() = default;
         ~PoolAllocatedBuffer();
 
@@ -118,15 +206,28 @@ namespace eureka
 
     //////////////////////////////////////////////////////////////////////////
     //
-    //                        HostStageZoneBuffer
+    //                        HostWriteCombinedBuffer
     //
     //////////////////////////////////////////////////////////////////////////
 
     class HostWriteCombinedBuffer : public HostMappedBuffer<AllocatedBuffer>
     {
     public:
-        HostWriteCombinedBuffer() = default;
         HostWriteCombinedBuffer(DeviceContext& deviceContext, const BufferConfig& config);
+        EUREKA_DEFAULT_MOVEONLY(HostWriteCombinedBuffer);
+    };
+
+    class HostWriteCombinedPoolBuffer : public HostMappedBuffer<AllocatedBuffer>
+    {
+       
+
+        friend class HostWriteCombinedRingPool;
+    public:
+        ~HostWriteCombinedPoolBuffer()
+        {
+
+        }
+        HostWriteCombinedPoolBuffer() = default;
     };
 
     //////////////////////////////////////////////////////////////////////////
@@ -141,6 +242,7 @@ namespace eureka
         HostVisibleDeviceConstantBuffer() = default;
         HostVisibleDeviceConstantBuffer(DeviceContext& deviceContext, const BufferConfig& config);
     };
+
 
     //////////////////////////////////////////////////////////////////////////
     //

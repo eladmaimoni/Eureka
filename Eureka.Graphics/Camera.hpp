@@ -16,7 +16,7 @@ namespace eureka
         float                                            _zNear{0.01f};
         float                                            _zFar{1000.0f};
         Eigen::Vector3f                                  _up{0.0f, 1.0f, 0.0f};
-        Eigen::Vector3f                                  _position{0.0f, 0.0f, 10.0f};
+        Eigen::Vector3f                                  _front{0.0f, 0.0f, 10.0f};
         Eigen::Vector3f                                  _direction{0.0f, 0.0f, -1.0f};
                                                          
         ViewProjection                                   _viewProjection;

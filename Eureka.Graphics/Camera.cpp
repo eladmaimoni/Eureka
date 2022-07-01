@@ -9,8 +9,8 @@ namespace eureka
         _constantBuffer(deviceContext, BufferConfig{ .byte_size = static_cast<uint32_t>(sizeof(ViewProjection)) }),
         _submissionThreadExecutionContext(std::move(submissionThreadExecutionContext))
     {
-        Eigen::Vector3f center = _position + _direction;
-        _viewProjection.view = Eigen::lookAt(_position, center, _up);
+        Eigen::Vector3f center = _front + _direction;
+        _viewProjection.view = Eigen::lookAt(_front, center, _up);
         auto aspectRatio = _viewport.width / _viewport.height;
         _viewProjection.projection = Eigen::perspective(_fovY, aspectRatio, _zNear, _zFar);
 
@@ -18,17 +18,17 @@ namespace eureka
 
     void PerspectiveCamera::SetPosition(const Eigen::Vector3f& position)
     {
-        _position = position;
-        Eigen::Vector3f center = _position + _direction;
-        _viewProjection.view = Eigen::lookAt(_position, center, _up);
+        _front = position;
+        Eigen::Vector3f center = _front + _direction;
+        _viewProjection.view = Eigen::lookAt(_front, center, _up);
         SyncTransforms();
     }
 
     void PerspectiveCamera::SetLookDirection(const Eigen::Vector3f& direction)
     {
         _direction = direction;
-        Eigen::Vector3f center = _position + _direction;
-        _viewProjection.view = Eigen::lookAt(_position, center, _up);
+        Eigen::Vector3f center = _front + _direction;
+        _viewProjection.view = Eigen::lookAt(_front, center, _up);
         SyncTransforms();
     }
 
