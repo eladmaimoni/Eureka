@@ -82,25 +82,43 @@ namespace eureka
 
     PoolAllocatedBuffer::~PoolAllocatedBuffer()
     {
+
+        DEBUGGER_TRACE("destroy pool buffer {}", _id);
         if (_buffer)
         {
+            DEBUGGER_TRACE("deallocate pool buffer {}", _id);
             vmaDestroyBuffer(_allocator, _buffer, _allocation);
             _releaseCallback();
+            _buffer = nullptr;
         }
+        
     
     }
 
     PoolAllocatedBuffer::PoolAllocatedBuffer(PoolAllocatedBuffer&& that) noexcept
-        : AllocatedBufferBase(std::move(that)), 
-        _releaseCallback(std::move(that._releaseCallback))
+        : AllocatedBufferBase(std::move(that))/*,*/ 
+        //_releaseCallback(std::move(that._releaseCallback))
     {
-
+        _releaseCallback = std::move(that._releaseCallback);
+        //assert(_releaseCallback);
+        //assert(!that._releaseCallback);
+        that._releaseCallback = [] {};
+        _id = instances++;
+        DEBUGGER_TRACE("pool buffer {}", _id);
+        assert(!that._buffer);
     }
 
     PoolAllocatedBuffer& PoolAllocatedBuffer::PoolAllocatedBuffer::operator=(PoolAllocatedBuffer&& rhs) noexcept
     {
+
         AllocatedBufferBase::operator=(std::move(rhs));
-        _releaseCallback = std::move(rhs._releaseCallback);     
+        _releaseCallback = std::move(rhs._releaseCallback);    
+        rhs._releaseCallback = [] {};
+
+        instances++;
+        DEBUGGER_TRACE("pool buffer {}", instances);
+
+        assert(!rhs._buffer);
         return *this;
     }
 

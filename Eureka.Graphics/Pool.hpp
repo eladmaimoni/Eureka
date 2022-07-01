@@ -79,8 +79,6 @@ namespace eureka
             );
 
         }
-
-
         future_t<HostWriteCombinedPoolBuffer> EnqueueAllocation(uint64_t byteSize)
         {
             if (byteSize > Size())

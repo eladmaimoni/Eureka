@@ -15,4 +15,6 @@ namespace eureka
 
     template<typename T>
     using result_t = concurrencpp::result<T>;
+
+    inline constexpr uint64_t STAGE_ZONE_SIZE = 1024 * 1024 * 400; // 20MB
 }

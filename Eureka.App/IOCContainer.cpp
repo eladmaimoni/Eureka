@@ -61,6 +61,8 @@ namespace eureka
             _graphicsQueue,
             std::move(submissionThreadExecutor)
             );
+
+        _uploadPool = std::make_shared<HostWriteCombinedRingPool>(_deviceContext, STAGE_ZONE_SIZE);
     }
 
     IOCContainer::~IOCContainer()
@@ -90,6 +92,7 @@ namespace eureka
             _copyQueue,
             _submissionThreadExecutionContext,
             _oneShotCopySubmissionHandler,
+            _uploadPool,
             _concurrencyRuntime.background_executor(),
             _concurrencyRuntime.thread_pool_executor()
             );

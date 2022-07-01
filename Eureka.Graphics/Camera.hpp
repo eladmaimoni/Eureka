@@ -1,7 +1,8 @@
 #pragma once
    
 #include "DeviceContext.hpp"
-#include "Mesh.hpp"
+#include "Buffer.hpp"
+#include "PipelineTypes.hpp"
 #include <eigen_graphics.hpp>
 #include "SubmissionThreadExecutionContext.hpp"
 

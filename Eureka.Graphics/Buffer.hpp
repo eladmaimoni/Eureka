@@ -1,6 +1,7 @@
 #pragma once
 #include "DeviceContext.hpp"
 #include "vk_error_handling.hpp"
+#include <debugger_trace.hpp>
 
 namespace eureka
 {
@@ -53,13 +54,29 @@ namespace eureka
     //                        PoolAllocatedBuffer
     //
     //////////////////////////////////////////////////////////////////////////
-
+    inline static int instances = 0;
     class PoolAllocatedBuffer : public AllocatedBufferBase
     {
+        int _id{};
     protected:
         fu::function<void(void)> _releaseCallback;
-        PoolAllocatedBuffer(DeviceContext& deviceContext, fu::function<void(void)> releaseCallback) : AllocatedBufferBase(deviceContext), _releaseCallback(std::move(releaseCallback)) {}
-        PoolAllocatedBuffer() = default;
+        PoolAllocatedBuffer(DeviceContext& deviceContext, fu::function<void(void)> releaseCallback) 
+            : AllocatedBufferBase(deviceContext), _releaseCallback(std::move(releaseCallback)) 
+        {
+            _id = instances++;
+            DEBUGGER_TRACE("pool buffer {}", _id);
+        
+        }
+        PoolAllocatedBuffer(DeviceContext& deviceContext) : AllocatedBufferBase(deviceContext) 
+        {
+            _id = instances++;
+            DEBUGGER_TRACE("pool buffer {}", _id);
+        }
+        PoolAllocatedBuffer()
+        {
+            _id = instances++;
+            DEBUGGER_TRACE("pool buffer {}", _id);
+        }
         ~PoolAllocatedBuffer();
         PoolAllocatedBuffer& operator=(PoolAllocatedBuffer&& rhs) noexcept;
         PoolAllocatedBuffer(PoolAllocatedBuffer&& that) noexcept;
@@ -78,10 +95,14 @@ namespace eureka
     {
     protected:
         void* _ptr{ nullptr };
+        HostMappedBuffer(DeviceContext& deviceContext) : BaseBuffer(deviceContext) {}
+        template<typename F>
+        HostMappedBuffer(DeviceContext& deviceContext, F f) : BaseBuffer(deviceContext, std::move(f)) {}
 
-        template<typename ... Args >
-        HostMappedBuffer(Args&& ... args) : BaseBuffer(std::forward<Args>(args)...) {}
-        ~HostMappedBuffer() = default; 
+        ~HostMappedBuffer()
+        {
+            _ptr = nullptr;
+        }
         HostMappedBuffer() = default;  
         HostMappedBuffer& operator=(HostMappedBuffer&& rhs) noexcept
         {
@@ -95,6 +116,7 @@ namespace eureka
             _ptr(that._ptr)
         {
             that._ptr = nullptr;
+            assert(!that._buffer);
         }
 
     public:
@@ -108,6 +130,7 @@ namespace eureka
         template<typename T, std::size_t COUNT>
         void Assign(std::span<T, COUNT> s, uint64_t byte_offset = 0)
         {
+           
             assert((s.size_bytes() + byte_offset) <= BaseBuffer::_byteSize);
             std::memcpy(
                 Ptr<uint8_t>() + byte_offset,
@@ -161,7 +184,7 @@ namespace eureka
             uint64_t          byteSize,
             void* ptr,
             fu::function<void(void)> releaseCallback
-        ) : HostMappedBuffer<PoolAllocatedBuffer>(deviceContext,std::move(releaseCallback))
+        ) : HostMappedBuffer<PoolAllocatedBuffer>(deviceContext, std::move(releaseCallback))
             
             //_allocation(allocation),
             //_buffer(buffer),
@@ -172,9 +195,27 @@ namespace eureka
             _buffer = buffer;
             _byteSize = byteSize;
             _ptr = ptr;
+            assert(_releaseCallback);
+            assert(_buffer);
         }
+
+
     public:
-        EUREKA_DEFAULT_MOVEONLY(HostWriteCombinedPoolBuffer);
+   
+        HostWriteCombinedPoolBuffer(HostWriteCombinedPoolBuffer&& that) noexcept
+            : HostMappedBuffer<PoolAllocatedBuffer>(std::move(that))
+        {
+            assert(!that._buffer);
+            assert(!that._allocation);
+            assert(!that._buffer);
+            assert(!that._ptr);
+            assert(that._byteSize == 0);
+        }
+
+        ~HostWriteCombinedPoolBuffer() noexcept
+        {
+            DEBUGGER_TRACE("destroying pool buffer with {} bytes", _byteSize);
+        }
     };
 
     //////////////////////////////////////////////////////////////////////////

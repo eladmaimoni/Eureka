@@ -57,17 +57,19 @@ namespace eureka
     class PoolSequentialStageZone
     {
     private:
-        HostWriteCombinedBuffer _buffer;
+        HostWriteCombinedPoolBuffer _buffer;
         uint64_t                _front{ 0 };
 
-        PoolSequentialStageZone(DeviceContext& deviceContext, StageZoneConfig config)
-            : _buffer(deviceContext, BufferConfig{ .byte_size = config.bytes_capacity })
+    public:
+        PoolSequentialStageZone(HostWriteCombinedPoolBuffer buffer)
+            : _buffer(std::move(_buffer))
         {
-
 
         }
 
-    public:
+    
+        //EUREKA_DEFAULT_MOVEONLY(PoolSequentialStageZone);
+
 
         uint64_t Position() const
         {

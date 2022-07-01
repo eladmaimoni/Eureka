@@ -53,7 +53,7 @@ namespace eureka
 
     };
 
-    inline constexpr uint64_t STAGE_ZONE_SIZE = 1024 * 1024 * 400; // 20MB
+    
 
     class AssetLoader
     {
@@ -63,6 +63,7 @@ namespace eureka
             Queue queue,
             std::shared_ptr<SubmissionThreadExecutionContext> submissionThreadExecutionContext,
             std::shared_ptr<OneShotCopySubmissionHandler>     oneShotCopySubmissionHandler,
+            std::shared_ptr<HostWriteCombinedRingPool>        uploadPool,
             IOExecutor ioExecutor,
             PoolExecutor poolExecutor     
         );
@@ -79,10 +80,11 @@ namespace eureka
         std::shared_ptr<OneShotCopySubmissionHandler>        _oneShotCopySubmissionHandler;
         IOExecutor                                           _ioExecutor;
         PoolExecutor                                         _poolExecutor;
-        SequentialStageZone                                  _stageZone;
+        //SequentialStageZone                                  _stageZone;
+        std::shared_ptr<HostWriteCombinedRingPool>           _uploadPool;
         CommandPool                                          _uploadCommandPool;
 
-        vkr::CommandBuffer RecordUploadCommands(dynamic_span<Image2DUploadTransferDesc> imageUploads, const BufferDataUploadTransferDesc& bufferUpload);
+        vkr::CommandBuffer RecordUploadCommands(dynamic_span<Image2DUploadTransferDesc> imageUploads, const BufferDataUploadTransferDesc& bufferUpload, const PoolSequentialStageZone& stageZone);
     };
 
 }

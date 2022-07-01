@@ -84,6 +84,7 @@ namespace eureka
         Queue queue, 
         std::shared_ptr<SubmissionThreadExecutionContext> submissionThreadExecutionContext,
         std::shared_ptr<OneShotCopySubmissionHandler>     oneShotCopySubmissionHandler,
+        std::shared_ptr<HostWriteCombinedRingPool>        uploadPool,
         IOExecutor ioExecutor, PoolExecutor poolExecutor
     ) :
         _deviceContext(deviceContext),
@@ -92,7 +93,8 @@ namespace eureka
         _oneShotCopySubmissionHandler(std::move(oneShotCopySubmissionHandler)),
         _ioExecutor(std::move(ioExecutor)),
         _poolExecutor(std::move(poolExecutor)),
-        _stageZone(deviceContext, StageZoneConfig{ .bytes_capacity = STAGE_ZONE_SIZE }),
+        _uploadPool(std::move(uploadPool)),
+        //_stageZone(deviceContext, StageZoneConfig{ .bytes_capacity = STAGE_ZONE_SIZE }),
         _uploadCommandPool(deviceContext.LogicalDevice(), CommandPoolDesc{ .type = CommandPoolType::eTransientResettableBuffers, .queue_family = _copyQueue.Family() })
     {
 
@@ -108,7 +110,13 @@ namespace eureka
     }
 
 
-    vkr::CommandBuffer AssetLoader::RecordUploadCommands(dynamic_span<Image2DUploadTransferDesc> imageUploads, const BufferDataUploadTransferDesc& bufferUpload)
+    vkr::CommandBuffer AssetLoader::RecordUploadCommands(
+        dynamic_span<Image2DUploadTransferDesc> imageUploads,
+        const BufferDataUploadTransferDesc& bufferUpload,
+        const PoolSequentialStageZone& stageZone
+        
+    
+    )
     {
         PROFILE_CATEGORIZED_SCOPE("Asset Loading Command Recording", Profiling::Color::Green, Profiling::PROFILING_CATEGORY_RENDERING);
         DEBUGGER_TRACE("rendering thread fun - recording one shot copy");
@@ -190,7 +198,7 @@ namespace eureka
                 };
 
                 uploadCommandBuffer.copyBufferToImage(
-                    _stageZone.Buffer(),
+                    stageZone.Buffer(),
                     imageUploadDesc.destination_image,
                     vk::ImageLayout::eTransferDstOptimal,
                     { region }
@@ -373,17 +381,24 @@ namespace eureka
 
         VertexAndIndexTransferableDeviceBuffer deviceBuffer(_deviceContext, BufferConfig{ .byte_size = totalBufferMemory });
 
-        _stageZone.Reset(); 
+        auto stageBuffer = co_await _uploadPool->EnqueueAllocation(totalBufferMemory + totalImageMemory);
+
+        DEBUGGER_TRACE("stage buffe allocated");
+
+        PoolSequentialStageZone stageZone(std::move(stageBuffer));
+
+    
+        //_stageZone.Reset(); 
         // TODO check stage zone leftover
         for (const auto& imageUploadDesc : imageUploadDescs)
         {      
-            _stageZone.Assign(imageUploadDesc.src_span);
+            stageZone.Assign(imageUploadDesc.src_span);
         }
 
         BufferDataUploadTransferDesc bufferUploadDesc
         {
-            .src_buffer = _stageZone.Buffer(),
-            .src_offset = _stageZone.Position(),
+            .src_buffer = stageZone.Buffer(),
+            .src_offset = stageZone.Position(),
             .bytes = deviceBuffer.ByteSize(),
             .dst_buffer = deviceBuffer.Buffer(),
             .dst_offset = 0
@@ -391,18 +406,18 @@ namespace eureka
      
         for (const auto& idxSpan : indicesUploadDesc)
         {
-            _stageZone.Assign(idxSpan);
+            stageZone.Assign(idxSpan);
         }
         for (const auto& vertexSpan : vertexDataUploadDesc)
         {
-            _stageZone.Assign(vertexSpan);
+            stageZone.Assign(vertexSpan);
         }
 
         ThrowOnCancelled(cancellationToken);
   
         co_await concurrencpp::resume_on(_submissionThreadExecutionContext->OneShotCopySubmitExecutor());
 
-        auto uploadCommandBuffer = RecordUploadCommands(imageUploadDescs, bufferUploadDesc);
+        auto uploadCommandBuffer = RecordUploadCommands(imageUploadDescs, bufferUploadDesc, stageZone);
 
         co_await _oneShotCopySubmissionHandler->AppendOneShotCommandBufferSubmission(std::move(uploadCommandBuffer));
         
