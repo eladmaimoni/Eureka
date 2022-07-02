@@ -9,9 +9,6 @@
 
 namespace eureka
 {
-
-
-
     struct PrimitiveDataView
     {
         dynamic_cspan<uint16_t> index_view;
@@ -74,11 +71,6 @@ namespace eureka
     }
     
 
-
-
-
-
-
     AssetLoader::AssetLoader(
         DeviceContext& deviceContext, 
         Queue queue, 
@@ -112,11 +104,11 @@ namespace eureka
     struct ImageUploadTuple
     {
         vk::ImageMemoryBarrier pre_transform_barrier;
+        vk::BufferImageCopy    copy;
         vk::ImageMemoryBarrier post_transform_barrier;
-        vk::BufferImageCopy    region;
     };
 
-    ImageUploadTuple ShaderSampledUploadTuple(
+    ImageUploadTuple ShaderSampledImageUploadTuple(
         const Queue& copyQueue,
         const Queue& graphicsQueue,
         const Image2DUploadTransferDesc& imageUploadDesc
@@ -141,7 +133,19 @@ namespace eureka
                    .layerCount = 1
                 }
             },
-            .post_transform_barrier = vk::ImageMemoryBarrier 
+            .copy = vk::BufferImageCopy
+            {
+                .bufferOffset = imageUploadDesc.stage_zone_offset,
+                .imageSubresource = vk::ImageSubresourceLayers 
+                {
+                    .aspectMask = vk::ImageAspectFlagBits::eColor,
+                    .mipLevel = 0,
+                    .baseArrayLayer = 0,
+                    .layerCount = 1
+                },
+                .imageExtent = imageUploadDesc.destination_image_extent
+            },
+            .post_transform_barrier = vk::ImageMemoryBarrier
             {
                 .srcAccessMask = vk::AccessFlagBits::eTransferWrite,
                 .dstAccessMask = vk::AccessFlagBits::eShaderRead,
@@ -157,18 +161,6 @@ namespace eureka
                    .levelCount = 1,
                    .layerCount = 1
                 }
-            },
-            .region = vk::BufferImageCopy
-            {
-                .bufferOffset = imageUploadDesc.stage_zone_offset,
-                .imageSubresource = vk::ImageSubresourceLayers 
-                {
-                    .aspectMask = vk::ImageAspectFlagBits::eColor,
-                    .mipLevel = 0,
-                    .baseArrayLayer = 0,
-                    .layerCount = 1
-                },
-                .imageExtent = imageUploadDesc.destination_image_extent
             }
         };
     }
@@ -195,47 +187,18 @@ namespace eureka
 
             svec10<vk::ImageMemoryBarrier> preTransferImageMemoryBarriers;
             svec10<vk::ImageMemoryBarrier> postTransferImageMemoryBarriers;
+            svec10<vk::BufferImageCopy> bufferImageCopies;
 
             for (const auto& imageUploadDesc : imageUploads)
             {
-                vk::ImageSubresourceRange subresourceRange
-                {
-                    .aspectMask = vk::ImageAspectFlagBits::eColor,
-                    .baseMipLevel = 0,
-                    .levelCount = 1,
-                    .layerCount = 1
-                };
+                auto [preTransferBarrier, bufferImageCopy, postTransferBarrier]
+                    = ShaderSampledImageUploadTuple(_copyQueue, graphicsQueue, imageUploadDesc);
 
-                vk::ImageMemoryBarrier preTransferImageMemoryBarrier
-                {
-                    .srcAccessMask = vk::AccessFlagBits::eNoneKHR,
-                    .dstAccessMask = vk::AccessFlagBits::eTransferWrite,
-                    .oldLayout = vk::ImageLayout::eUndefined,
-                    .newLayout = vk::ImageLayout::eTransferDstOptimal,
-                    .srcQueueFamilyIndex = copyQueue.Family(),
-                    .dstQueueFamilyIndex = copyQueue.Family(),
-                    .image = imageUploadDesc.destination_image,
-                    .subresourceRange = subresourceRange
-                };
-
-                preTransferImageMemoryBarriers.emplace_back(preTransferImageMemoryBarrier);
-
-                vk::ImageMemoryBarrier postTransferImageMemoryBarrier
-                {
-                    .srcAccessMask = vk::AccessFlagBits::eTransferWrite,
-                    .dstAccessMask = vk::AccessFlagBits::eShaderRead,
-                    .oldLayout = vk::ImageLayout::eTransferDstOptimal,
-                    .newLayout = vk::ImageLayout::eShaderReadOnlyOptimal,
-                    .srcQueueFamilyIndex = copyQueue.Family(),
-                    .dstQueueFamilyIndex = graphicsQueue.Family(),
-                    .image = imageUploadDesc.destination_image,
-                    .subresourceRange = subresourceRange
-                };
-
-                postTransferImageMemoryBarriers.emplace_back(postTransferImageMemoryBarrier);
+                preTransferImageMemoryBarriers.emplace_back(preTransferBarrier);
+                bufferImageCopies.emplace_back(bufferImageCopy);
+                postTransferImageMemoryBarriers.emplace_back(postTransferBarrier);
             }
-
-            
+      
             uploadCommandBuffer.pipelineBarrier(
                 vk::PipelineStageFlagBits::eTopOfPipe,
                 vk::PipelineStageFlagBits::eTransfer,
@@ -245,28 +208,13 @@ namespace eureka
                 preTransferImageMemoryBarriers
             );
 
-            for (const auto& imageUploadDesc : imageUploads)
+            for (auto i = 0u; i < imageUploads.size(); ++i)
             {
-                vk::ImageSubresourceLayers subresourceLayers
-                {
-                    .aspectMask = vk::ImageAspectFlagBits::eColor,
-                    .mipLevel = 0,
-                    .baseArrayLayer = 0,
-                    .layerCount = 1
-                };
-
-                vk::BufferImageCopy region
-                {
-                    .bufferOffset = imageUploadDesc.stage_zone_offset,
-                    .imageSubresource = subresourceLayers,
-                    .imageExtent = imageUploadDesc.destination_image_extent
-                };
-
                 uploadCommandBuffer.copyBufferToImage(
                     stageZone.Buffer(),
-                    imageUploadDesc.destination_image,
+                    imageUploads[i].destination_image,
                     vk::ImageLayout::eTransferDstOptimal,
-                    { region }
+                    { bufferImageCopies[i] }
                 );
             }
 
