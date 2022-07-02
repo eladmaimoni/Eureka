@@ -6,6 +6,7 @@
 #include <SubmissionThreadExecutionContext.hpp>
 #include <OneShotCopySubmission.hpp>
 #include <UploadRingBuffer.hpp>
+#include <CommandsUtils.hpp>
 
 namespace eureka
 {
@@ -24,13 +25,7 @@ namespace eureka
             );
     }
 
-    struct Image2DUploadTransferDesc
-    {
-        dynamic_cspan<uint8_t> src_span;
-        uint64_t    stage_zone_offset;
-        vk::Image   destination_image;
-        vk::Extent3D destination_image_extent;
-    };
+
 
     struct BufferDataUploadTransferDesc
     {
@@ -68,9 +63,6 @@ namespace eureka
         );
 
         future_t<LoadedModel> LoadModel(const std::filesystem::path& path, const ModelLoadingConfig& config);
-
-
-
     private:
         std::atomic_bool                                     _busy{ false };
         DeviceContext&                                       _deviceContext;
@@ -82,7 +74,7 @@ namespace eureka
         std::shared_ptr<HostWriteCombinedRingPool>           _uploadPool;
         CommandPool                                          _uploadCommandPool;
 
-        vkr::CommandBuffer RecordUploadCommands(dynamic_span<Image2DUploadTransferDesc> imageUploads, const BufferDataUploadTransferDesc& bufferUpload, const PoolSequentialStageZone& stageZone);
+        vkr::CommandBuffer RecordUploadCommands(dynamic_span<ImageStageUploadDesc> imageUploads, const BufferDataUploadTransferDesc& bufferUpload, const PoolSequentialStageZone& stageZone);
     };
 
 }

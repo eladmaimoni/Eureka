@@ -4,9 +4,6 @@
 
 namespace eureka
 {
-
-
-
     struct FixedPiplinePreset
     {
         vk::PipelineInputAssemblyStateCreateInfo input_assembly_create_info;
@@ -30,6 +27,19 @@ namespace eureka
         }
     };
 
+    struct MeshFixedPresetTraits
+    {
+        static constexpr vk::CullModeFlags cull_mode = vk::CullModeFlagBits::eNone;
+        static constexpr bool depth_test = true;
+        static constexpr bool depth_write = true;
+    };
+    struct UIFixedPresetTraits
+    {
+        static constexpr vk::CullModeFlags cull_mode = vk::CullModeFlagBits::eNone;
+        static constexpr bool depth_test = false;
+        static constexpr bool depth_write = false;
+    };
+    template<typename Traits>
     void SetupFixedPreset(MeshPipelinePreset& meshPipelinePreset)
     {
         meshPipelinePreset.fixed_preset = FixedPiplinePreset
@@ -43,7 +53,7 @@ namespace eureka
                 .depthClampEnable = false,
                 .rasterizerDiscardEnable = false,
                 .polygonMode = vk::PolygonMode::eFill,
-                .cullMode = vk::CullModeFlagBits::eNone,
+                .cullMode = Traits::cull_mode,
                 .frontFace = vk::FrontFace::eCounterClockwise,
                 .depthBiasEnable = false,
                 .lineWidth = 1.0f
@@ -65,8 +75,8 @@ namespace eureka
             },
             .depth_stencil_state_create_info = vk::PipelineDepthStencilStateCreateInfo
             {
-                .depthTestEnable = true,
-                .depthWriteEnable = true,
+                .depthTestEnable = Traits::depth_test,
+                .depthWriteEnable = Traits::depth_write,
                 .depthCompareOp = vk::CompareOp::eLessOrEqual,
                 .depthBoundsTestEnable = false,
                 .stencilTestEnable = false,
@@ -96,7 +106,113 @@ namespace eureka
         return meshPipelinePreset;
     }
 
+    //////////////////////////////////////////////////////////////////////////
+    //
+    //                        UIPipeline
+    // 
+    //////////////////////////////////////////////////////////////////////////
 
+    void UIPipeline::Setup(DeviceContext& deviceContext, vk::RenderPass renderPass)
+    {
+        //
+        // Vertex Attributes 
+        //
+        
+        vk::VertexInputBindingDescription vertexInputBinding
+        {
+            .binding = 0,
+            .stride = sizeof(ImGuiVertex),
+            .inputRate = vk::VertexInputRate::eVertex
+        };
+
+        std::array<vk::VertexInputAttributeDescription, 3> vertexInputAttributs
+        {
+            // xyz position at shader location 0
+            vk::VertexInputAttributeDescription
+            {
+                .location = 0,
+                .binding = 0,
+                .format = vk::Format::eR32G32Sfloat,
+                .offset = offsetof(ImGuiVertex, position)
+            },
+            vk::VertexInputAttributeDescription
+            {
+                .location = 1,
+                .binding = 0,
+                .format = vk::Format::eR32G32Sfloat,
+                .offset = offsetof(ImGuiVertex, uv)
+            },
+            // rgb color at shader location 1
+            vk::VertexInputAttributeDescription
+            {
+                .location = 2,
+                .binding = 0,
+                .format = vk::Format::eR8G8B8Unorm,
+                .offset = offsetof(PositionColorVertex, color)
+            }
+        };
+
+        vk::PipelineVertexInputStateCreateInfo vertexInputState
+        {
+            .vertexBindingDescriptionCount = 1,
+            .pVertexBindingDescriptions = &vertexInputBinding,
+            .vertexAttributeDescriptionCount = static_cast<uint32_t>(vertexInputAttributs.size()),
+            .pVertexAttributeDescriptions = vertexInputAttributs.data()
+        };
+
+        auto preset = CreateMeshPipelinePreset();
+        SetupFixedPreset<UIFixedPresetTraits>(preset);
+
+        //
+        // Shaders
+        // 
+
+        auto vshader = deviceContext.Shaders()->LoadShaderModule(ColoredVertexVS);
+        auto fshader = deviceContext.Shaders()->LoadShaderModule(ColoredVertexFS);
+
+        std::array<vk::PipelineShaderStageCreateInfo, 2> shaderStages
+        {
+            vk::PipelineShaderStageCreateInfo
+            {
+                .stage = vk::ShaderStageFlagBits::eVertex,
+                .module = *vshader,
+                .pName = "main"
+            },
+            vk::PipelineShaderStageCreateInfo
+            {
+                .stage = vk::ShaderStageFlagBits::eFragment,
+                .module = *fshader,
+                .pName = "main"
+            }
+        };
+
+
+        //
+        // All Together
+        //
+
+        vk::GraphicsPipelineCreateInfo pipelineCreateInfo
+        {
+            .stageCount = static_cast<uint32_t>(shaderStages.size()),
+            .pStages = shaderStages.data(),
+            .pVertexInputState = &vertexInputState,
+            .pInputAssemblyState = &preset.fixed_preset.input_assembly_create_info,
+            .pTessellationState = nullptr,
+            .pViewportState = &preset.fixed_preset.viewport_state_create_info,
+            .pRasterizationState = &preset.fixed_preset.rasterization_state_create_info,
+            .pMultisampleState = &preset.fixed_preset.multisampling_state_create_info,
+            .pDepthStencilState = &preset.fixed_preset.depth_stencil_state_create_info,
+            .pColorBlendState = &preset.fixed_preset.color_blend_state_create_info,
+            .pDynamicState = &preset.fixed_preset.dynamic_state_create_info,
+            .layout = *_pipelineLayout,
+            .renderPass = renderPass
+        };
+
+        _pipeline = deviceContext.LogicalDevice()->createGraphicsPipeline(
+            deviceContext.Shaders()->Cache(),
+            pipelineCreateInfo
+        );
+    }
 
     //////////////////////////////////////////////////////////////////////////
     //
@@ -163,7 +279,7 @@ namespace eureka
         };
 
         auto preset = CreateMeshPipelinePreset();
-        SetupFixedPreset(preset);
+        SetupFixedPreset<MeshFixedPresetTraits>(preset);
 
         //
         // Shaders
@@ -340,7 +456,7 @@ namespace eureka
         };
 
         auto preset = CreateMeshPipelinePreset();
-        SetupFixedPreset(preset);
+        SetupFixedPreset<MeshFixedPresetTraits>(preset);
 
         //
         // Shaders
@@ -392,5 +508,7 @@ namespace eureka
             pipelineCreateInfo
         );
     }
+
+
 
 }

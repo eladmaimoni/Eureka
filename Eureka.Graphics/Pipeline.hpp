@@ -35,6 +35,31 @@ namespace eureka
         }
     };
 
+
+    //////////////////////////////////////////////////////////////////////////
+    //
+    //                        UIPipeline
+    // 
+    //////////////////////////////////////////////////////////////////////////
+    class UIPipeline : public PipelineBase
+    {
+        vk::DescriptorSetLayout _perViewLayout;
+        void Setup(DeviceContext& deviceContext, vk::RenderPass renderPass);
+    public:
+        UIPipeline(
+            DeviceContext& deviceContext,
+            const DepthColorRenderPass& renderPass,
+            const PerViewDescriptorSetLayout& descriptorSetLayout
+        );
+        EUREKA_DEFAULT_MOVEABLE(UIPipeline);
+
+        vk::DescriptorSetLayout GetPerViewLayout() const
+        {
+            return _perViewLayout;
+        }
+    };
+
+
     //////////////////////////////////////////////////////////////////////////
     //
     //                        ColoredVertexMeshPipeline

@@ -98,80 +98,12 @@ namespace eureka
         {
             throw operation_cancelled("cancelled");
         }
-
     }
-
-    struct ImageUploadTuple
-    {
-        vk::ImageMemoryBarrier pre_transform_barrier;
-        vk::BufferImageCopy    copy;
-        vk::ImageMemoryBarrier post_transform_barrier;
-    };
-
-    ImageUploadTuple ShaderSampledImageUploadTuple(
-        const Queue& copyQueue,
-        const Queue& graphicsQueue,
-        const Image2DUploadTransferDesc& imageUploadDesc
-    )
-    {
-        return ImageUploadTuple
-        {
-            .pre_transform_barrier = vk::ImageMemoryBarrier
-            {
-                .srcAccessMask = vk::AccessFlagBits::eNoneKHR,
-                .dstAccessMask = vk::AccessFlagBits::eTransferWrite,
-                .oldLayout = vk::ImageLayout::eUndefined,
-                .newLayout = vk::ImageLayout::eTransferDstOptimal,
-                .srcQueueFamilyIndex = copyQueue.Family(),
-                .dstQueueFamilyIndex = copyQueue.Family(),
-                .image = imageUploadDesc.destination_image,
-                .subresourceRange = vk::ImageSubresourceRange
-                {
-                   .aspectMask = vk::ImageAspectFlagBits::eColor,
-                   .baseMipLevel = 0,
-                   .levelCount = 1,
-                   .layerCount = 1
-                }
-            },
-            .copy = vk::BufferImageCopy
-            {
-                .bufferOffset = imageUploadDesc.stage_zone_offset,
-                .imageSubresource = vk::ImageSubresourceLayers 
-                {
-                    .aspectMask = vk::ImageAspectFlagBits::eColor,
-                    .mipLevel = 0,
-                    .baseArrayLayer = 0,
-                    .layerCount = 1
-                },
-                .imageExtent = imageUploadDesc.destination_image_extent
-            },
-            .post_transform_barrier = vk::ImageMemoryBarrier
-            {
-                .srcAccessMask = vk::AccessFlagBits::eTransferWrite,
-                .dstAccessMask = vk::AccessFlagBits::eShaderRead,
-                .oldLayout = vk::ImageLayout::eTransferDstOptimal,
-                .newLayout = vk::ImageLayout::eShaderReadOnlyOptimal,
-                .srcQueueFamilyIndex = copyQueue.Family(),
-                .dstQueueFamilyIndex = graphicsQueue.Family(),
-                .image = imageUploadDesc.destination_image,
-                .subresourceRange = vk::ImageSubresourceRange
-                {
-                   .aspectMask = vk::ImageAspectFlagBits::eColor,
-                   .baseMipLevel = 0,
-                   .levelCount = 1,
-                   .layerCount = 1
-                }
-            }
-        };
-    }
-
 
     vkr::CommandBuffer AssetLoader::RecordUploadCommands(
-        dynamic_span<Image2DUploadTransferDesc> imageUploads,
+        dynamic_span<ImageStageUploadDesc> imageUploads,
         const BufferDataUploadTransferDesc& bufferUpload,
-        const PoolSequentialStageZone& stageZone
-        
-    
+        const PoolSequentialStageZone& stageZone    
     )
     {
         PROFILE_CATEGORIZED_SCOPE("Asset Loading Command Recording", Profiling::Color::Green, Profiling::PROFILING_CATEGORY_RENDERING);
@@ -288,7 +220,7 @@ namespace eureka
 
         DEBUGGER_TRACE("pool thread fun");
 
-        svec10<Image2DUploadTransferDesc> imageUploadDescs;
+        svec10<ImageStageUploadDesc> imageUploadDescs;
         imageUploadDescs.reserve(gltfModel.images.size() + gltfModel.nodes.size());
 
         svec10<SampledImage2D> images;
@@ -322,9 +254,9 @@ namespace eureka
             };
             auto& vulkanImage = images.emplace_back(_deviceContext, imageProps);
             imageUploadDescs.emplace_back(
-                Image2DUploadTransferDesc
+                ImageStageUploadDesc
                 { 
-                    .src_span = dynamic_cspan<uint8_t>(glTFImage.image.data(), glTFImage.image.size()),
+                    .unpinned_src_span = dynamic_cspan<uint8_t>(glTFImage.image.data(), glTFImage.image.size()),
                     .stage_zone_offset = totalImageMemory,
                     .destination_image = vulkanImage.Get(),
                     .destination_image_extent = vk::Extent3D{.width = imageProps.width, .height = imageProps.width, .depth = 1}
@@ -373,7 +305,7 @@ namespace eureka
         // TODO check stage zone leftover
         for (const auto& imageUploadDesc : imageUploadDescs)
         {      
-            stageZone.Assign(imageUploadDesc.src_span);
+            stageZone.Assign(imageUploadDesc.unpinned_src_span);
         }
 
         BufferDataUploadTransferDesc bufferUploadDesc

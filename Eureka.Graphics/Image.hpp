@@ -45,7 +45,6 @@ namespace eureka
     protected:
         VmaAllocator      _allocator{ nullptr };
         VmaAllocation     _allocation{ nullptr };
-        //VmaAllocationInfo _allocationInfo{  };
     };
 
 

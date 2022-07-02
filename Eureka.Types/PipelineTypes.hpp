@@ -22,4 +22,11 @@ namespace eureka
         Eigen::Vector3f position;
         Eigen::Vector3f color;
     };
+
+    struct ImGuiVertex
+    {
+        Eigen::Vector2f  position;
+        Eigen::Vector2f  uv;
+        uint32_t         color;
+    };
 }
