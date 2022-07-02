@@ -1,13 +1,13 @@
 ﻿
 
 set_source_group(
-    core 
-
+    ui 
+    "ImguiIntegration.hpp"
+    "ImguiIntegration.cpp"
 )
 
 set_source_group(
     infrastructure 
-
     "GraphicsDefaults.hpp"
     "UploadRingBuffer.hpp"
     "UploadRingBuffer.cpp"
@@ -17,6 +17,8 @@ set_source_group(
     "SubmissionThreadExecutor.cpp"
     "SubmissionThreadExecutionContext.hpp"
     "SubmissionThreadExecutionContext.cpp"
+    "OneShotCopySubmission.hpp"
+    "OneShotCopySubmission.cpp"
 )
 
 set_source_group(
@@ -77,13 +79,12 @@ set_source_group(
 
 add_library(
     Eureka.Graphics
-    ${core}
     ${infrastructure}
-    ${rendering}
-    ${wrappers}
-    ${windowing}
     ${objects}
+    ${rendering}
+    ${ui}
     ${vulkan}
+    ${windowing}
  )
 
 
@@ -114,6 +115,7 @@ target_link_libraries(
     Eureka.Shaders 
     glfw
     Eureka.Types
+    imgui::imgui
     concurrencpp::concurrencpp
     unofficial::vulkan-memory-allocator::vulkan-memory-allocator
     

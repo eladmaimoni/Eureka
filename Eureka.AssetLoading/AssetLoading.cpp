@@ -109,6 +109,70 @@ namespace eureka
 
     }
 
+    struct ImageUploadTuple
+    {
+        vk::ImageMemoryBarrier pre_transform_barrier;
+        vk::ImageMemoryBarrier post_transform_barrier;
+        vk::BufferImageCopy    region;
+    };
+
+    ImageUploadTuple ShaderSampledUploadTuple(
+        const Queue& copyQueue,
+        const Queue& graphicsQueue,
+        const Image2DUploadTransferDesc& imageUploadDesc
+    )
+    {
+        return ImageUploadTuple
+        {
+            .pre_transform_barrier = vk::ImageMemoryBarrier
+            {
+                .srcAccessMask = vk::AccessFlagBits::eNoneKHR,
+                .dstAccessMask = vk::AccessFlagBits::eTransferWrite,
+                .oldLayout = vk::ImageLayout::eUndefined,
+                .newLayout = vk::ImageLayout::eTransferDstOptimal,
+                .srcQueueFamilyIndex = copyQueue.Family(),
+                .dstQueueFamilyIndex = copyQueue.Family(),
+                .image = imageUploadDesc.destination_image,
+                .subresourceRange = vk::ImageSubresourceRange
+                {
+                   .aspectMask = vk::ImageAspectFlagBits::eColor,
+                   .baseMipLevel = 0,
+                   .levelCount = 1,
+                   .layerCount = 1
+                }
+            },
+            .post_transform_barrier = vk::ImageMemoryBarrier 
+            {
+                .srcAccessMask = vk::AccessFlagBits::eTransferWrite,
+                .dstAccessMask = vk::AccessFlagBits::eShaderRead,
+                .oldLayout = vk::ImageLayout::eTransferDstOptimal,
+                .newLayout = vk::ImageLayout::eShaderReadOnlyOptimal,
+                .srcQueueFamilyIndex = copyQueue.Family(),
+                .dstQueueFamilyIndex = graphicsQueue.Family(),
+                .image = imageUploadDesc.destination_image,
+                .subresourceRange = vk::ImageSubresourceRange
+                {
+                   .aspectMask = vk::ImageAspectFlagBits::eColor,
+                   .baseMipLevel = 0,
+                   .levelCount = 1,
+                   .layerCount = 1
+                }
+            },
+            .region = vk::BufferImageCopy
+            {
+                .bufferOffset = imageUploadDesc.stage_zone_offset,
+                .imageSubresource = vk::ImageSubresourceLayers 
+                {
+                    .aspectMask = vk::ImageAspectFlagBits::eColor,
+                    .mipLevel = 0,
+                    .baseArrayLayer = 0,
+                    .layerCount = 1
+                },
+                .imageExtent = imageUploadDesc.destination_image_extent
+            }
+        };
+    }
+
 
     vkr::CommandBuffer AssetLoader::RecordUploadCommands(
         dynamic_span<Image2DUploadTransferDesc> imageUploads,
@@ -171,6 +235,7 @@ namespace eureka
                 postTransferImageMemoryBarriers.emplace_back(postTransferImageMemoryBarrier);
             }
 
+            
             uploadCommandBuffer.pipelineBarrier(
                 vk::PipelineStageFlagBits::eTopOfPipe,
                 vk::PipelineStageFlagBits::eTransfer,
@@ -230,44 +295,11 @@ namespace eureka
                 { bufferMemoryBarrier },
                 postTransferImageMemoryBarriers
             );
-
-            //vk::BufferMemoryBarrier2KHR bufferMemoryBarrier
-            //{
-            //     .srcStageMask = vk::PipelineStageFlagBits2KHR::eTransfer,
-            //     .srcAccessMask = vk::AccessFlagBits2KHR::eTransferWrite,
-            //     .srcQueueFamilyIndex = copyQueue.Family(),
-            //     .dstQueueFamilyIndex = graphicsQueue.Family(),
-            //     .buffer = deviceBuffer.Buffer(),
-            //};
-
-            //vk::DependencyInfoKHR dependencyInfo
-            //{
-            //    .bufferMemoryBarrierCount = 1,
-            //    .pBufferMemoryBarriers = &bufferMemoryBarrier,
-            //};
-
-            //uploadCommandBuffer.pipelineBarrier2KHR(dependencyInfo);
-
-
-            /*
-                VULKAN_HPP_NAMESPACE::AccessFlags   srcAccessMask       = {};
-    VULKAN_HPP_NAMESPACE::AccessFlags   dstAccessMask       = {};
-
-            */
-
-            //uploadCommandBuffer.pipelineBarrier(
-            //    vk::PipelineStageFlagBits::eTransfer,
-            //    vk::PipelineStageFlagBits::eBottomOfPipe,
-            //    {},
-            //    nullptr,
-            //    nullptr,
-            //    nullptr
-            //);
         }
         return uploadCommandBuffer;
     }
 
-    result_t<LoadedModel> AssetLoader::LoadModel(
+    future_t<LoadedModel> AssetLoader::LoadModel(
         const std::filesystem::path& path,
         const ModelLoadingConfig& config
     )

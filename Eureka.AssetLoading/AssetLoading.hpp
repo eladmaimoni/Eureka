@@ -2,7 +2,6 @@
 
 #include <DeviceContext.hpp>
 #include <GraphicsDefaults.hpp>
-#include <SecondaryCommandRecorder.hpp>
 #include <Commands.hpp>
 #include <SubmissionThreadExecutionContext.hpp>
 #include <OneShotCopySubmission.hpp>
@@ -68,7 +67,7 @@ namespace eureka
             PoolExecutor poolExecutor     
         );
 
-        result_t<LoadedModel> LoadModel(const std::filesystem::path& path, const ModelLoadingConfig& config);
+        future_t<LoadedModel> LoadModel(const std::filesystem::path& path, const ModelLoadingConfig& config);
 
 
 
