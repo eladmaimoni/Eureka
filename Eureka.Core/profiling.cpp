@@ -8,22 +8,10 @@ namespace Profiling
 {
     void InitProfilingCategories()
     {
-        nvtxNameCategoryA(PROFILING_CATEGORY_SYMBOL_ENGINE, "symbol engine");
-        nvtxNameCategoryA(PROFILING_CATEGORY_VIDEO_CAPTURE, "video capture");
-        nvtxNameCategoryA(PROFILING_CATEGORY_DMA, "dma");
-        nvtxNameCategoryA(PROFILING_CATEGORY_IMU, "IMU");
-        nvtxNameCategoryA(PROFILING_CATEGORY_MATCHING_ALGO, "matching");
-        nvtxNameCategoryA(PROFILING_CATEGORY_MOSSE, "mosse");
-        nvtxNameCategoryA(PROFILING_CATEGORY_VIDEO_ENCODING, "video encoding");
-        nvtxNameCategoryA(PROFILING_CATEGORY_ALGO_GENERAL, "algo");
-
-        nvtxNameCategoryA(PROFILING_CATEGORY_VIN1, "vin1");
-        nvtxNameCategoryA(PROFILING_CATEGORY_VIN2, "vin2");
-        nvtxNameCategoryA(PROFILING_CATEGORY_VIN3, "vin3");
-        nvtxNameCategoryA(PROFILING_CATEGORY_VOUT1, "vout1");
-        nvtxNameCategoryA(PROFILING_CATEGORY_VOUT2, "vout2");
-        nvtxNameCategoryA(PROFILING_CATEGORY_VOUT3, "vout3");
-        nvtxNameCategoryA(PROFILING_CATEGORY_VOUT4, "vout4");
+        
+        nvtxNameCategoryA(PROFILING_CATEGORY_LOAD, "load");
+        nvtxNameCategoryA(PROFILING_CATEGORY_INIT, "init");
+        nvtxNameCategoryA(PROFILING_CATEGORY_RENDERING, "rendering");
     }
 
     void PushRange(const char* rangeName, Color color, uint32_t category)

@@ -5,7 +5,7 @@
 #include <Image.hpp>
 #include <Buffer.hpp>
 #include <basic_utils.hpp>
-#include <profiling_macros.hpp>
+
 
 namespace eureka
 {
@@ -184,7 +184,7 @@ namespace eureka
         const ModelLoadingConfig& config
     )
     {
-        PROFILE_CATEGORIZED_UNTHREADED_SCOPE("Asset Loading Background", Profiling::Color::Red, Profiling::PROFILING_CATEGORY_RENDERING);
+        PROFILE_CATEGORIZED_UNTHREADED_SCOPE("Asset Loading Background", Profiling::Color::Red, Profiling::PROFILING_CATEGORY_LOAD);
         auto cancellationToken = config.cancel;
         bool expected = false;
         if (!_busy.compare_exchange_strong(expected, true))

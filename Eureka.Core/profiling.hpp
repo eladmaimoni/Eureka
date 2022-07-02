@@ -6,23 +6,10 @@
 
 namespace Profiling
 {
-    inline constexpr uint32_t PROFILING_CATEGORY_SYMBOL_ENGINE = 999;
-    inline constexpr uint32_t PROFILING_CATEGORY_VIDEO_CAPTURE = 998;
-    inline constexpr uint32_t PROFILING_CATEGORY_DMA = 997;
-    inline constexpr uint32_t PROFILING_CATEGORY_IMU = 996;
-    inline constexpr uint32_t PROFILING_CATEGORY_MATCHING_ALGO = 995;
-    inline constexpr uint32_t PROFILING_CATEGORY_MOSSE = 994;
-    inline constexpr uint32_t PROFILING_CATEGORY_VIDEO_ENCODING = 993;
-    inline constexpr uint32_t PROFILING_CATEGORY_ALGO_GENERAL = 992;
-    inline constexpr uint32_t PROFILING_CATEGORY_RENDERING = 991;
+    inline constexpr uint32_t PROFILING_CATEGORY_LOAD = 993;
 
-    inline constexpr uint32_t PROFILING_CATEGORY_VIN1 = 0b1110;
-    inline constexpr uint32_t PROFILING_CATEGORY_VIN2 = 0b1101;
-    inline constexpr uint32_t PROFILING_CATEGORY_VIN3 = 0b1100;
-    inline constexpr uint32_t PROFILING_CATEGORY_VOUT1 = 0b0001;
-    inline constexpr uint32_t PROFILING_CATEGORY_VOUT2 = 0b0010;
-    inline constexpr uint32_t PROFILING_CATEGORY_VOUT3 = 0b0011;
-    inline constexpr uint32_t PROFILING_CATEGORY_VOUT4 = 0b0100;
+    inline constexpr uint32_t PROFILING_CATEGORY_INIT = 992;
+    inline constexpr uint32_t PROFILING_CATEGORY_RENDERING = 991;
 
     void InitProfilingCategories();
 

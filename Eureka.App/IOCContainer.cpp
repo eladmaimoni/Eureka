@@ -6,7 +6,7 @@
 #include "../Eureka.Graphics/OneShotCopySubmission.hpp"
 #include "../Eureka.Graphics/ImguiIntegration.hpp"
 #include "../Eureka.AssetLoading/AssetLoading.hpp"
-#include <profiling.hpp>
+
 namespace eureka
 {
     InstanceConfig CreateInstanceConfig(const GLFWRuntime& glfw)

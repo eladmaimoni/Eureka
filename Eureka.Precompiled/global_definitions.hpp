@@ -2,6 +2,7 @@
 #include <concurrencpp/concurrencpp.h>
 #include <compiler.hpp>
 #include <macros.hpp>
+#include <Profiling.hpp>
 EUREKA_MSVC_WARNING_PUSH_DISABLE(5054 4127)
 #include <Eigen/Core>
 #include <Eigen/Geometry>
