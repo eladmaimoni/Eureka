@@ -50,8 +50,16 @@ namespace eureka
         void HandleSwapChainResize();
         void Deinitialize();
         
+        // TODO REMOVE init from outside
         void HandleResize(uint32_t width, uint32_t height);
         GLFWwindow* WindowHandle() { return _window.get(); }
+
+        // temporary until proper hierarchical init
+        // TODO REMOVE init from outside
+        std::shared_ptr<PipelineCache> GetPipelineCache()
+        {
+            return _pipelineCache;
+        }
     private:
         Instance&                                                  _instance;
         DeviceContext&                                             _deviceContext;

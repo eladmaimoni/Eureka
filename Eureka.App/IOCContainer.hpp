@@ -11,6 +11,7 @@ namespace eureka
     class AssetLoader;
     class SubmissionThreadExecutionContext;
     class OneShotCopySubmissionHandler;
+    class ImGuiIntegration;
 
     class IOCContainer
     {
@@ -19,7 +20,7 @@ namespace eureka
         ~IOCContainer();
 
 
-        std::unique_ptr<RenderingSystem> CreateRenderingSystem();
+        std::shared_ptr<RenderingSystem> GetRenderingSystem();
         std::unique_ptr<AssetLoader> CreateAssetLoader();
     private:
         GLFWRuntime                                        _glfw;
@@ -31,6 +32,10 @@ namespace eureka
         concurrencpp::runtime                              _concurrencyRuntime;
         std::shared_ptr<SubmissionThreadExecutionContext>  _submissionThreadExecutionContext;
         std::shared_ptr<OneShotCopySubmissionHandler>      _oneShotCopySubmissionHandler;
-        std::shared_ptr< HostWriteCombinedRingPool>        _uploadPool;
+        std::shared_ptr<HostWriteCombinedRingPool>         _uploadPool;
+        std::shared_ptr<ImGuiIntegration>                  _imguiIntegration;
+        std::shared_ptr<RenderingSystem>                   _renderingSystem;
+
+        void InitializeGraphicsSubsystem();
     };
 }

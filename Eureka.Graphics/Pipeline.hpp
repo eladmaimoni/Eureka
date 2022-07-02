@@ -43,20 +43,14 @@ namespace eureka
     //////////////////////////////////////////////////////////////////////////
     class ImGuiPipeline : public PipelineBase
     {
-        vk::DescriptorSetLayout _descLayout;
         void Setup(DeviceContext& deviceContext, vk::RenderPass renderPass);
     public:
         ImGuiPipeline(
             DeviceContext& deviceContext,
             const DepthColorRenderPass& renderPass,
-            const SingleVertexShaderUBODescriptorSetLayout& descriptorSetLayout
+            const SingleFragmentShaderCombinedImageSamplerDescriptorSetLayout& fragmentShaderSetLayout
         );
         EUREKA_DEFAULT_MOVEABLE(ImGuiPipeline);
-
-        vk::DescriptorSetLayout GetDescLayout() const
-        {
-            return _descLayout;
-        }
     };
 
 
@@ -122,12 +116,14 @@ namespace eureka
         // NOTE: if we allow multiple render passes, we should use a different pipeline cache
         // but the same descriptor set layouts
         // we should probably have a pipeline cache per render pass instance
-        std::shared_ptr<DepthColorRenderPass>                   _depthColorRenderPass;
-        SingleVertexShaderUBODescriptorSetLayout                _singleVertexShaderUBODSL;
-        PerNormalMappedModelDescriptorSetLayout                 _perNormalMappedModelDSL;
-        CachedPipeline<ColoredVertexMeshPipeline>               _coloredVertexMeshPipeline;
-        CachedPipeline<PhongShadedMeshWithNormalMapPipeline>    _phongShadedMeshWithNormalMapPipeline;
-        CachedPipeline<ImGuiPipeline>                           _imguiPipeline;
+        std::shared_ptr<DepthColorRenderPass>                       _depthColorRenderPass;
+        SingleVertexShaderUBODescriptorSetLayout                    _singleVertexShaderUBODSL;
+        PerNormalMappedModelDescriptorSetLayout                     _perNormalMappedModelDSL;
+        SingleFragmentShaderCombinedImageSamplerDescriptorSetLayout _singleFragmentShaderCISDSL;
+
+        CachedPipeline<ColoredVertexMeshPipeline>                   _coloredVertexMeshPipeline;
+        CachedPipeline<PhongShadedMeshWithNormalMapPipeline>        _phongShadedMeshWithNormalMapPipeline;
+        CachedPipeline<ImGuiPipeline>                               _imguiPipeline;
     public:
         PipelineCache(
             DeviceContext& deviceContext,
@@ -137,7 +133,8 @@ namespace eureka
             _deviceContext(deviceContext),
             _depthColorRenderPass(std::move(depthColorRenderPass)),
             _singleVertexShaderUBODSL(deviceContext),
-            _perNormalMappedModelDSL(deviceContext)
+            _perNormalMappedModelDSL(deviceContext),
+            _singleFragmentShaderCISDSL(deviceContext)
         {
 
         }
@@ -176,7 +173,7 @@ namespace eureka
             return GetCachedPipeline(
                 _imguiPipeline,
                 *_depthColorRenderPass,
-                _singleVertexShaderUBODSL
+                _singleFragmentShaderCISDSL
             );
         }
 

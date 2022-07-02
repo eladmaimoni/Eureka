@@ -56,10 +56,10 @@ namespace eureka
     class DescriptorSetLayout
     {
     protected:
-        vkr::DescriptorSetLayout _perViewDescriptorSetLayout{ nullptr };
+        vkr::DescriptorSetLayout _layout{ nullptr };
         EUREKA_DEFAULT_MOVEABLE(DescriptorSetLayout);
     public:
-        vk::DescriptorSetLayout Get() const { return *_perViewDescriptorSetLayout; }
+        vk::DescriptorSetLayout Get() const { return *_layout; }
    
     };
 
@@ -77,6 +77,13 @@ namespace eureka
     public:
         SingleVertexShaderUBODescriptorSetLayout(DeviceContext& deviceContext);
         EUREKA_DEFAULT_MOVEABLE(SingleVertexShaderUBODescriptorSetLayout);
+    };
+
+    class SingleFragmentShaderCombinedImageSamplerDescriptorSetLayout : public DescriptorSetLayout
+    {
+    public:
+        SingleFragmentShaderCombinedImageSamplerDescriptorSetLayout(DeviceContext& deviceContext);
+        EUREKA_DEFAULT_MOVEABLE(SingleFragmentShaderCombinedImageSamplerDescriptorSetLayout);
     };
 
     class PerNormalMappedModelDescriptorSetLayout : public DescriptorSetLayout

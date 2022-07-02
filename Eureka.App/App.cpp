@@ -53,12 +53,8 @@ namespace eureka
 
     void App::Initialize()
     {
-        _renderingSystem = _container.CreateRenderingSystem();
+        _renderingSystem = _container.GetRenderingSystem();
         _assetLoader = _container.CreateAssetLoader();
-
-
-
-        _renderingSystem->Initialize();
 
 
         if (!_pendingLoad)

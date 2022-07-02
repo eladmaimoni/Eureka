@@ -214,10 +214,16 @@ namespace eureka
         );
     }
 
-    ImGuiPipeline::ImGuiPipeline(DeviceContext& deviceContext, const DepthColorRenderPass& renderPass, const SingleVertexShaderUBODescriptorSetLayout& descriptorSetLayout)
+    ImGuiPipeline::ImGuiPipeline(
+        DeviceContext& deviceContext,
+        const DepthColorRenderPass& renderPass,
+        const SingleFragmentShaderCombinedImageSamplerDescriptorSetLayout& fragmentShaderSetLayout
+    )
     {
-        _descLayout = descriptorSetLayout.Get();
-
+        std::array<vk::DescriptorSetLayout, 1> setLayouts
+        {
+            fragmentShaderSetLayout.Get(),
+        };
 
         vk::PushConstantRange pushConstantsRange
         {
@@ -229,8 +235,8 @@ namespace eureka
 
         vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo
         {
-            .setLayoutCount = 1,
-            .pSetLayouts = &_descLayout,
+            .setLayoutCount = static_cast<uint32_t>(setLayouts.size()),
+            .pSetLayouts = setLayouts.data(),
             .pushConstantRangeCount = 1,
             .pPushConstantRanges = &pushConstantsRange
         };

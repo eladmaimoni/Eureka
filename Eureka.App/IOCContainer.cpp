@@ -4,6 +4,7 @@
 #include "../Eureka.Graphics/RenderingSystem.hpp"
 #include "../Eureka.Graphics/SubmissionThreadExecutionContext.hpp"
 #include "../Eureka.Graphics/OneShotCopySubmission.hpp"
+#include "../Eureka.Graphics/ImguiIntegration.hpp"
 #include "../Eureka.AssetLoading/AssetLoading.hpp"
 #include <profiling.hpp>
 namespace eureka
@@ -37,6 +38,8 @@ namespace eureka
         DEBUGGER_TRACE("Requested device extentions = {}", device_context_desc.required_extentions);
         DEBUGGER_TRACE("Requested device layers = {}", device_context_desc.required_layers);
         return device_context_desc;
+
+
     }
 
     IOCContainer::IOCContainer()
@@ -46,6 +49,39 @@ namespace eureka
 
     {
         Profiling::InitProfilingCategories();
+
+        InitializeGraphicsSubsystem();
+   
+
+    }
+
+    IOCContainer::~IOCContainer()
+    {
+       
+    }
+
+    std::shared_ptr<RenderingSystem> IOCContainer::GetRenderingSystem() 
+    {
+        return _renderingSystem;
+    }
+
+    std::unique_ptr<AssetLoader> IOCContainer::CreateAssetLoader()
+    {
+
+
+        return std::make_unique<AssetLoader>(
+            _deviceContext,
+            _copyQueue,
+            _submissionThreadExecutionContext,
+            _oneShotCopySubmissionHandler,
+            _uploadPool,
+            _concurrencyRuntime.background_executor(),
+            _concurrencyRuntime.thread_pool_executor()
+            );
+    }
+
+    void IOCContainer::InitializeGraphicsSubsystem()
+    {
         _deviceContext.Init(_instance, CreateDeviceContextConfig());
 
         _graphicsQueue = _deviceContext.CreateGraphicsQueue();
@@ -63,16 +99,8 @@ namespace eureka
             );
 
         _uploadPool = std::make_shared<HostWriteCombinedRingPool>(_deviceContext, STAGE_ZONE_SIZE);
-    }
 
-    IOCContainer::~IOCContainer()
-    {
-       
-    }
-
-    std::unique_ptr<RenderingSystem> IOCContainer::CreateRenderingSystem() 
-    {
-        return std::make_unique<RenderingSystem>(
+        _renderingSystem = std::make_shared<RenderingSystem>(
             _instance,
             _deviceContext,
             _glfw,
@@ -81,19 +109,15 @@ namespace eureka
             _graphicsQueue,
             _copyQueue
             );
-    }
 
-    std::unique_ptr<AssetLoader> IOCContainer::CreateAssetLoader()
-    {
+        _renderingSystem->Initialize();
 
-
-        return std::make_unique<AssetLoader>(
+        _imguiIntegration = std::make_shared<ImGuiIntegration>(
             _deviceContext,
-            _copyQueue,
+            _renderingSystem->GetPipelineCache(), // TODO init from outside
             _submissionThreadExecutionContext,
             _oneShotCopySubmissionHandler,
             _uploadPool,
-            _concurrencyRuntime.background_executor(),
             _concurrencyRuntime.thread_pool_executor()
             );
     }

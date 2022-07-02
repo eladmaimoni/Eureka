@@ -39,6 +39,8 @@ namespace eureka
 			_oneShotCopySubmissionHandler(std::move(oneShotCopySubmissionHandler))
 		{
 			ImGui::CreateContext();
+
+			Setup(std::move(pipelineCache));
 		}
 
 		future_t<void> Setup(std::shared_ptr<PipelineCache> pipelineCache)

@@ -78,11 +78,28 @@ namespace eureka
             .pBindings = &descriptorSetLayoutBinding
         };
 
-        _perViewDescriptorSetLayout = deviceContext.LogicalDevice()->createDescriptorSetLayout(descriptorSetLayoutCreateInfo);
+        _layout = deviceContext.LogicalDevice()->createDescriptorSetLayout(descriptorSetLayoutCreateInfo);
     }
 
 
+    SingleFragmentShaderCombinedImageSamplerDescriptorSetLayout::SingleFragmentShaderCombinedImageSamplerDescriptorSetLayout(DeviceContext& deviceContext)
+    {
+        vk::DescriptorSetLayoutBinding binding
+        {
+            .binding = 0,
+            .descriptorType = vk::DescriptorType::eCombinedImageSampler,
+            .descriptorCount = 1,
+            .stageFlags = vk::ShaderStageFlagBits::eFragment
+        };
 
+        vk::DescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo
+        {
+            .bindingCount = 1,
+            .pBindings = &binding
+        };
+
+        _layout = deviceContext.LogicalDevice()->createDescriptorSetLayout(descriptorSetLayoutCreateInfo);
+    }
 
     PerNormalMappedModelDescriptorSetLayout::PerNormalMappedModelDescriptorSetLayout(DeviceContext& deviceContext)
     {
@@ -110,7 +127,9 @@ namespace eureka
             .pBindings = descriptorSetLayoutBindings.data()
         };
 
-        _perViewDescriptorSetLayout = deviceContext.LogicalDevice()->createDescriptorSetLayout(descriptorSetLayoutCreateInfo);
+        _layout = deviceContext.LogicalDevice()->createDescriptorSetLayout(descriptorSetLayoutCreateInfo);
     }
+
+
 
 }
