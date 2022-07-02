@@ -29,4 +29,10 @@ namespace eureka
         Eigen::Vector2f  uv;
         uint32_t         color;
     };
+
+    struct ImGuiPushConstantsBlock
+    {
+        Eigen::Vector2f  scale;
+        Eigen::Vector2f  translate;
+    };
 }

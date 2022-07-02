@@ -115,7 +115,7 @@ namespace eureka
         std::shared_ptr<P> p;
     };
 
-    class PiplineCache
+    class PipelineCache
     {
     private:
         DeviceContext& _deviceContext;     
@@ -123,20 +123,20 @@ namespace eureka
         // but the same descriptor set layouts
         // we should probably have a pipeline cache per render pass instance
         std::shared_ptr<DepthColorRenderPass>                   _depthColorRenderPass;
-        SingleVertexShaderUBODescriptorSetLayout                _perViewDSL;
+        SingleVertexShaderUBODescriptorSetLayout                _singleVertexShaderUBODSL;
         PerNormalMappedModelDescriptorSetLayout                 _perNormalMappedModelDSL;
         CachedPipeline<ColoredVertexMeshPipeline>               _coloredVertexMeshPipeline;
         CachedPipeline<PhongShadedMeshWithNormalMapPipeline>    _phongShadedMeshWithNormalMapPipeline;
         CachedPipeline<ImGuiPipeline>                           _imguiPipeline;
     public:
-        PiplineCache(
+        PipelineCache(
             DeviceContext& deviceContext,
             std::shared_ptr<DepthColorRenderPass> depthColorRenderPass
         )
             : 
             _deviceContext(deviceContext),
             _depthColorRenderPass(std::move(depthColorRenderPass)),
-            _perViewDSL(deviceContext),
+            _singleVertexShaderUBODSL(deviceContext),
             _perNormalMappedModelDSL(deviceContext)
         {
 
@@ -167,7 +167,16 @@ namespace eureka
             return GetCachedPipeline(
                 _coloredVertexMeshPipeline,
                 *_depthColorRenderPass,
-                _perViewDSL
+                _singleVertexShaderUBODSL
+            );
+        }
+
+        std::shared_ptr<ImGuiPipeline> GetImGuiPipeline()
+        {
+            return GetCachedPipeline(
+                _imguiPipeline,
+                *_depthColorRenderPass,
+                _singleVertexShaderUBODSL
             );
         }
 
@@ -176,7 +185,7 @@ namespace eureka
             return GetCachedPipeline(
                 _phongShadedMeshWithNormalMapPipeline,
                 *_depthColorRenderPass,
-                _perViewDSL,
+                _singleVertexShaderUBODSL,
                 _perNormalMappedModelDSL
                 );
         }

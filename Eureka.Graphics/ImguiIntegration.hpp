@@ -9,6 +9,7 @@
 #include "UploadRingBuffer.hpp"
 #include "GraphicsDefaults.hpp"
 #include "CommandsUtils.hpp"
+#include "Pipeline.hpp"
 
 namespace eureka
 {
@@ -23,9 +24,11 @@ namespace eureka
 	public:
 		ImGuiIntegration(
 			DeviceContext& deviceContext,
+			std::shared_ptr<PipelineCache> pipelineCache,
 			std::shared_ptr<SubmissionThreadExecutionContext> submissionThreadExecutionContext,
 			std::shared_ptr<OneShotCopySubmissionHandler>     oneShotCopySubmissionHandler,
 			std::shared_ptr<HostWriteCombinedRingPool> uploadPool,
+			
 			PoolExecutor poolExecutor
 			)
 			: 
@@ -38,17 +41,19 @@ namespace eureka
 			ImGui::CreateContext();
 		}
 
-		future_t<void> Setup()
+		future_t<void> Setup(std::shared_ptr<PipelineCache> pipelineCache)
 		{
+
+			co_await concurrencpp::resume_on(*_poolExecutor);
+
 			ImGuiIO& io = ImGui::GetIO();
 
 			// Create font texture
 			unsigned char* fontData;
 			int texWidth, texHeight;
 			io.Fonts->GetTexDataAsRGBA32(&fontData, &texWidth, &texHeight);
+			
 			VkDeviceSize uploadSize = texWidth * texHeight * 4 * sizeof(char);
-
-			co_await concurrencpp::resume_on(*_poolExecutor);
 
 			Image2DProperties fontImageProps
 			{
@@ -81,6 +86,10 @@ namespace eureka
 				_submissionThreadExecutionContext->GraphicsQueue(),
 				transferDesc
 				);
+
+
+			auto imguiPipline = pipelineCache->GetImGuiPipeline();
+
 
 			co_await concurrencpp::resume_on(_submissionThreadExecutionContext->OneShotCopySubmitExecutor());
 
@@ -117,8 +126,12 @@ namespace eureka
 			auto fut = _oneShotCopySubmissionHandler->AppendOneShotCommandBufferSubmission(std::move(uploadCommandBuffer));
 
 
+
 			co_await fut;
-			
+
+			co_await concurrencpp::resume_on(_submissionThreadExecutionContext->OneShotCopySubmitExecutor());
+
+			co_return;
 		}
 
 		~ImGuiIntegration()

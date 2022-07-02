@@ -189,7 +189,7 @@ namespace eureka
        
         _lastFrameTime = std::chrono::high_resolution_clock::now();
 
-        _pipelineCache = std::make_shared<PiplineCache>(_deviceContext, _renderPass);
+        _pipelineCache = std::make_shared<PipelineCache>(_deviceContext, _renderPass);
 
         _coloredVertexPipeline = _pipelineCache->GetColoredVertexMeshPipeline();
         _phongPipeline = _pipelineCache->GetPhongShadedMeshWithNormalMapPipeline();

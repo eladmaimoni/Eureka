@@ -217,10 +217,22 @@ namespace eureka
     ImGuiPipeline::ImGuiPipeline(DeviceContext& deviceContext, const DepthColorRenderPass& renderPass, const SingleVertexShaderUBODescriptorSetLayout& descriptorSetLayout)
     {
         _descLayout = descriptorSetLayout.Get();
+
+
+        vk::PushConstantRange pushConstantsRange
+        {
+            .stageFlags = vk::ShaderStageFlagBits::eVertex,
+            .offset = 0,
+            .size = sizeof(ImGuiPushConstantsBlock)
+        };
+
+
         vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo
         {
             .setLayoutCount = 1,
-            .pSetLayouts = &_descLayout
+            .pSetLayouts = &_descLayout,
+            .pushConstantRangeCount = 1,
+            .pPushConstantRanges = &pushConstantsRange
         };
 
         _pipelineLayout = deviceContext.LogicalDevice()->createPipelineLayout(pipelineLayoutCreateInfo);

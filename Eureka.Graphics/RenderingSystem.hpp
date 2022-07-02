@@ -71,7 +71,7 @@ namespace eureka
         std::vector<FrameCommands>                                 _frameCommandBuffer;
 
         DescriptorPool                                             _descPool;
-        std::shared_ptr<PiplineCache>                              _pipelineCache;
+        std::shared_ptr<PipelineCache>                             _pipelineCache;
 
         //                                                         
         // upload - temporary                                      
