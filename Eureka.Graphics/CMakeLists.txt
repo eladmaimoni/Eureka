@@ -4,6 +4,8 @@ set_source_group(
     ui 
     "ImguiIntegration.hpp"
     "ImguiIntegration.cpp"
+    "ImGuiRenderer.hpp"
+    "ImGuiRenderer.cpp"
 )
 
 set_source_group(
