@@ -57,7 +57,7 @@ namespace eureka
         return vkr::DescriptorSet(*_device, descriptorSet, *_pool);
     }
 
-    PerViewDescriptorSetLayout::PerViewDescriptorSetLayout(DeviceContext& deviceContext)
+    SingleVertexShaderUBODescriptorSetLayout::SingleVertexShaderUBODescriptorSetLayout(DeviceContext& deviceContext)
     {
         // describe the relation between the shader indices (set 0, binding 0)
         // to the host indices 

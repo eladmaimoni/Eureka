@@ -69,11 +69,14 @@ namespace eureka
     // per view parameters such as view direction and viewport size
     // 
     //////////////////////////////////////////////////////////////////////////
-    class PerViewDescriptorSetLayout : public DescriptorSetLayout
+
+
+
+    class SingleVertexShaderUBODescriptorSetLayout : public DescriptorSetLayout
     {
     public:
-        PerViewDescriptorSetLayout(DeviceContext& deviceContext);
-        EUREKA_DEFAULT_MOVEABLE(PerViewDescriptorSetLayout);
+        SingleVertexShaderUBODescriptorSetLayout(DeviceContext& deviceContext);
+        EUREKA_DEFAULT_MOVEABLE(SingleVertexShaderUBODescriptorSetLayout);
     };
 
     class PerNormalMappedModelDescriptorSetLayout : public DescriptorSetLayout

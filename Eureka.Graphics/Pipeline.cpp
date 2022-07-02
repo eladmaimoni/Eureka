@@ -112,7 +112,7 @@ namespace eureka
     // 
     //////////////////////////////////////////////////////////////////////////
 
-    void UIPipeline::Setup(DeviceContext& deviceContext, vk::RenderPass renderPass)
+    void ImGuiPipeline::Setup(DeviceContext& deviceContext, vk::RenderPass renderPass)
     {
         //
         // Vertex Attributes 
@@ -167,8 +167,8 @@ namespace eureka
         // Shaders
         // 
 
-        auto vshader = deviceContext.Shaders()->LoadShaderModule(ColoredVertexVS);
-        auto fshader = deviceContext.Shaders()->LoadShaderModule(ColoredVertexFS);
+        auto vshader = deviceContext.Shaders()->LoadShaderModule(ImGuiVS);
+        auto fshader = deviceContext.Shaders()->LoadShaderModule(ImGuiFS);
 
         std::array<vk::PipelineShaderStageCreateInfo, 2> shaderStages
         {
@@ -214,6 +214,20 @@ namespace eureka
         );
     }
 
+    ImGuiPipeline::ImGuiPipeline(DeviceContext& deviceContext, const DepthColorRenderPass& renderPass, const SingleVertexShaderUBODescriptorSetLayout& descriptorSetLayout)
+    {
+        _descLayout = descriptorSetLayout.Get();
+        vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo
+        {
+            .setLayoutCount = 1,
+            .pSetLayouts = &_descLayout
+        };
+
+        _pipelineLayout = deviceContext.LogicalDevice()->createPipelineLayout(pipelineLayoutCreateInfo);
+
+        Setup(deviceContext, renderPass.Get());
+    }
+
     //////////////////////////////////////////////////////////////////////////
     //
     //                        ColoredVertexMeshPipeline
@@ -222,14 +236,14 @@ namespace eureka
     ColoredVertexMeshPipeline::ColoredVertexMeshPipeline(
         DeviceContext& deviceContext, 
         const DepthColorRenderPass& renderPass,
-        const PerViewDescriptorSetLayout& descriptorSetLayout
+        const SingleVertexShaderUBODescriptorSetLayout& descriptorSetLayout
     ) 
     {
-        _perViewLayout = descriptorSetLayout.Get();
+        _descLayout = descriptorSetLayout.Get();
         vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo
         {
             .setLayoutCount = 1,
-            .pSetLayouts = &_perViewLayout
+            .pSetLayouts = &_descLayout
         };
 
         _pipelineLayout = deviceContext.LogicalDevice()->createPipelineLayout(pipelineLayoutCreateInfo);
@@ -344,7 +358,7 @@ namespace eureka
     PhongShadedMeshWithNormalMapPipeline::PhongShadedMeshWithNormalMapPipeline(
         DeviceContext& deviceContext, 
         const DepthColorRenderPass& renderPass,
-        const PerViewDescriptorSetLayout& perViewDescriptorSetLayout,
+        const SingleVertexShaderUBODescriptorSetLayout& perViewDescriptorSetLayout,
         const PerNormalMappedModelDescriptorSetLayout& perNormalMappedModelDescriptorSetLayout
     )
     {

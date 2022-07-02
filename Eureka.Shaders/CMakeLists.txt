@@ -113,8 +113,8 @@ endmacro(shaders_group)
 ################################################################################
 shaders_group(glsl_vertex_shaders vertex "TriangleVS.vert")
 shaders_group(glsl_fragment_shaders fragment "TriangleFS.frag") 
-shaders_group(hlsl_fragment_shaders ps_6_0 "ColoredVertexFS.hlsl" "PhongShadedMeshWithNormalMapFS.hlsl")
-shaders_group(hlsl_vertex_shaders vs_6_0 "ColoredVertexVS.hlsl" "ShadedMeshWithNormalMapVS.hlsl")
+shaders_group(hlsl_fragment_shaders ps_6_0 "ImGuiFS.hlsl" "ColoredVertexFS.hlsl" "PhongShadedMeshWithNormalMapFS.hlsl")
+shaders_group(hlsl_vertex_shaders vs_6_0 "ImGuiVS.hlsl" "ColoredVertexVS.hlsl" "ShadedMeshWithNormalMapVS.hlsl")
 
 
 ################################################################################
