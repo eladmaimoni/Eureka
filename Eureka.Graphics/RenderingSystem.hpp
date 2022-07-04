@@ -77,16 +77,9 @@ namespace eureka
 
         DescriptorPool                                             _descPool;
         std::shared_ptr<PipelineCache>                             _pipelineCache;
+          
 
-        //                                                         
-        // upload - temporary                                      
-        //                                                         
-        vkr::Semaphore                                             _uploadDoneSemaphore{ nullptr };
-        vkr::Fence                                                 _uploadDoneFence{ nullptr };
-        CommandPool                                                _uploadPool; // TODO upload thread of some sort
-        vkr::CommandBuffer                                         _uploadCommandBuffer{ nullptr };
-        HostWriteCombinedBuffer                                    _stageZone;
-                                                                   
+        HostWriteCombinedBuffer                                    _stageZone;                                                                  
         DescriptorSet                                              _constantBufferSet;
                                                                    
         // triangle stuff                                          

@@ -92,13 +92,6 @@ namespace eureka
     void RenderingSystem::Initialize()
     {
         _submissionThreadExecutionContext->SetCurrentThreadAsRenderingThread();
-        //
-        // this section should be moved to some sort of window class
-        //
-
-
-        //_deviceContext.InitializePresentationQueueFromExistingQueues(*windowSurface.surface);
-
 
         InitializeCommandPoolsAndBuffers();
 
@@ -116,8 +109,6 @@ namespace eureka
             }
         }
 
-        
-
         DepthColorRenderPassConfig depthColorConfig
         {
             .color_output_format = _swapChain->ImageFormat(),
@@ -127,35 +118,19 @@ namespace eureka
         _renderPass = std::make_shared<DepthColorRenderPass>(_deviceContext, depthColorConfig);
 
 
-        //for (auto i = 0; i < 10; ++i)
-        //{
-        //    _pendingSubmits.emplace_back(
-        //        PendingSubmitFence
-        //        {
-        //            .fence = _deviceContext.LogicalDevice()->createFence(vk::FenceCreateInfo{.flags = vk::FenceCreateFlagBits::eSignaled }),
-        //            .in_flight = false
-        //        }
-        //    );
-        //}
-
         _stageZone = HostWriteCombinedBuffer(
             _deviceContext.Allocator(),
             BufferConfig{ .byte_size = sizeof(mesh::COLORED_TRIANGLE_INDEX_DATA) + sizeof(mesh::COLORED_TRIANGLE_VERTEX_DATA) }
         );
 
-        _uploadDoneFence = _deviceContext.LogicalDevice()->createFence(vk::FenceCreateInfo{ .flags = vk::FenceCreateFlagBits::eSignaled });
-     
-  
+
 
         _triangle = VertexAndIndexTransferableDeviceBuffer(
             _deviceContext.Allocator(),
             BufferConfig{ .byte_size = sizeof(mesh::COLORED_TRIANGLE_INDEX_DATA) + sizeof(mesh::COLORED_TRIANGLE_VERTEX_DATA) }
         );
 
-        _uploadPool = CommandPool(_deviceContext.LogicalDevice(), CommandPoolDesc{ .type = CommandPoolType::eLinear, .queue_family = _copyQueue.Family() });
-        _uploadDoneSemaphore = _deviceContext.LogicalDevice()->createSemaphore(vk::SemaphoreCreateInfo());
-        _uploadCommandBuffer = _uploadPool.AllocatePrimaryCommandBuffer();
-       
+
         _lastFrameTime = std::chrono::high_resolution_clock::now();
 
         _pipelineCache = std::make_shared<PipelineCache>(_deviceContext, _renderPass);

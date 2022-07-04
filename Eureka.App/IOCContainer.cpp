@@ -46,7 +46,6 @@ namespace eureka
     IOCContainer::IOCContainer()
         : 
         _instance(CreateInstanceConfig(_glfw))
-        //_copySubmitExecutor(_concurrencyRuntime.make_manual_executor()),
 
     {
         Profiling::InitProfilingCategories();
