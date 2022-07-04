@@ -18,4 +18,6 @@ namespace eureka
         operation_cancelled(const char* what_arg) : std::runtime_error(what_arg) {}
         operation_cancelled(const std::string& what_arg) : std::runtime_error(what_arg) {}
     };
+
+
 }

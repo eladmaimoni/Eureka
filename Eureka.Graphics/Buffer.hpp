@@ -171,6 +171,8 @@ namespace eureka
 
     class HostWriteCombinedBuffer : public HostMappedBuffer<AllocatedBuffer>
     {
+        // ideal as a stage buffer for uploading large amounts of data to the gpu
+        // not ideal when you want to read the data or update it in a random way
     public:
         HostWriteCombinedBuffer(DeviceContext& deviceContext, const BufferConfig& config);
         EUREKA_DEFAULT_MOVEONLY(HostWriteCombinedBuffer);
@@ -229,6 +231,10 @@ namespace eureka
 
     class HostVisibleDeviceConstantBuffer : public HostMappedBuffer<AllocatedBuffer>
     {
+        // AKA BAR memory.
+        // this is gpu memory mapped to host virtual address
+        // all write are expected to be sequential
+        // writes have to travel through PCIe bus
     public:
         HostVisibleDeviceConstantBuffer() = default;
         HostVisibleDeviceConstantBuffer(DeviceContext& deviceContext, const BufferConfig& config);
@@ -246,5 +252,23 @@ namespace eureka
     public:
         VertexAndIndexTransferableDeviceBuffer() = default;
         VertexAndIndexTransferableDeviceBuffer(DeviceContext& deviceContext, const BufferConfig& config);
+    };
+
+    //////////////////////////////////////////////////////////////////////////
+    //
+    //                VertexAndIndexHostVisibleDeviceBuffer
+    //
+    //////////////////////////////////////////////////////////////////////////
+
+    class VertexAndIndexHostVisibleDeviceBuffer : public HostMappedBuffer<AllocatedBuffer>
+    {
+        // AKA BAR memory.
+        // this is gpu memory mapped to host virtual address
+        // all write are expected to be sequential
+        // writes have to travel through PCIe bus
+        
+    public:
+        VertexAndIndexHostVisibleDeviceBuffer() = default;
+        VertexAndIndexHostVisibleDeviceBuffer(DeviceContext& deviceContext, const BufferConfig& config);
     };
 }

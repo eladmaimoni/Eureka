@@ -1,7 +1,7 @@
 #pragma once
 #include <imgui.h>
 #include <Buffer.hpp>
-
+#include <imgui_internal.h>
 
 namespace eureka
 {
