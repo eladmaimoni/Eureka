@@ -16,6 +16,7 @@
             "features": [ "docking-experimental" ]
         },
         "nlohmann-json",
+        "palsigslot",
         "tinygltf",
         "vulkan",
         "vulkan-headers",

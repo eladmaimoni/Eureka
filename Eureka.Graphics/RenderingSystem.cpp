@@ -56,24 +56,18 @@ namespace eureka
 
 namespace eureka
 {
-    inline constexpr int DEFAULT_WINDOW_WIDTH = 1024;
-    inline constexpr int DEFAULT_WINDOW_HEIGHT = 768;
-
-
 
     RenderingSystem::RenderingSystem(
-        Instance& instance,
         DeviceContext& deviceContext,
-        GLFWRuntime& glfw,
+        std::shared_ptr<SwapChain> swapChain,
         std::shared_ptr<SubmissionThreadExecutionContext> submissionThreadExecutionContext,
         std::shared_ptr<OneShotCopySubmissionHandler> oneShotCopySubmissionHandler,
         Queue graphicsQueue,
         Queue copyQueue
     )
         :
-        _glfw(glfw),
-        _instance(instance),
         _deviceContext(deviceContext),
+        _swapChain(swapChain),
         _submissionThreadExecutionContext(/*std::move(*/submissionThreadExecutionContext/*)*/), // TODO
         _oneShotCopySubmissionHandler(std::move(oneShotCopySubmissionHandler)),
         _descPool(deviceContext),
@@ -81,7 +75,7 @@ namespace eureka
         _graphicsQueue(graphicsQueue),
         _copyQueue(copyQueue)
     {
-
+        _maxFramesInFlight = _swapChain->ImageCount();
     }
 
     RenderingSystem::~RenderingSystem()
@@ -102,29 +96,8 @@ namespace eureka
         // this section should be moved to some sort of window class
         //
 
-        auto windowSurface = _glfw.CreateVulkanWindowSurface(DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT, _instance.Get());
+
         //_deviceContext.InitializePresentationQueueFromExistingQueues(*windowSurface.surface);
-
-       
-
-        _window = std::move(windowSurface.window);
-
-        glfwSetWindowUserPointer(_window.get(), this);
-        glfwSetWindowSizeCallback(_window.get(), [](GLFWwindow* window, int width, int height)
-            {
-                auto userPtr = glfwGetWindowUserPointer(window);
-                auto self = static_cast<RenderingSystem*>(userPtr);
-                self->HandleResize(static_cast<uint32_t>(width), static_cast<uint32_t>(height));
-            }
-        );
-
-
-
-
-        _presentationQueue = _deviceContext.CreatePresentQueue(*windowSurface.surface);
-
-        InitializeSwapChain(windowSurface);
-
 
 
         InitializeCommandPoolsAndBuffers();
@@ -153,10 +126,6 @@ namespace eureka
 
         _renderPass = std::make_shared<DepthColorRenderPass>(_deviceContext, depthColorConfig);
 
-        {
-            HandleSwapChainResize();
-
-        }
 
         //for (auto i = 0; i < 10; ++i)
         //{
@@ -222,11 +191,24 @@ namespace eureka
 
         _oneShotCopySubmissionHandler->AppendOneShotCommandBufferSubmission(std::move(oneShotCopyTriangleCommandBuffer));
 
+        {
+            HandleSwapChainResize();
+        }
 
+        _resizeConnection = _swapChain->ConnectResizeSlot(
+            [this](uint32_t, uint32_t)
+            {
+                HandleSwapChainResize();
+            }
+        );
     }
 
     void RenderingSystem::HandleSwapChainResize()
     {
+        DEBUGGER_TRACE("handle swap chain resize");
+        //co_await concurrencpp::resume_on(_submissionThreadExecutionContext->PreRenderExecutor());
+
+        _graphicsQueue->waitIdle();
         _renderTargets = CreateDepthColorTargetForSwapChain(
             _deviceContext, 
             *_swapChain,
@@ -234,10 +216,10 @@ namespace eureka
         );
         auto renderArea = _swapChain->RenderArea();
         _camera.SetFullViewport(renderArea.offset.x, renderArea.offset.y, renderArea.extent.width, renderArea.extent.height);
-    
+   
+        RunOne(); // refresh before next resize
 
-
-
+        //co_return;
     }
 
     void RenderingSystem::Deinitialize()
@@ -372,20 +354,7 @@ namespace eureka
         renderingCommandBuffer.endRenderPass();
     }
 
-    void RenderingSystem::InitializeSwapChain(GLFWVulkanSurface& windowSurface)
-    {
-        SwapChainTargetConfig swapChainDesc{};
-        swapChainDesc.width = windowSurface.size.width;
-        swapChainDesc.height = windowSurface.size.height;
-        swapChainDesc.surface = std::move(windowSurface.surface);
 
-        swapChainDesc.present_queue_family = _presentationQueue.Family();
-        swapChainDesc.graphics_queue_family = _graphicsQueue.Family();
-
-        _swapChain = std::make_unique<SwapChain>(_deviceContext, _presentationQueue, std::move(swapChainDesc));
-
-        _maxFramesInFlight = _swapChain->ImageCount();
-    }
 
     void RenderingSystem::InitializeCommandPoolsAndBuffers()
     {
@@ -395,17 +364,6 @@ namespace eureka
         }
     }
 
-    void RenderingSystem::HandleResize(uint32_t width, uint32_t height)
-    {
-        DEBUGGER_TRACE("HandleResize({},{})", width, height);
-        
-        // recreate swap chain images and views
-        _swapChain->Resize(width, height);
 
-        // recreate all resizeable stuff
-        HandleSwapChainResize();
-
-        RunOne();
-    }
 
 }

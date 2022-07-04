@@ -122,10 +122,11 @@ namespace eureka
     {
         size_t executed = 0;
 
-        std::array<std::deque<concurrencpp::task>*, 2> all_tasks
+        std::array<std::deque<concurrencpp::task>*, 3> all_tasks
         {
             &_tasks,
-            &_oneShotCopyExecutor.Tasks()
+            &_oneShotCopyExecutor.Tasks(),
+            &_preRenderExecutor.Tasks()
         };
 
         auto i = 0;

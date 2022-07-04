@@ -58,7 +58,10 @@ namespace eureka
         {
             return _executor->one_shot_copy_submit_executor();
         }
-
+        submission_thread_sub_executor& PreRenderExecutor()
+        {
+            return _executor->pre_render_executor();
+        }
         submission_thread_executor& Executor()
         {
             return *_executor;

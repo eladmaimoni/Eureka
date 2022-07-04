@@ -127,6 +127,8 @@ namespace eureka
         _currentSemaphore = 0;
 
         CreateSwapChain();
+
+        _resizeSignal(width, height);
     }
 
     SwapChainImageReference SwapChain::AcquireNextAvailableImageAsync()
@@ -246,5 +248,7 @@ namespace eureka
         return static_cast<uint32_t>(_surfaceImages.size());
     }
 
+
+ 
 
 }

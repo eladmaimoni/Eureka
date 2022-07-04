@@ -75,7 +75,8 @@ set_source_group(
     windowing 
     "GLFWRuntime.hpp" 
     "GLFWRuntime.cpp" 
-
+    "Window.hpp" 
+    "Window.cpp" 
 )
 
 
@@ -107,7 +108,6 @@ target_include_directories(
     PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
     PRIVATE 
-
     ${VULKAN_HPP_INCLUDE_DIRS}
 )
 
@@ -122,6 +122,7 @@ target_link_libraries(
     imgui::imgui
     concurrencpp::concurrencpp
     unofficial::vulkan-memory-allocator::vulkan-memory-allocator
+
     
 )
 

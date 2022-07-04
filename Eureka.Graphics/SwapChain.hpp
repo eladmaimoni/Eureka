@@ -41,9 +41,13 @@ namespace eureka
         std::vector<std::shared_ptr<Image>> Images() const;
         uint32_t ImageCount() const;
         
-
+        template <typename Callable>
+        sigslot::connection ConnectResizeSlot(Callable&& slot)
+        {
+            return _resizeSignal.connect(std::forward<Callable>(slot));
+        }
     private:
-        DeviceContext& _deviceContext;
+        DeviceContext&                       _deviceContext;
         SwapChainTargetConfig                _desc;
         Queue                                _presentationQueue;
         vk::Extent2D                         _swapchainExtent;
@@ -56,6 +60,9 @@ namespace eureka
         uint32_t                             _currentSemaphore{ 0 };
         uint32_t                             _lastAquiredImage{ 0 };
         //uint32_t                             _currentSemaphore = 0;
+
+        sigslot::signal<uint32_t, uint32_t>  _resizeSignal;
+
         void CreateSwapChain();
     };
 

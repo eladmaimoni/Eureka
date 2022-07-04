@@ -3,6 +3,8 @@
 #include <compiler.hpp>
 #include <macros.hpp>
 #include <Profiling.hpp>
+#include <function2/function2.hpp>
+#include <sigslot/signal.hpp>
 EUREKA_MSVC_WARNING_PUSH_DISABLE(5054 4127)
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -31,5 +33,9 @@ namespace eureka
   
     template<typename T> using dynamic_span = std::span<T, std::dynamic_extent>; 
     template<typename T> using dynamic_cspan = std::span<const T, std::dynamic_extent>;
+
+    template <typename... Signatures> 
+    using function_t = fu2::function<Signatures ...>;
+ 
     
 }

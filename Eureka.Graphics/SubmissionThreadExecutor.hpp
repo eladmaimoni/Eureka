@@ -47,6 +47,7 @@ namespace eureka
         submission_thread_executor_shared_state    _sharedState;
         std::deque<concurrencpp::task>             _tasks;
         submission_thread_sub_executor             _oneShotCopyExecutor;
+        submission_thread_sub_executor             _preRenderExecutor;
 
 
     public:
@@ -55,7 +56,7 @@ namespace eureka
         submission_thread_executor()
             :
             concurrencpp::derivable_executor<submission_thread_executor>("submission_executor"),
-            _oneShotCopyExecutor(_sharedState)
+            _oneShotCopyExecutor(_sharedState), _preRenderExecutor(_sharedState)
         {
 
         }
@@ -64,7 +65,10 @@ namespace eureka
         {
             return _oneShotCopyExecutor;
         }
-
+        submission_thread_sub_executor& pre_render_executor()
+        {
+            return _preRenderExecutor;
+        }
         size_t loop_all(size_t max_count);
 
         void enqueue(concurrencpp::task task) override;

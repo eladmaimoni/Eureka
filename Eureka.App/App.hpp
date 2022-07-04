@@ -4,6 +4,8 @@
 namespace eureka
 {
 
+    class Window;
+
 
     class App
     {
@@ -24,5 +26,6 @@ namespace eureka
 
         std::stop_source      _cancellationSource;
         result_t<LoadedModel> _pendingLoad;
+        std::shared_ptr<Window> _window;
     };
 }    

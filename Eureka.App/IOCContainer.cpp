@@ -5,6 +5,7 @@
 #include "../Eureka.Graphics/SubmissionThreadExecutionContext.hpp"
 #include "../Eureka.Graphics/OneShotCopySubmission.hpp"
 #include "../Eureka.Graphics/ImguiIntegration.hpp"
+#include "../Eureka.Graphics/Window.hpp"
 #include "../Eureka.AssetLoading/AssetLoading.hpp"
 
 namespace eureka
@@ -65,10 +66,13 @@ namespace eureka
         return _renderingSystem;
     }
 
+    std::shared_ptr<eureka::Window> IOCContainer::GetWindow()
+    {
+        return _window;
+    }
+
     std::unique_ptr<AssetLoader> IOCContainer::CreateAssetLoader()
     {
-
-
         return std::make_unique<AssetLoader>(
             _deviceContext,
             _copyQueue,
@@ -100,10 +104,13 @@ namespace eureka
 
         _uploadPool = std::make_shared<HostWriteCombinedRingPool>(_deviceContext, STAGE_ZONE_SIZE);
 
+
+        _window = std::make_shared<Window>(_glfw, _instance, _deviceContext, _graphicsQueue);
+
+        
         _renderingSystem = std::make_shared<RenderingSystem>(
-            _instance,
             _deviceContext,
-            _glfw,
+            _window->GetSwapChain(),
             _submissionThreadExecutionContext,
             _oneShotCopySubmissionHandler,
             _graphicsQueue,

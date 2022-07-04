@@ -27,8 +27,7 @@ namespace eureka
 			std::shared_ptr<PipelineCache> pipelineCache,
 			std::shared_ptr<SubmissionThreadExecutionContext> submissionThreadExecutionContext,
 			std::shared_ptr<OneShotCopySubmissionHandler>     oneShotCopySubmissionHandler,
-			std::shared_ptr<HostWriteCombinedRingPool> uploadPool,
-			
+			std::shared_ptr<HostWriteCombinedRingPool> uploadPool,			
 			PoolExecutor poolExecutor
 			);
 

@@ -2,6 +2,7 @@
 #include <debugger_trace.hpp>
 #include <RenderingSystem.hpp>
 #include <AssetLoading.hpp>
+#include <Window.hpp>
 
 namespace eureka
 {
@@ -34,7 +35,7 @@ namespace eureka
         Initialize();
    
         auto i = 0;
-        while (!glfwWindowShouldClose(_renderingSystem->WindowHandle()))
+        while (!glfwWindowShouldClose(_window->WindowHandle()))
         {
             glfwPollEvents();
             _renderingSystem->RunOne();
@@ -55,7 +56,7 @@ namespace eureka
     {
         _renderingSystem = _container.GetRenderingSystem();
         _assetLoader = _container.CreateAssetLoader();
-
+        _window = _container.GetWindow();
 
         if (!_pendingLoad)
         {

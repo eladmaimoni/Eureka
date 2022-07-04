@@ -1,8 +1,5 @@
 
-
-
-add_executable(
-    Eureka.App
+set_source_group(app 
     "EurekaMain.cpp"
     "App.hpp"
     "App.cpp"
@@ -10,6 +7,11 @@ add_executable(
     "UIView.cpp"
     "IOCContainer.hpp"
     "IOCContainer.cpp"
+)
+
+add_executable(
+    Eureka.App
+    ${app}
 ) 
 
 set_compiler_flags(Eureka.App)  

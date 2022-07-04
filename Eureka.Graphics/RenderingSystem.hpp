@@ -30,11 +30,11 @@ namespace eureka
 
     class RenderingSystem
     {
+        std::shared_ptr<SwapChain>                  _swapChain;
     public:
         RenderingSystem(
-            Instance& instance,
             DeviceContext& deviceContext,
-            GLFWRuntime& glfw,
+            std::shared_ptr<SwapChain> swapChain,
             std::shared_ptr<SubmissionThreadExecutionContext> submissionThreadExecutionContext,
             std::shared_ptr<OneShotCopySubmissionHandler> oneShotCopySubmissionHandler,
             Queue graphicsQueue,
@@ -50,9 +50,6 @@ namespace eureka
         void HandleSwapChainResize();
         void Deinitialize();
         
-        // TODO REMOVE init from outside
-        void HandleResize(uint32_t width, uint32_t height);
-        GLFWwindow* WindowHandle() { return _window.get(); }
 
         // temporary until proper hierarchical init
         // TODO REMOVE init from outside
@@ -61,18 +58,18 @@ namespace eureka
             return _pipelineCache;
         }
     private:
-        Instance&                                                  _instance;
+
         DeviceContext&                                             _deviceContext;
-        GLFWRuntime&                                               _glfw;             
-        Queue                                                      _presentationQueue;
+             
+        
         Queue                                                      _graphicsQueue;
         Queue                                                      _copyQueue;
 
         std::shared_ptr<SubmissionThreadExecutionContext>          _submissionThreadExecutionContext;
         std::shared_ptr<OneShotCopySubmissionHandler>              _oneShotCopySubmissionHandler;
 
-        GLFWWindowPtr                                              _window; // TODO should remove
-        std::unique_ptr<SwapChain>                                 _swapChain;
+        
+       
 
         std::shared_ptr<DepthColorRenderPass>                      _renderPass;
         std::vector<DepthColorRenderTarget>                        _renderTargets;
@@ -105,7 +102,7 @@ namespace eureka
 
         std::chrono::high_resolution_clock::time_point             _lastFrameTime;
      
-        void InitializeSwapChain(GLFWVulkanSurface& windowSurface);
+
         void InitializeCommandPoolsAndBuffers();
 
 
@@ -119,5 +116,6 @@ namespace eureka
         );
 
         void RecordMainRenderPass(uint32_t currentFrame, vkr::CommandBuffer& renderingCommandBuffer);
+        sigslot::scoped_connection _resizeConnection;
     };
 }
