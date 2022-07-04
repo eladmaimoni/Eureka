@@ -170,7 +170,7 @@ namespace eureka
         //}
 
         _stageZone = HostWriteCombinedBuffer(
-            _deviceContext,
+            _deviceContext.Allocator(),
             BufferConfig{ .byte_size = sizeof(mesh::COLORED_TRIANGLE_INDEX_DATA) + sizeof(mesh::COLORED_TRIANGLE_VERTEX_DATA) }
         );
 
@@ -179,7 +179,7 @@ namespace eureka
   
 
         _triangle = VertexAndIndexTransferableDeviceBuffer(
-            _deviceContext,
+            _deviceContext.Allocator(),
             BufferConfig{ .byte_size = sizeof(mesh::COLORED_TRIANGLE_INDEX_DATA) + sizeof(mesh::COLORED_TRIANGLE_VERTEX_DATA) }
         );
 

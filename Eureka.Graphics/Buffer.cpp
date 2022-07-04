@@ -20,8 +20,8 @@ namespace eureka
         }
     }
 
-    AllocatedBufferBase::AllocatedBufferBase(DeviceContext& deviceContext)
-        : _allocator(deviceContext.Allocator())
+    AllocatedBufferBase::AllocatedBufferBase(VmaAllocator allocator)
+        : _allocator(allocator)
     {
 
     }
@@ -127,10 +127,10 @@ namespace eureka
 
 
     HostWriteCombinedBuffer::HostWriteCombinedBuffer(
-        DeviceContext& deviceContext, 
+        VmaAllocator allocator, 
         const BufferConfig& config
     ) 
-        : HostMappedBuffer(deviceContext)
+        : HostMappedBuffer(allocator)
     {
 
         vk::BufferCreateInfo bufferCreateInfo
@@ -168,8 +168,8 @@ namespace eureka
     //
     //////////////////////////////////////////////////////////////////////////
 
-    HostVisibleDeviceConstantBuffer::HostVisibleDeviceConstantBuffer(DeviceContext& deviceContext, const BufferConfig& config)
-        : HostMappedBuffer(deviceContext)
+    HostVisibleDeviceConstantBuffer::HostVisibleDeviceConstantBuffer(VmaAllocator allocator, const BufferConfig& config)
+        : HostMappedBuffer(allocator)
     {
         // see 'Advanced data uploading'
         // https://gpuopen-librariesandsdks.github.io/VulkanMemoryAllocator/html/usage_patterns.html
@@ -215,7 +215,7 @@ namespace eureka
     //
     //////////////////////////////////////////////////////////////////////////
 
-    VertexAndIndexTransferableDeviceBuffer::VertexAndIndexTransferableDeviceBuffer(DeviceContext& deviceContext, const BufferConfig& config) : AllocatedBuffer(deviceContext)
+    VertexAndIndexTransferableDeviceBuffer::VertexAndIndexTransferableDeviceBuffer(VmaAllocator allocator, const BufferConfig& config) : AllocatedBuffer(allocator)
     {
         vk::BufferCreateInfo bufferCreateInfo
         {
@@ -252,7 +252,8 @@ namespace eureka
     //                VertexAndIndexHostVisibleDeviceBuffer
     //
     //////////////////////////////////////////////////////////////////////////
-    VertexAndIndexHostVisibleDeviceBuffer::VertexAndIndexHostVisibleDeviceBuffer(DeviceContext& deviceContext, const BufferConfig& config)
+    VertexAndIndexHostVisibleDeviceBuffer::VertexAndIndexHostVisibleDeviceBuffer(VmaAllocator allocator, const BufferConfig& config)
+        : HostMappedBuffer<AllocatedBuffer>(allocator)
     {
         // see 'Advanced data uploading'
         // https://gpuopen-librariesandsdks.github.io/VulkanMemoryAllocator/html/usage_patterns.html

@@ -18,7 +18,7 @@ namespace eureka
 
     public:
         SequentialStageZone(DeviceContext& deviceContext, StageZoneConfig config)
-            : _buffer(deviceContext, BufferConfig{ .byte_size = config.bytes_capacity })
+            : _buffer(deviceContext.Allocator(), BufferConfig{.byte_size = config.bytes_capacity})
         {
 
 

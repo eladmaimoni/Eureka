@@ -70,7 +70,7 @@ namespace eureka
             assert(allocationInfo.pMappedData);
 
             return HostWriteCombinedPoolBuffer(
-                _deviceContext,
+                _deviceContext.Allocator(),
                 allocation,
                 buffer,
                 bufferCreateInfo.size,

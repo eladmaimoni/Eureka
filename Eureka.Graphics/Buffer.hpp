@@ -26,7 +26,7 @@ namespace eureka
         VmaAllocation     _allocation{ nullptr };
         vk::Buffer        _buffer{ nullptr };
         uint64_t          _byteSize{ 0 };
-        AllocatedBufferBase(DeviceContext& deviceContext);
+        AllocatedBufferBase(VmaAllocator allocator);
         AllocatedBufferBase() = default;
         ~AllocatedBufferBase() = default;
         AllocatedBufferBase& operator=(AllocatedBufferBase&& rhs) noexcept;
@@ -42,7 +42,7 @@ namespace eureka
     class AllocatedBuffer : public AllocatedBufferBase
     {
     protected:
-        AllocatedBuffer(DeviceContext& deviceContext) : AllocatedBufferBase(deviceContext) {}
+        AllocatedBuffer(VmaAllocator allocator) : AllocatedBufferBase(allocator) {}
         ~AllocatedBuffer();
         AllocatedBuffer() = default;
         AllocatedBuffer& operator=(AllocatedBuffer&& rhs) noexcept = default;
@@ -63,14 +63,14 @@ namespace eureka
         //int _id{};
     protected:
         fu::function<void(void)> _releaseCallback;
-        PoolAllocatedBuffer(DeviceContext& deviceContext, fu::function<void(void)> releaseCallback) 
-            : AllocatedBufferBase(deviceContext), _releaseCallback(std::move(releaseCallback)) 
+        PoolAllocatedBuffer(VmaAllocator allocator, fu::function<void(void)> releaseCallback) 
+            : AllocatedBufferBase(allocator), _releaseCallback(std::move(releaseCallback)) 
         {
             //_id = instances.fetch_add(1);
-            //DEBUGGER_TRACE("PoolAllocatedBuffer(DeviceContext& deviceContext, fu::function<void(void)> releaseCallback) {} instances = {}", _id, _id + 1);
+            //DEBUGGER_TRACE("PoolAllocatedBuffer(VmaAllocator allocator, fu::function<void(void)> releaseCallback) {} instances = {}", _id, _id + 1);
         
         }
-        PoolAllocatedBuffer(DeviceContext& deviceContext) : AllocatedBufferBase(deviceContext) 
+        PoolAllocatedBuffer(VmaAllocator allocator) : AllocatedBufferBase(allocator) 
         {
             //_id = instances.fetch_add(1);
             //DEBUGGER_TRACE("pool buffer {} instances = {}", _id, _id + 1);
@@ -98,9 +98,9 @@ namespace eureka
     {
     protected:
         void* _ptr{ nullptr };
-        HostMappedBuffer(DeviceContext& deviceContext) : BaseBuffer(deviceContext) {}
+        HostMappedBuffer(VmaAllocator allocator) : BaseBuffer(allocator) {}
         template<typename F>
-        HostMappedBuffer(DeviceContext& deviceContext, F f) : BaseBuffer(deviceContext, std::move(f)) {}
+        HostMappedBuffer(VmaAllocator allocator, F f) : BaseBuffer(allocator, std::move(f)) {}
 
         ~HostMappedBuffer()
         {
@@ -174,7 +174,7 @@ namespace eureka
         // ideal as a stage buffer for uploading large amounts of data to the gpu
         // not ideal when you want to read the data or update it in a random way
     public:
-        HostWriteCombinedBuffer(DeviceContext& deviceContext, const BufferConfig& config);
+        HostWriteCombinedBuffer(VmaAllocator allocator, const BufferConfig& config);
         EUREKA_DEFAULT_MOVEONLY(HostWriteCombinedBuffer);
     };
 
@@ -183,13 +183,13 @@ namespace eureka
         friend class HostWriteCombinedRingPool;
 
         HostWriteCombinedPoolBuffer(
-            DeviceContext&    deviceContext,
+            VmaAllocator    allocator,
             VmaAllocation     allocation,
             vk::Buffer        buffer,
             uint64_t          byteSize,
             void* ptr,
             fu::function<void(void)> releaseCallback
-        ) : HostMappedBuffer<PoolAllocatedBuffer>(deviceContext, std::move(releaseCallback))
+        ) : HostMappedBuffer<PoolAllocatedBuffer>(allocator, std::move(releaseCallback))
             
             //_allocation(allocation),
             //_buffer(buffer),
@@ -237,7 +237,7 @@ namespace eureka
         // writes have to travel through PCIe bus
     public:
         HostVisibleDeviceConstantBuffer() = default;
-        HostVisibleDeviceConstantBuffer(DeviceContext& deviceContext, const BufferConfig& config);
+        HostVisibleDeviceConstantBuffer(VmaAllocator allocator, const BufferConfig& config);
     };
 
 
@@ -251,7 +251,7 @@ namespace eureka
     {
     public:
         VertexAndIndexTransferableDeviceBuffer() = default;
-        VertexAndIndexTransferableDeviceBuffer(DeviceContext& deviceContext, const BufferConfig& config);
+        VertexAndIndexTransferableDeviceBuffer(VmaAllocator allocator, const BufferConfig& config);
     };
 
     //////////////////////////////////////////////////////////////////////////
@@ -269,6 +269,6 @@ namespace eureka
         
     public:
         VertexAndIndexHostVisibleDeviceBuffer() = default;
-        VertexAndIndexHostVisibleDeviceBuffer(DeviceContext& deviceContext, const BufferConfig& config);
+        VertexAndIndexHostVisibleDeviceBuffer(VmaAllocator allocator, const BufferConfig& config);
     };
 }

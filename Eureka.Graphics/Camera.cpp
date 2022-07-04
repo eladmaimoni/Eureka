@@ -6,7 +6,7 @@ namespace eureka
 
     PerspectiveCamera::PerspectiveCamera(DeviceContext& deviceContext, std::shared_ptr<SubmissionThreadExecutionContext> submissionThreadExecutionContext) 
         :
-        _constantBuffer(deviceContext, BufferConfig{ .byte_size = static_cast<uint32_t>(sizeof(ViewProjection)) }),
+        _constantBuffer(deviceContext.Allocator(), BufferConfig{ .byte_size = static_cast<uint32_t>(sizeof(ViewProjection)) }),
         _submissionThreadExecutionContext(std::move(submissionThreadExecutionContext))
     {
         Eigen::Vector3f center = _front + _direction;

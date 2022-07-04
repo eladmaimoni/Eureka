@@ -291,7 +291,7 @@ namespace eureka
             }
         }
 
-        VertexAndIndexTransferableDeviceBuffer deviceBuffer(_deviceContext, BufferConfig{ .byte_size = totalBufferMemory });
+        VertexAndIndexTransferableDeviceBuffer deviceBuffer(_deviceContext.Allocator(), BufferConfig{ .byte_size = totalBufferMemory });
 
  
         auto stageBuffer = co_await _uploadPool->EnqueueAllocation(totalBufferMemory + totalImageMemory);
