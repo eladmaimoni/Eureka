@@ -8,6 +8,7 @@
 #include "UploadRingBuffer.hpp"
 #include "CommandsUtils.hpp"
 #include "Mesh.hpp"
+#include "Pipeline.hpp"
 
 namespace eureka
 {
@@ -59,7 +60,9 @@ namespace eureka
             std::shared_ptr<SubmissionThreadExecutionContext> submissionThreadExecutionContext,
             std::shared_ptr<OneShotCopySubmissionHandler>     oneShotCopySubmissionHandler,
             std::shared_ptr<HostWriteCombinedRingPool>        uploadPool,
+            std::shared_ptr<PipelineCache >                   pipelineCache,
             std::shared_ptr<DescriptorPool>                   descPool,
+
             IOExecutor ioExecutor,
             PoolExecutor poolExecutor     
         );
@@ -70,6 +73,8 @@ namespace eureka
         DeviceContext&                                       _deviceContext;
         Queue                                                _copyQueue;
         std::shared_ptr<DescriptorPool>                      _descPool;
+        std::shared_ptr<PipelineCache>                       _pipelineCache;
+
         std::shared_ptr<SubmissionThreadExecutionContext>    _submissionThreadExecutionContext;
         std::shared_ptr<OneShotCopySubmissionHandler>        _oneShotCopySubmissionHandler;
         IOExecutor                                           _ioExecutor;

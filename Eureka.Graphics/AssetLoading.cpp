@@ -89,23 +89,24 @@ namespace eureka
     
 
     AssetLoader::AssetLoader(
-        DeviceContext& deviceContext, 
-        Queue queue, 
+        DeviceContext& deviceContext,
+        Queue queue,
         std::shared_ptr<SubmissionThreadExecutionContext> submissionThreadExecutionContext,
         std::shared_ptr<OneShotCopySubmissionHandler>     oneShotCopySubmissionHandler,
-        std::shared_ptr<HostWriteCombinedRingPool>        uploadPool, 
+        std::shared_ptr<HostWriteCombinedRingPool>        uploadPool,
+        std::shared_ptr<PipelineCache >                   pipelineCache,
         std::shared_ptr<DescriptorPool>                   descPool,
         IOExecutor ioExecutor, PoolExecutor poolExecutor
     ) :
         _deviceContext(deviceContext),
         _copyQueue(queue),
-        _descPool(std::move(descPool)),
+        _descPool(std::move(descPool)), 
+        _pipelineCache(std::move(pipelineCache)),
         _submissionThreadExecutionContext(std::move(submissionThreadExecutionContext)),
         _oneShotCopySubmissionHandler(std::move(oneShotCopySubmissionHandler)),
         _ioExecutor(std::move(ioExecutor)),
         _poolExecutor(std::move(poolExecutor)),
         _uploadPool(std::move(uploadPool)),
-        //_stageZone(deviceContext, StageZoneConfig{ .bytes_capacity = STAGE_ZONE_SIZE }),
         _uploadCommandPool(deviceContext.LogicalDevice(), CommandPoolDesc{ .type = CommandPoolType::eTransientResettableBuffers, .queue_family = _copyQueue.Family() })
     {
 
@@ -322,7 +323,7 @@ namespace eureka
 
                     const auto& material = gltfModel.materials[primitive.material];
                     
-
+                    
 
                 }
             }

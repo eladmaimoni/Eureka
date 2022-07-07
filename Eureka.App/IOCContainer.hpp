@@ -14,6 +14,7 @@ namespace eureka
     class ImGuiIntegration;
     class Window;
     class DescriptorPool;
+    class PipelineCache;
 
     class IOCContainer
     {
@@ -39,6 +40,7 @@ namespace eureka
         std::shared_ptr<ImGuiIntegration>                  _imguiIntegration;
         std::shared_ptr<RenderingSystem>                   _renderingSystem;
         std::shared_ptr<Window>                            _window;
+        std::shared_ptr<PipelineCache>                     _pipelineCache;
 
         std::shared_ptr<DescriptorPool>                    _descPool;
         void InitializeGraphicsSubsystem();

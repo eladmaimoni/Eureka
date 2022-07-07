@@ -79,6 +79,7 @@ namespace eureka
             _submissionThreadExecutionContext,
             _oneShotCopySubmissionHandler,
             _uploadPool,
+            _pipelineCache,
             _descPool,
             _concurrencyRuntime.background_executor(),
             _concurrencyRuntime.thread_pool_executor()
@@ -122,14 +123,18 @@ namespace eureka
 
         _renderingSystem->Initialize();
 
+        _pipelineCache = _renderingSystem->GetPipelineCache(); // TODO init from outside
+
         _imguiIntegration = std::make_shared<ImGuiIntegration>(
             _deviceContext,
-            _renderingSystem->GetPipelineCache(), // TODO init from outside
+            _pipelineCache, // TODO init from outside
             _submissionThreadExecutionContext,
             _oneShotCopySubmissionHandler,
             _uploadPool,
             _concurrencyRuntime.thread_pool_executor()
             );
+
+       
     }
 
 }
