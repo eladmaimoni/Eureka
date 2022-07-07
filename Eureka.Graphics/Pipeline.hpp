@@ -3,7 +3,6 @@
 #include "VkHelpers.hpp"
 #include "vk_error_handling.hpp"
 #include "RenderPass.hpp"
-#include "Mesh.hpp"
 #include "Descriptors.hpp"
 
 namespace eureka
@@ -90,7 +89,7 @@ namespace eureka
             DeviceContext& deviceContext,
             const DepthColorRenderPass& renderPass,
             const SingleVertexShaderUBODescriptorSetLayout& perViewDescriptorSetLayout,
-            const PerNormalMappedModelDescriptorSetLayout& perNormalMappedModelDescriptorSetLayout
+            const ColorAndNormalMapFragmentDescriptorSetLayout& perNormalMappedModelDescriptorSetLayout
         );
         EUREKA_DEFAULT_MOVEABLE(PhongShadedMeshWithNormalMapPipeline);
     };
@@ -118,7 +117,7 @@ namespace eureka
         // we should probably have a pipeline cache per render pass instance
         std::shared_ptr<DepthColorRenderPass>                       _depthColorRenderPass;
         SingleVertexShaderUBODescriptorSetLayout                    _singleVertexShaderUBODSL;
-        PerNormalMappedModelDescriptorSetLayout                     _perNormalMappedModelDSL;
+        ColorAndNormalMapFragmentDescriptorSetLayout                     _perNormalMappedModelDSL;
         SingleFragmentShaderCombinedImageSamplerDescriptorSetLayout _singleFragmentShaderCISDSL;
 
         CachedPipeline<ColoredVertexMeshPipeline>                   _coloredVertexMeshPipeline;

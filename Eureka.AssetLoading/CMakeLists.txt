@@ -1,6 +1,6 @@
 ﻿
 
-set_source_group(asset "AssetLoading.hpp" "AssetLoading.cpp"  "tingltf.cpp")
+set_source_group(asset "tingltf.cpp")
 
 add_library(
     Eureka.AssetLoading     

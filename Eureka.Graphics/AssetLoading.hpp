@@ -1,12 +1,13 @@
 #pragma once
 
-#include <DeviceContext.hpp>
-#include <GraphicsDefaults.hpp>
-#include <Commands.hpp>
-#include <SubmissionThreadExecutionContext.hpp>
-#include <OneShotCopySubmission.hpp>
-#include <UploadRingBuffer.hpp>
-#include <CommandsUtils.hpp>
+#include "DeviceContext.hpp"
+#include "GraphicsDefaults.hpp"
+#include "Commands.hpp"
+#include "SubmissionThreadExecutionContext.hpp"
+#include "OneShotCopySubmission.hpp"
+#include "UploadRingBuffer.hpp"
+#include "CommandsUtils.hpp"
+#include "Mesh.hpp"
 
 namespace eureka
 {
@@ -58,6 +59,7 @@ namespace eureka
             std::shared_ptr<SubmissionThreadExecutionContext> submissionThreadExecutionContext,
             std::shared_ptr<OneShotCopySubmissionHandler>     oneShotCopySubmissionHandler,
             std::shared_ptr<HostWriteCombinedRingPool>        uploadPool,
+            std::shared_ptr<DescriptorPool>                   descPool,
             IOExecutor ioExecutor,
             PoolExecutor poolExecutor     
         );
@@ -67,6 +69,7 @@ namespace eureka
         std::atomic_bool                                     _busy{ false };
         DeviceContext&                                       _deviceContext;
         Queue                                                _copyQueue;
+        std::shared_ptr<DescriptorPool>                      _descPool;
         std::shared_ptr<SubmissionThreadExecutionContext>    _submissionThreadExecutionContext;
         std::shared_ptr<OneShotCopySubmissionHandler>        _oneShotCopySubmissionHandler;
         IOExecutor                                           _ioExecutor;

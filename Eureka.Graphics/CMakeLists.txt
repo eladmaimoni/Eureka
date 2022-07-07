@@ -24,6 +24,12 @@ set_source_group(
 )
 
 set_source_group(
+    assets
+    "AssetLoading.hpp" 
+    "AssetLoading.cpp"
+)
+
+set_source_group(
     vulkan 
     "VkHelpers.hpp"
     "vk_error_handling.hpp"
@@ -84,6 +90,7 @@ set_source_group(
 
 add_library(
     Eureka.Graphics
+    ${assets}
     ${infrastructure}
     ${objects}
     ${rendering}
@@ -109,6 +116,7 @@ target_include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}
     PRIVATE 
     ${VULKAN_HPP_INCLUDE_DIRS}
+    ${TINYGLTF_INCLUDE_DIRS}
 )
 
 target_link_libraries(
@@ -121,8 +129,6 @@ target_link_libraries(
     Eureka.Types
     imgui::imgui
     concurrencpp::concurrencpp
-    unofficial::vulkan-memory-allocator::vulkan-memory-allocator
-
-    
+    unofficial::vulkan-memory-allocator::vulkan-memory-allocator     
 )
 

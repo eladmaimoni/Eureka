@@ -1,4 +1,5 @@
 #include "Pipeline.hpp"
+#include "PipelineTypes.hpp"
 #include <ShadersCache.hpp>
 
 
@@ -377,7 +378,7 @@ namespace eureka
         DeviceContext& deviceContext, 
         const DepthColorRenderPass& renderPass,
         const SingleVertexShaderUBODescriptorSetLayout& perViewDescriptorSetLayout,
-        const PerNormalMappedModelDescriptorSetLayout& perNormalMappedModelDescriptorSetLayout
+        const ColorAndNormalMapFragmentDescriptorSetLayout& perNormalMappedModelDescriptorSetLayout
     )
     {
    

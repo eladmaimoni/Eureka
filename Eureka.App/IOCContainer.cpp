@@ -6,7 +6,8 @@
 #include "../Eureka.Graphics/OneShotCopySubmission.hpp"
 #include "../Eureka.Graphics/ImguiIntegration.hpp"
 #include "../Eureka.Graphics/Window.hpp"
-#include "../Eureka.AssetLoading/AssetLoading.hpp"
+#include "../Eureka.Graphics/AssetLoading.hpp"
+#include "../Eureka.Graphics/Descriptors.hpp"
 
 namespace eureka
 {
@@ -78,6 +79,7 @@ namespace eureka
             _submissionThreadExecutionContext,
             _oneShotCopySubmissionHandler,
             _uploadPool,
+            _descPool,
             _concurrencyRuntime.background_executor(),
             _concurrencyRuntime.thread_pool_executor()
             );
@@ -106,12 +108,14 @@ namespace eureka
 
         _window = std::make_shared<Window>(_glfw, _instance, _deviceContext, _graphicsQueue);
 
-        
+        _descPool = std::make_shared<DescriptorPool>(_deviceContext);
+
         _renderingSystem = std::make_shared<RenderingSystem>(
             _deviceContext,
             _window->GetSwapChain(),
             _submissionThreadExecutionContext,
             _oneShotCopySubmissionHandler,
+            _descPool,
             _graphicsQueue,
             _copyQueue
             );

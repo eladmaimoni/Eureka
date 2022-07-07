@@ -38,6 +38,7 @@ namespace eureka
 
     vkr::DescriptorSet DescriptorPool::AllocateSet(vk::DescriptorSetLayout layout)
     {
+
         vk::DescriptorSetAllocateInfo allocInfo
         {
             .descriptorPool = *_pool,
@@ -48,11 +49,15 @@ namespace eureka
         auto device = **_device;
         vk::DescriptorSet descriptorSet{};
 
-        VK_CHECK(vkAllocateDescriptorSets(
-            device,
-            (VkDescriptorSetAllocateInfo*)&allocInfo,
-            (VkDescriptorSet*)&descriptorSet)
-        );
+        {
+            std::scoped_lock lk(_mtx);
+            VK_CHECK(vkAllocateDescriptorSets(
+                device,
+                (VkDescriptorSetAllocateInfo*)&allocInfo,
+                (VkDescriptorSet*)&descriptorSet)
+            );
+
+        }
 
         return vkr::DescriptorSet(*_device, descriptorSet, *_pool);
     }
@@ -101,7 +106,7 @@ namespace eureka
         _layout = deviceContext.LogicalDevice()->createDescriptorSetLayout(descriptorSetLayoutCreateInfo);
     }
 
-    PerNormalMappedModelDescriptorSetLayout::PerNormalMappedModelDescriptorSetLayout(DeviceContext& deviceContext)
+    ColorAndNormalMapFragmentDescriptorSetLayout::ColorAndNormalMapFragmentDescriptorSetLayout(DeviceContext& deviceContext)
     {
         std::array<vk::DescriptorSetLayoutBinding, 2> descriptorSetLayoutBindings
         {

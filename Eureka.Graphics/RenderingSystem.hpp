@@ -37,6 +37,7 @@ namespace eureka
             std::shared_ptr<SwapChain> swapChain,
             std::shared_ptr<SubmissionThreadExecutionContext> submissionThreadExecutionContext,
             std::shared_ptr<OneShotCopySubmissionHandler> oneShotCopySubmissionHandler,
+            std::shared_ptr<DescriptorPool>                   descPool,
             Queue graphicsQueue,
             Queue copyQueue
         );
@@ -58,33 +59,27 @@ namespace eureka
             return _pipelineCache;
         }
     private:
-
-        DeviceContext&                                             _deviceContext;
-             
-        
+        DeviceContext&                                             _deviceContext;          
         Queue                                                      _graphicsQueue;
         Queue                                                      _copyQueue;
 
         std::shared_ptr<SubmissionThreadExecutionContext>          _submissionThreadExecutionContext;
         std::shared_ptr<OneShotCopySubmissionHandler>              _oneShotCopySubmissionHandler;
 
-        
-       
-
         std::shared_ptr<DepthColorRenderPass>                      _renderPass;
         std::vector<DepthColorRenderTarget>                        _renderTargets;
         std::vector<FrameCommands>                                 _frameCommandBuffer;
 
-        DescriptorPool                                             _descPool;
+        std::shared_ptr<DescriptorPool>                            _descPool;
         std::shared_ptr<PipelineCache>                             _pipelineCache;
           
 
         HostWriteCombinedBuffer                                    _stageZone;                                                                  
         DescriptorSet                                              _constantBufferSet;
+        VertexAndIndexTransferableDeviceBuffer                     _triangle;
                                                                    
         // triangle stuff                                          
         PerspectiveCamera                                          _camera;
-        VertexAndIndexTransferableDeviceBuffer                     _triangle;
 
 
         std::shared_ptr<ColoredVertexMeshPipeline>                 _coloredVertexPipeline;

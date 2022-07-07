@@ -61,16 +61,17 @@ namespace eureka
         DeviceContext& deviceContext,
         std::shared_ptr<SwapChain> swapChain,
         std::shared_ptr<SubmissionThreadExecutionContext> submissionThreadExecutionContext,
-        std::shared_ptr<OneShotCopySubmissionHandler> oneShotCopySubmissionHandler,
+        std::shared_ptr<OneShotCopySubmissionHandler>     oneShotCopySubmissionHandler,
+        std::shared_ptr<DescriptorPool>                   descPool,
         Queue graphicsQueue,
         Queue copyQueue
     )
         :
         _deviceContext(deviceContext),
         _swapChain(swapChain),
+        _descPool(std::move(descPool)),
         _submissionThreadExecutionContext(/*std::move(*/submissionThreadExecutionContext/*)*/), // TODO
         _oneShotCopySubmissionHandler(std::move(oneShotCopySubmissionHandler)),
-        _descPool(deviceContext),
         _camera(deviceContext, /*std::move(*/submissionThreadExecutionContext/*)*/),  // TODO
         _graphicsQueue(graphicsQueue),
         _copyQueue(copyQueue)
@@ -142,7 +143,7 @@ namespace eureka
         _camera.SetLookDirection(Eigen::Vector3f(0.0f, 0.0f, -1.0f));
         _camera.SetVerticalFov(3.14f / 4.0f);
 
-        _constantBufferSet = _descPool.AllocateSet(_coloredVertexPipeline->GetPerViewLayout());
+        _constantBufferSet = _descPool->AllocateSet(_coloredVertexPipeline->GetPerViewLayout());
 
         auto [descType, descInfo] = _camera.DescriptorInfo();
 
@@ -312,17 +313,19 @@ namespace eureka
             vk::PipelineBindPoint::eGraphics,
             _coloredVertexPipeline->Get()
         );
+        
+        renderingCommandBuffer.bindIndexBuffer(
+            _triangle.Buffer(),
+            0,
+            vk::IndexType::eUint32
+        );
 
         renderingCommandBuffer.bindVertexBuffers(
             0,
             { _triangle.Buffer() },
             { sizeof(mesh::COLORED_TRIANGLE_INDEX_DATA) }
         );
-        renderingCommandBuffer.bindIndexBuffer(
-            _triangle.Buffer(),
-            0,
-            vk::IndexType::eUint32
-        );
+ 
 
         renderingCommandBuffer.drawIndexed(3, 1, 0, 0, 1);
 

@@ -43,6 +43,7 @@ namespace eureka
     private:
         std::shared_ptr<vkr::Device> _device;
         vkr::DescriptorPool _pool{ nullptr };
+        std::mutex _mtx; // Host access to pAllocateInfo->descriptorPool must be externally synchronized
     public:
         DescriptorPool(DeviceContext& deviceContext);
         vk::DescriptorPool Get() const
@@ -86,10 +87,10 @@ namespace eureka
         EUREKA_DEFAULT_MOVEABLE(SingleFragmentShaderCombinedImageSamplerDescriptorSetLayout);
     };
 
-    class PerNormalMappedModelDescriptorSetLayout : public DescriptorSetLayout
+    class ColorAndNormalMapFragmentDescriptorSetLayout : public DescriptorSetLayout
     {
     public:
-        PerNormalMappedModelDescriptorSetLayout(DeviceContext& deviceContext);
-        EUREKA_DEFAULT_MOVEABLE(PerNormalMappedModelDescriptorSetLayout);
+        ColorAndNormalMapFragmentDescriptorSetLayout(DeviceContext& deviceContext);
+        EUREKA_DEFAULT_MOVEABLE(ColorAndNormalMapFragmentDescriptorSetLayout);
     };
 }
