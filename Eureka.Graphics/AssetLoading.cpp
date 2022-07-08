@@ -253,7 +253,7 @@ namespace eureka
         svec10<dynamic_cspan<uint8_t>> vertexDataUploadDesc;
         vertexDataUploadDesc.reserve(gltfModel.meshes.size());
 
-        std::vector<CNTexturedPrimitiveBufferOffsets> primitives;
+        std::vector<CNTexturedPrimitiveNode> primitives;
 
 
         auto pipeline = _pipelineCache->GetPhongShadedMeshWithNormalMapPipeline();
@@ -328,8 +328,29 @@ namespace eureka
                     // materials 
 
                     const auto& material = gltfModel.materials[primitive.material];
-                    
+                    auto colorMapIdx = material.values.at("baseColorTexture").TextureIndex();
+                    auto normalMapIdx = material.additionalValues.at("normalTexture").TextureIndex();
+
                     primitiveNode.fragment_desc_set = _descPool->AllocateSet(descLayout);
+
+                    std::array<vk::DescriptorImageInfo, 2> imageInfos;
+                    auto& colorMapImage = images[colorMapIdx];
+                    auto& normalMapImage = images[normalMapIdx];
+                    imageInfos[0] = vk::DescriptorImageInfo
+                    {
+                       .sampler = colorMapImage.GetSampler(),
+                       .imageView = colorMapImage.GetView(),
+                       .imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal
+                    };
+                    imageInfos[1] = vk::DescriptorImageInfo
+                    {
+                       .sampler = normalMapImage.GetSampler(),
+                       .imageView = normalMapImage.GetView(),
+                       .imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal
+                    };
+                    primitiveNode.fragment_desc_set.SetBindings(0, vk::DescriptorType::eCombinedImageSampler, imageInfos);
+
+                    primitives.emplace_back(std::move(primitiveNode));
 
 
                 }

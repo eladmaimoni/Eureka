@@ -53,19 +53,28 @@ namespace eureka
             _device->updateDescriptorSets({ writeDescriptorSet }, {});
         }
 
-        void SetBindings(uint32_t bindingSlot, vk::DescriptorType descType, dynamic_cspan<vk::DescriptorImageInfo> imageInfos)
+        void SetBindings(uint32_t startSlot, vk::DescriptorType descType, dynamic_cspan<vk::DescriptorImageInfo> imageInfos)
         {
-            vk::WriteDescriptorSet writeDescriptorSet
-            {
-                .dstSet = _set,
-                .dstBinding = bindingSlot,
-                .descriptorCount = static_cast<uint32_t>(imageInfos.size()),
-                .descriptorType = descType,
-                .pImageInfo = imageInfos.data(),
-                .pBufferInfo = nullptr
-            };
+            svec5<vk::WriteDescriptorSet> writes;
+            writes.reserve(imageInfos.size());
 
-            _device->updateDescriptorSets({ writeDescriptorSet }, {});
+            for (auto& imgeInfo : imageInfos)
+            {
+                writes.emplace_back(
+                    vk::WriteDescriptorSet
+                    {
+                        .dstSet = _set,
+                        .dstBinding = startSlot,
+                        .descriptorCount = 1u,
+                        .descriptorType = descType,
+                        .pImageInfo = &imgeInfo,
+                        .pBufferInfo = nullptr
+                    }
+                );
+                ++startSlot;
+            }
+   
+            _device->updateDescriptorSets(writes, {});
         }
     };
 

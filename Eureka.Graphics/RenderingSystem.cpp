@@ -25,7 +25,7 @@ namespace eureka
 
         for (auto i = 0u; i < images.size(); ++i)
         {
-            std::array<vk::ImageView, 2> attachments = { images[i]->View(), depthImage->View()};
+            std::array<vk::ImageView, 2> attachments = { images[i]->GetView(), depthImage->GetView()};
 
             vk::FramebufferCreateInfo framebufferCreateInfo
             {

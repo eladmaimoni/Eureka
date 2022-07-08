@@ -23,7 +23,7 @@ namespace eureka
         Image& operator=(Image&& rhs);
         Image(vk::Image image, vkr::ImageView view);
         vk::Image Get() const { return _image; };
-        vk::ImageView View() const { return *_view; }
+        vk::ImageView GetView() const { return *_view; }
     protected:
         vk::Image         _image{nullptr}; // note: non owning
         vkr::ImageView    _view{ nullptr }; // note: owning
@@ -99,6 +99,10 @@ namespace eureka
         SampledImage2D(SampledImage2D&& that);
         SampledImage2D& operator=(SampledImage2D&& rhs);
         ~SampledImage2D();
+        vk::Sampler GetSampler() const
+        {
+            return *_sampler;
+        }
     };
 
     class MipmapImage2D : public AllocatedImage

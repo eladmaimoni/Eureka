@@ -17,7 +17,7 @@ struct UBO
 };
 
 
-cbuffer ubo : register(b0) { UBO ubo; };
+cbuffer ubo : register(b0, space0) { UBO ubo; };
 
 struct PushConsts 
 {
