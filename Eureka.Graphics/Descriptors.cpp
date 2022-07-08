@@ -11,55 +11,107 @@ namespace eureka
     inline constexpr uint32_t DEFAULT_MAX_COMBINED_IMAGE_SAMPLERS_DESCRIPTORS = 50;
 
 
-    DescriptorPool::DescriptorPool(DeviceContext& deviceContext)
-        : _device(deviceContext.LogicalDevice())
+    vkr::DescriptorPool MTDescriptorAllocator::AllocatePool()
     {
-        // We need to tell the API the number of max. requested descriptors per type
-        std::array<vk::DescriptorPoolSize, 2> perTypeMaxCount{};
-        perTypeMaxCount[0] = vk::DescriptorPoolSize{ .type = vk::DescriptorType::eUniformBuffer, .descriptorCount = DEFAULT_MAX_UBO_DESCRIPTORS };
-        perTypeMaxCount[1] = vk::DescriptorPoolSize{ .type = vk::DescriptorType::eCombinedImageSampler, .descriptorCount = DEFAULT_MAX_COMBINED_IMAGE_SAMPLERS_DESCRIPTORS };
 
-        // For additional types you need to add new entries in the type count list
-        // E.g. for two combined image samplers :
-        // typeCounts[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        // typeCounts[1].descriptorCount = 2;
+        std::vector<vk::DescriptorPoolSize> perTypeMaxCount(_config.multipliers.size());
 
-        // Create the global descriptor pool
-        // All descriptors used in this example are allocated from this pool
+        for (auto i = 0u; i < perTypeMaxCount.size(); ++i)
+        {
+            auto [type, multiplier] = _config.multipliers[i];
+
+            perTypeMaxCount[i] = vk::DescriptorPoolSize{ .type = type, .descriptorCount = static_cast<uint32_t>(_config.max_sets_per_pool * multiplier) };
+        }
+
         vk::DescriptorPoolCreateInfo descriptorPoolCreateInfo
         {
-            .maxSets = DEFAULT_MAX_DESCRIPTOR_SETS,
+            .flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet,
+            .maxSets = _config.max_sets_per_pool,
             .poolSizeCount = static_cast<uint32_t>(perTypeMaxCount.size()),
             .pPoolSizes = perTypeMaxCount.data()
         };
-        _pool = _device->createDescriptorPool(descriptorPoolCreateInfo);
+
+        return _device->createDescriptorPool(descriptorPoolCreateInfo);
+    }
+
+    void MTDescriptorAllocator::FreeSet(vk::DescriptorPool pool, vk::DescriptorSet set)
+    {
+        VK_CHECK(vkFreeDescriptorSets(**_device, pool,1, reinterpret_cast<VkDescriptorSet*>(&set)));
     }
 
 
-    vkr::DescriptorSet DescriptorPool::AllocateSet(vk::DescriptorSetLayout layout)
+
+    MTDescriptorAllocator::MTDescriptorAllocator(DeviceContext& deviceContext, MTDescriptorAllocatorConfig config)
+        :
+        _config(std::move(config)),
+        _device(deviceContext.LogicalDevice())
     {
+        _pools.emplace_back(AllocatePool());
+    }
 
-        vk::DescriptorSetAllocateInfo allocInfo
-        {
-            .descriptorPool = *_pool,
-            .descriptorSetCount = 1,
-            .pSetLayouts = &layout
 
-        };
-        auto device = **_device;
+    OwnedDescriptorSet MTDescriptorAllocator::AllocateSet(vk::DescriptorSetLayout layout)
+    {
         vk::DescriptorSet descriptorSet{};
+        auto device = **_device;
 
+        std::scoped_lock lk(_mtx);
+        //auto poolCount = _pools.size();
+
+        vk::Result result{};
+        for (auto i = 0u; i < _pools.size(); ++i)
         {
-            std::scoped_lock lk(_mtx);
-            VK_CHECK(vkAllocateDescriptorSets(
+            auto pool = *_pools[i];
+
+            vk::DescriptorSetAllocateInfo allocInfo
+            {
+                .descriptorPool = pool,
+                .descriptorSetCount = 1,
+                .pSetLayouts = &layout
+            };
+
+            result = static_cast<vk::Result>(vkAllocateDescriptorSets(
                 device,
                 (VkDescriptorSetAllocateInfo*)&allocInfo,
-                (VkDescriptorSet*)&descriptorSet)
-            );
+                (VkDescriptorSet*)&descriptorSet
+            ));
 
+            if (result == vk::Result::eSuccess)
+            {
+                return OwnedDescriptorSet(
+                    this,
+                    pool,
+                    [](void* self, vk::DescriptorPool pool, vk::DescriptorSet set)
+                    {
+                        auto _this = static_cast<MTDescriptorAllocator*>(self);
+                        _this->FreeSet(pool, set);
+                    },
+                    _device,
+                    descriptorSet
+                );
+            }
+            else if (result == vk::Result::eErrorFragmentedPool || result == vk::Result::eErrorOutOfPoolMemory)
+            {
+                if (i < (_pools.size() - 1))
+                {
+                    continue; // try next pool
+                }
+                else if (_pools.size() < _config.max_pools)
+                {
+                    _pools.emplace_back(AllocatePool());
+                    continue; // new pool is allocated
+                }
+                else
+                {
+                    break;
+                }
+            }
+            else
+            {
+                break;
+            }
         }
-
-        return vkr::DescriptorSet(*_device, descriptorSet, *_pool);
+        vk::throwResultException(result, "allocation failed");
     }
 
     SingleVertexShaderUBODescriptorSetLayout::SingleVertexShaderUBODescriptorSetLayout(DeviceContext& deviceContext)

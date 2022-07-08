@@ -84,6 +84,7 @@ namespace eureka
     class PhongShadedMeshWithNormalMapPipeline : public PipelineBase
     {
         void Setup(DeviceContext& deviceContext, vk::RenderPass renderPass);
+        
     public:
         PhongShadedMeshWithNormalMapPipeline(
             DeviceContext& deviceContext,
@@ -117,27 +118,14 @@ namespace eureka
         // we should probably have a pipeline cache per render pass instance
         std::shared_ptr<DepthColorRenderPass>                       _depthColorRenderPass;
         SingleVertexShaderUBODescriptorSetLayout                    _singleVertexShaderUBODSL;
-        ColorAndNormalMapFragmentDescriptorSetLayout                     _perNormalMappedModelDSL;
+        ColorAndNormalMapFragmentDescriptorSetLayout                _perNormalMappedModelDSL;
         SingleFragmentShaderCombinedImageSamplerDescriptorSetLayout _singleFragmentShaderCISDSL;
 
         CachedPipeline<ColoredVertexMeshPipeline>                   _coloredVertexMeshPipeline;
         CachedPipeline<PhongShadedMeshWithNormalMapPipeline>        _phongShadedMeshWithNormalMapPipeline;
         CachedPipeline<ImGuiPipeline>                               _imguiPipeline;
-    public:
-        PipelineCache(
-            DeviceContext& deviceContext,
-            std::shared_ptr<DepthColorRenderPass> depthColorRenderPass
-        )
-            : 
-            _deviceContext(deviceContext),
-            _depthColorRenderPass(std::move(depthColorRenderPass)),
-            _singleVertexShaderUBODSL(deviceContext),
-            _perNormalMappedModelDSL(deviceContext),
-            _singleFragmentShaderCISDSL(deviceContext)
-        {
 
-        }
-        
+
         template<typename CachedPipeline, typename ... Args>
         std::shared_ptr<typename CachedPipeline::pipeline_type> GetCachedPipeline(CachedPipeline& cachedPipeline, Args&& ... args)
         {
@@ -158,6 +146,28 @@ namespace eureka
             return ptr;
         }
 
+
+    public:
+        PipelineCache(
+            DeviceContext& deviceContext,
+            std::shared_ptr<DepthColorRenderPass> depthColorRenderPass
+        )
+            : 
+            _deviceContext(deviceContext),
+            _depthColorRenderPass(std::move(depthColorRenderPass)),
+            _singleVertexShaderUBODSL(deviceContext),
+            _perNormalMappedModelDSL(deviceContext),
+            _singleFragmentShaderCISDSL(deviceContext)
+        {
+
+        }
+
+
+        const ColorAndNormalMapFragmentDescriptorSetLayout& GetColorAndNormalMapFragmentDescriptorSetLayout()
+        {
+            return _perNormalMappedModelDSL;
+        }
+
         std::shared_ptr<ColoredVertexMeshPipeline> GetColoredVertexMeshPipeline()
         {
             return GetCachedPipeline(
@@ -166,7 +176,6 @@ namespace eureka
                 _singleVertexShaderUBODSL
             );
         }
-
         std::shared_ptr<ImGuiPipeline> GetImGuiPipeline()
         {
             return GetCachedPipeline(
@@ -175,7 +184,6 @@ namespace eureka
                 _singleFragmentShaderCISDSL
             );
         }
-
         std::shared_ptr<PhongShadedMeshWithNormalMapPipeline> GetPhongShadedMeshWithNormalMapPipeline()
         {
             return GetCachedPipeline(

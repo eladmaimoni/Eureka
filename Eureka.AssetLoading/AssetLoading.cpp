@@ -271,11 +271,11 @@ namespace eureka
 
         for (auto i = 0u; i < scene.nodes.size(); ++i)
         {
-            const tinygltf::Node node = gltfModel.nodes[scene.nodes[i]];
+            const tinygltf::Node gltfNode = gltfModel.nodes[scene.nodes[i]];
             
-            if (node.mesh > -1)
+            if (gltfNode.mesh > -1)
             {
-                const tinygltf::Mesh mesh = gltfModel.meshes[node.mesh];
+                const tinygltf::Mesh mesh = gltfModel.meshes[gltfNode.mesh];
 
                 for (auto j = 0u; j < mesh.primitives.size(); ++j)
                 {

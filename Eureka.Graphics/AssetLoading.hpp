@@ -61,7 +61,7 @@ namespace eureka
             std::shared_ptr<OneShotCopySubmissionHandler>     oneShotCopySubmissionHandler,
             std::shared_ptr<HostWriteCombinedRingPool>        uploadPool,
             std::shared_ptr<PipelineCache >                   pipelineCache,
-            std::shared_ptr<DescriptorPool>                   descPool,
+            std::shared_ptr<MTDescriptorAllocator>            descPool,
 
             IOExecutor ioExecutor,
             PoolExecutor poolExecutor     
@@ -72,7 +72,7 @@ namespace eureka
         std::atomic_bool                                     _busy{ false };
         DeviceContext&                                       _deviceContext;
         Queue                                                _copyQueue;
-        std::shared_ptr<DescriptorPool>                      _descPool;
+        std::shared_ptr<MTDescriptorAllocator>                      _descPool;
         std::shared_ptr<PipelineCache>                       _pipelineCache;
 
         std::shared_ptr<SubmissionThreadExecutionContext>    _submissionThreadExecutionContext;

@@ -109,7 +109,7 @@ namespace eureka
 
         _window = std::make_shared<Window>(_glfw, _instance, _deviceContext, _graphicsQueue);
 
-        _descPool = std::make_shared<DescriptorPool>(_deviceContext);
+        _descPool = std::make_shared<MTDescriptorAllocator>(_deviceContext);
 
         _renderingSystem = std::make_shared<RenderingSystem>(
             _deviceContext,

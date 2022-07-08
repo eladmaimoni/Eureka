@@ -95,7 +95,7 @@ namespace eureka
         std::shared_ptr<OneShotCopySubmissionHandler>     oneShotCopySubmissionHandler,
         std::shared_ptr<HostWriteCombinedRingPool>        uploadPool,
         std::shared_ptr<PipelineCache >                   pipelineCache,
-        std::shared_ptr<DescriptorPool>                   descPool,
+        std::shared_ptr<MTDescriptorAllocator>                   descPool,
         IOExecutor ioExecutor, PoolExecutor poolExecutor
     ) :
         _deviceContext(deviceContext),
@@ -255,6 +255,10 @@ namespace eureka
 
         std::vector<CNTexturedPrimitiveBufferOffsets> primitives;
 
+
+        auto pipeline = _pipelineCache->GetPhongShadedMeshWithNormalMapPipeline();
+        auto descLayout = _pipelineCache->GetColorAndNormalMapFragmentDescriptorSetLayout().Get();
+
         //
         // create images and buffers (no transfer yet)
         //
@@ -294,19 +298,21 @@ namespace eureka
 
         for (auto i = 0u; i < scene.nodes.size(); ++i)
         {
-            const tinygltf::Node node = gltfModel.nodes[scene.nodes[i]];
+            const tinygltf::Node gltfNode = gltfModel.nodes[scene.nodes[i]];
             
-            if (node.mesh > -1)
+            if (gltfNode.mesh > -1)
             {
                 
-                const tinygltf::Mesh& mesh = gltfModel.meshes[node.mesh];
+                const tinygltf::Mesh& mesh = gltfModel.meshes[gltfNode.mesh];
 
                 for (auto j = 0u; j < mesh.primitives.size(); ++j)
                 {
                     const auto& primitive = mesh.primitives[j];
                     auto primitiveView = ExtractPrimitiveData(gltfModel, primitive);
 
-                    CNTexturedPrimitiveBufferOffsets bufferOffsets{};
+                    CNTexturedPrimitiveNode primitiveNode{};
+
+                    CNTexturedPrimitiveBufferOffsets& bufferOffsets = primitiveNode.buffer_offsets;
                     
                     bufferOffsets.index_offset = totalIndexBufferMemory;
                     totalIndexBufferMemory += indicesUploadDesc.emplace_back(to_raw_span(primitiveView.index_view)).size_bytes();
@@ -323,7 +329,8 @@ namespace eureka
 
                     const auto& material = gltfModel.materials[primitive.material];
                     
-                    
+                    primitiveNode.fragment_desc_set = _descPool->AllocateSet(descLayout);
+
 
                 }
             }
@@ -331,7 +338,7 @@ namespace eureka
 
         VertexAndIndexTransferableDeviceBuffer deviceBuffer(_deviceContext.Allocator(), BufferConfig{ .byte_size = totalIndexBufferMemory + totalVertexBufferMemory });
 
- 
+
         auto stageBuffer = co_await _uploadPool->EnqueueAllocation(totalIndexBufferMemory + totalVertexBufferMemory + totalImageMemory);
 
         DEBUGGER_TRACE("stage buffer allocated");

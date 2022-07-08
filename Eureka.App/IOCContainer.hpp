@@ -13,7 +13,7 @@ namespace eureka
     class OneShotCopySubmissionHandler;
     class ImGuiIntegration;
     class Window;
-    class DescriptorPool;
+    class MTDescriptorAllocator;
     class PipelineCache;
 
     class IOCContainer
@@ -42,7 +42,7 @@ namespace eureka
         std::shared_ptr<Window>                            _window;
         std::shared_ptr<PipelineCache>                     _pipelineCache;
 
-        std::shared_ptr<DescriptorPool>                    _descPool;
+        std::shared_ptr<MTDescriptorAllocator>              _descPool;
         void InitializeGraphicsSubsystem();
 
     };

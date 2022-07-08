@@ -34,7 +34,7 @@ namespace eureka
     {
         CNTexturedPrimitiveBufferOffsets buffer_offsets;
         
-        
+        OwnedDescriptorSet               fragment_desc_set;
     };
 
     // CNR - Color, Normal Map, Metallic Roughness. Textured model with color map, normal map and metallic roughness map

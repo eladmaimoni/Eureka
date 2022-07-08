@@ -62,7 +62,7 @@ namespace eureka
         std::shared_ptr<SwapChain> swapChain,
         std::shared_ptr<SubmissionThreadExecutionContext> submissionThreadExecutionContext,
         std::shared_ptr<OneShotCopySubmissionHandler>     oneShotCopySubmissionHandler,
-        std::shared_ptr<DescriptorPool>                   descPool,
+        std::shared_ptr<MTDescriptorAllocator>                   descPool,
         Queue graphicsQueue,
         Queue copyQueue
     )
@@ -137,7 +137,7 @@ namespace eureka
         _pipelineCache = std::make_shared<PipelineCache>(_deviceContext, _renderPass);
 
         _coloredVertexPipeline = _pipelineCache->GetColoredVertexMeshPipeline();
-        _phongPipeline = _pipelineCache->GetPhongShadedMeshWithNormalMapPipeline();
+
 
         _camera.SetPosition(Eigen::Vector3f(0.0f, 0.0f, 2.5f));
         _camera.SetLookDirection(Eigen::Vector3f(0.0f, 0.0f, -1.0f));

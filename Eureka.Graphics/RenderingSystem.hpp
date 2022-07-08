@@ -37,7 +37,7 @@ namespace eureka
             std::shared_ptr<SwapChain> swapChain,
             std::shared_ptr<SubmissionThreadExecutionContext> submissionThreadExecutionContext,
             std::shared_ptr<OneShotCopySubmissionHandler> oneShotCopySubmissionHandler,
-            std::shared_ptr<DescriptorPool>                   descPool,
+            std::shared_ptr<MTDescriptorAllocator>                   descPool,
             Queue graphicsQueue,
             Queue copyQueue
         );
@@ -70,7 +70,7 @@ namespace eureka
         std::vector<DepthColorRenderTarget>                        _renderTargets;
         std::vector<FrameCommands>                                 _frameCommandBuffer;
 
-        std::shared_ptr<DescriptorPool>                            _descPool;
+        std::shared_ptr<MTDescriptorAllocator>                            _descPool;
         std::shared_ptr<PipelineCache>                             _pipelineCache;
           
 
@@ -83,7 +83,7 @@ namespace eureka
 
 
         std::shared_ptr<ColoredVertexMeshPipeline>                 _coloredVertexPipeline;
-        std::shared_ptr<PhongShadedMeshWithNormalMapPipeline>      _phongPipeline;
+
 
         // this section should be a ring buffer of some sort
         uint32_t                                                   _maxFramesInFlight{};
