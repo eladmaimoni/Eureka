@@ -71,16 +71,16 @@ namespace eureka
 
     using DescriptorSetReleaseCallback = std::add_pointer<void(void*, vk::DescriptorPool, vk::DescriptorSet)>::type;
 
-    class OwnedDescriptorSet : public DescriptorSet
+    class FreeableDescriptorSet : public DescriptorSet
     {
         void*                        _allocator{ nullptr };
         vk::DescriptorPool           _pool{ nullptr };
         DescriptorSetReleaseCallback _releaseCallback{nullptr};
     public:
-        OwnedDescriptorSet() = default;
-        OwnedDescriptorSet(const OwnedDescriptorSet&) = delete;
-        OwnedDescriptorSet& operator=(const OwnedDescriptorSet&) = delete;
-        OwnedDescriptorSet(OwnedDescriptorSet&& that)
+        FreeableDescriptorSet() = default;
+        FreeableDescriptorSet(const FreeableDescriptorSet&) = delete;
+        FreeableDescriptorSet& operator=(const FreeableDescriptorSet&) = delete;
+        FreeableDescriptorSet(FreeableDescriptorSet&& that)
             : 
             DescriptorSet(std::move(that)),
             _allocator(that._allocator),
@@ -91,7 +91,7 @@ namespace eureka
             that._pool = nullptr;
             that._releaseCallback = nullptr;
         }
-        OwnedDescriptorSet& operator=(OwnedDescriptorSet&& rhs)
+        FreeableDescriptorSet& operator=(FreeableDescriptorSet&& rhs)
         {
             DescriptorSet::operator=(std::move(rhs));
             _allocator = rhs._allocator;
@@ -103,7 +103,7 @@ namespace eureka
             rhs._releaseCallback = nullptr;
             return *this;
         }
-        OwnedDescriptorSet(void* allocator, vk::DescriptorPool pool, DescriptorSetReleaseCallback releaseCallback, std::shared_ptr<vkr::Device> device, vk::DescriptorSet set)
+        FreeableDescriptorSet(void* allocator, vk::DescriptorPool pool, DescriptorSetReleaseCallback releaseCallback, std::shared_ptr<vkr::Device> device, vk::DescriptorSet set)
             : 
             DescriptorSet(std::move(device), set),
             _allocator(allocator),
@@ -113,7 +113,7 @@ namespace eureka
 
         }
 
-        ~OwnedDescriptorSet()
+        ~FreeableDescriptorSet()
         {
             if (_set)
             {
@@ -168,7 +168,7 @@ namespace eureka
         void FreeSet(vk::DescriptorPool pool, vk::DescriptorSet set);
     public:
         MTDescriptorAllocator(DeviceContext& deviceContext, MTDescriptorAllocatorConfig config = {});
-        OwnedDescriptorSet AllocateSet(vk::DescriptorSetLayout layout);
+        FreeableDescriptorSet AllocateSet(vk::DescriptorSetLayout layout);
     
     
 

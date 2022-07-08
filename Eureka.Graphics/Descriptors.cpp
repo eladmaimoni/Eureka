@@ -50,7 +50,7 @@ namespace eureka
     }
 
 
-    OwnedDescriptorSet MTDescriptorAllocator::AllocateSet(vk::DescriptorSetLayout layout)
+    FreeableDescriptorSet MTDescriptorAllocator::AllocateSet(vk::DescriptorSetLayout layout)
     {
         vk::DescriptorSet descriptorSet{};
         auto device = **_device;
@@ -78,7 +78,7 @@ namespace eureka
 
             if (result == vk::Result::eSuccess)
             {
-                return OwnedDescriptorSet(
+                return FreeableDescriptorSet(
                     this,
                     pool,
                     [](void* self, vk::DescriptorPool pool, vk::DescriptorSet set)
