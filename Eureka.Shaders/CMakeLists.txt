@@ -135,6 +135,14 @@ configure_hlsl_shaders_compilation(${hlsl_vertex_shaders})
 configure_hlsl_shaders_compilation(${hlsl_fragment_shaders})
 
 
+set_source_group(
+    shader_cache 
+    "ShadersCache.cpp"
+    "ShadersCache.hpp"
+    "ShadersDeclare.hpp"
+    "ShadersImpl.cpp"
+)
+
 add_library(
     Eureka.Shaders 
     STATIC 
@@ -142,10 +150,7 @@ add_library(
     ${hlsl_fragment_shaders}
     ${glsl_vertex_shaders}
     ${glsl_fragment_shaders}
-    "ShadersCache.cpp"
-    "ShadersCache.hpp"
-    "ShadersDeclare.hpp"
-    "ShadersImpl.cpp"
+    ${shader_cache}
 )
 
 set_compiler_flags(Eureka.Shaders)

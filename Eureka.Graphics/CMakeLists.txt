@@ -47,6 +47,8 @@ set_source_group(
     "SwapChain.cpp" 
     "Pipeline.hpp" 
     "Pipeline.cpp"
+    "PipelineHelpers.hpp" 
+    "PipelineHelpers.cpp"
     "DeviceContext.hpp" 
     "DeviceContext.cpp"
     "Image.hpp"
@@ -65,6 +67,8 @@ set_source_group(
     objects 
     "Mesh.hpp"
     "Mesh.cpp"
+    "Model.hpp"
+    "Model.cpp" 
     "Camera.hpp"
     "Camera.cpp" 
     "Scene.hpp" 

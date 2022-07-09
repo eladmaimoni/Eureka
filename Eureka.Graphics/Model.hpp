@@ -2,7 +2,7 @@
 
 namespace eureka
 {
-    class Scene
+    class Model
     {
 
 

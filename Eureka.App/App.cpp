@@ -65,6 +65,8 @@ namespace eureka
                 "C:/Projects/Samples/Vulkan/data/models/FlightHelmet/glTF/scene.gltf",
                 ModelLoadingConfig{ .cancel = _cancellationSource.get_token() }
             );
+
+            
         }
 
 

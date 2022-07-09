@@ -14,6 +14,7 @@
 namespace tinygltf
 {
     class Model;
+    class Primitive;
 }
 
 namespace eureka
@@ -55,6 +56,15 @@ namespace eureka
 
     };
 
+    struct PrimitiveDataView
+    {
+        dynamic_cspan<uint16_t> index_view;
+        dynamic_cspan<float>    position_view;
+        dynamic_cspan<float>    normal_view;
+        dynamic_cspan<float>    uv_view;
+        dynamic_cspan<float>    tangent_view;
+    };
+
     struct PreparedModelImages
     {
         uint64_t                           total_image_memory = 0;
@@ -79,6 +89,29 @@ namespace eureka
         );
 
         future_t<LoadedModel> LoadModel(const std::filesystem::path& path, const ModelLoadingConfig& config);
+
+        PrimitiveBufferOffsets PreparePrimitiveVertexData(
+            const PrimitiveDataView& primitiveView,
+            uint64_t& totalIndexBufferMemory,
+            svec10<dynamic_cspan<uint8_t>>& indicesUploadDesc,
+            uint64_t& totalVertexBufferMemory,
+            svec10<dynamic_cspan<uint8_t>>& vertexDataUploadDesc
+        )
+        {
+            PrimitiveBufferOffsets bufferOffsets{};
+            bufferOffsets.index_offset = totalIndexBufferMemory;
+            totalIndexBufferMemory += indicesUploadDesc.emplace_back(to_raw_span(primitiveView.index_view)).size_bytes();
+            bufferOffsets.position_offset = totalVertexBufferMemory;
+            totalVertexBufferMemory += vertexDataUploadDesc.emplace_back(to_raw_span(primitiveView.position_view)).size_bytes();
+            bufferOffsets.normal_offset = totalVertexBufferMemory;
+            totalVertexBufferMemory += vertexDataUploadDesc.emplace_back(to_raw_span(primitiveView.normal_view)).size_bytes();
+            bufferOffsets.uv_offset = totalVertexBufferMemory;
+            totalVertexBufferMemory += vertexDataUploadDesc.emplace_back(to_raw_span(primitiveView.uv_view)).size_bytes();
+            bufferOffsets.tangent_offset = totalVertexBufferMemory;
+            totalVertexBufferMemory += vertexDataUploadDesc.emplace_back(to_raw_span(primitiveView.tangent_view)).size_bytes();
+
+            return bufferOffsets;
+        }
 
 
     private:

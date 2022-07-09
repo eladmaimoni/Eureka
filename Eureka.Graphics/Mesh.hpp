@@ -21,7 +21,7 @@ namespace eureka::mesh
 
 namespace eureka
 {
-    struct CNTexturedPrimitiveBufferOffsets
+    struct PrimitiveBufferOffsets
     {
         uint64_t index_offset;
         uint64_t position_offset;
@@ -32,22 +32,22 @@ namespace eureka
 
     struct CNTexturedPrimitiveNode
     {
-        CNTexturedPrimitiveBufferOffsets buffer_offsets;        
-        FreeableDescriptorSet            fragment_desc_set;
+        PrimitiveBufferOffsets buffer_offsets;        
+        FreeableDescriptorSet  fragment_desc_set;
     };
 
-    // CNR - Color, Normal Map, Metallic Roughness. Textured model with color map, normal map and metallic roughness map
-    struct CNTexturedPrimitiveGroup
+    // CNR - Color, Normal Map, Metallic Roughness. Textured model with color map, normal map and metallic roughness 
+    struct TexturedPrimitiveGroup
     {
         VertexAndIndexTransferableDeviceBuffer buffer;
         std::vector<SampledImage2D> images;
 
-        std::vector<CNTexturedPrimitiveNode> nodes;
+        std::vector<CNTexturedPrimitiveNode> nodes; // in future, might be variant or divided up to a few lists
     };
 
-    class PhongNormalShadedDrawables
+    struct PhongNormalShadedDrawables
     {
-
-        std::shared_ptr<PhongShadedMeshWithNormalMapPipeline> _pipeline;
+        
+        std::shared_ptr<PhongShadedMeshWithNormalMapPipeline> pipeline;
     };
 }

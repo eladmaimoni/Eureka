@@ -9,14 +9,7 @@
 
 namespace eureka
 {
-    struct PrimitiveDataView
-    {
-        dynamic_cspan<uint16_t> index_view;
-        dynamic_cspan<float>    position_view;
-        dynamic_cspan<float>    normal_view;
-        dynamic_cspan<float>    uv_view;
-        dynamic_cspan<float>    tangent_view;
-    };
+
 
     PrimitiveDataView ExtractPrimitiveData(
         const tinygltf::Model& gltfModel,
@@ -290,11 +283,9 @@ namespace eureka
 
         auto [totalImageMemory, imageUploadDescs, deviceImages] = PrepareImages(gltfModel);
      
-        CNTexturedPrimitiveGroup primitiveGroup;
+        TexturedPrimitiveGroup primitiveGroup;
         auto& primitiveNodes = primitiveGroup.nodes;
 
-
-       
 
         const tinygltf::Scene& scene = gltfModel.scenes.at(0);
 
@@ -306,41 +297,26 @@ namespace eureka
             const tinygltf::Node gltfNode = gltfModel.nodes[scene.nodes[i]];
             
             if (gltfNode.mesh > -1)
-            {
-                
+            {         
                 const tinygltf::Mesh& mesh = gltfModel.meshes[gltfNode.mesh];
 
                 for (auto j = 0u; j < mesh.primitives.size(); ++j)
                 {
                     const auto& primitive = mesh.primitives[j];
                     auto primitiveView = ExtractPrimitiveData(gltfModel, primitive);
-
-                    CNTexturedPrimitiveNode primitiveNode{};
-
-                    CNTexturedPrimitiveBufferOffsets& bufferOffsets = primitiveNode.buffer_offsets;
-                    
-                    bufferOffsets.index_offset = totalIndexBufferMemory;
-                    totalIndexBufferMemory += indicesUploadDesc.emplace_back(to_raw_span(primitiveView.index_view)).size_bytes();
-                    bufferOffsets.position_offset = totalVertexBufferMemory;
-                    totalVertexBufferMemory += vertexDataUploadDesc.emplace_back(to_raw_span(primitiveView.position_view)).size_bytes();
-                    bufferOffsets.normal_offset = totalVertexBufferMemory;
-                    totalVertexBufferMemory += vertexDataUploadDesc.emplace_back(to_raw_span(primitiveView.normal_view)).size_bytes();
-                    bufferOffsets.uv_offset = totalVertexBufferMemory;
-                    totalVertexBufferMemory += vertexDataUploadDesc.emplace_back(to_raw_span(primitiveView.uv_view)).size_bytes();
-                    bufferOffsets.tangent_offset = totalVertexBufferMemory;
-                    totalVertexBufferMemory += vertexDataUploadDesc.emplace_back(to_raw_span(primitiveView.tangent_view)).size_bytes();
-
+           
                     // materials 
 
                     const auto& material = gltfModel.materials[primitive.material];
                     auto colorMapIdx = material.values.at("baseColorTexture").TextureIndex();
                     auto normalMapIdx = material.additionalValues.at("normalTexture").TextureIndex();
-
-                    primitiveNode.fragment_desc_set = _descPool->AllocateSet(descLayout);
+         
+                    auto materialDecriptorSet = _descPool->AllocateSet(descLayout);
 
                     std::array<vk::DescriptorImageInfo, 2> imageInfos;
                     auto& colorMapImage = deviceImages[colorMapIdx];
                     auto& normalMapImage = deviceImages[normalMapIdx];
+
                     imageInfos[0] = vk::DescriptorImageInfo
                     {
                        .sampler = colorMapImage.GetSampler(),
@@ -353,18 +329,20 @@ namespace eureka
                        .imageView = normalMapImage.GetView(),
                        .imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal
                     };
+
+                    CNTexturedPrimitiveNode primitiveNode{};
+                    primitiveNode.fragment_desc_set = std::move(materialDecriptorSet);
                     primitiveNode.fragment_desc_set.SetBindings(0, vk::DescriptorType::eCombinedImageSampler, imageInfos);
+                    primitiveNode.buffer_offsets = PreparePrimitiveVertexData(primitiveView, totalIndexBufferMemory, indicesUploadDesc, totalVertexBufferMemory, vertexDataUploadDesc);;
 
                     primitiveNodes.emplace_back(std::move(primitiveNode));
-
-
                 }
             }
         }
 
-        VertexAndIndexTransferableDeviceBuffer deviceBuffer(_deviceContext.Allocator(), BufferConfig{ .byte_size = totalIndexBufferMemory + totalVertexBufferMemory });
 
-
+        primitiveGroup.buffer = VertexAndIndexTransferableDeviceBuffer(_deviceContext.Allocator(), BufferConfig{ .byte_size = totalIndexBufferMemory + totalVertexBufferMemory });
+     
         auto stageBuffer = co_await _uploadPool->EnqueueAllocation(totalIndexBufferMemory + totalVertexBufferMemory + totalImageMemory);
 
         DEBUGGER_TRACE("stage buffer allocated");
@@ -383,8 +361,8 @@ namespace eureka
         {
             .src_buffer = stageZone.Buffer(),
             .src_offset = stageZone.Position(),
-            .bytes = deviceBuffer.ByteSize(),
-            .dst_buffer = deviceBuffer.Buffer(),
+            .bytes = primitiveGroup.buffer.ByteSize(),
+            .dst_buffer = primitiveGroup.buffer.Buffer(),
             .dst_offset = 0
         };
      
