@@ -1,6 +1,6 @@
 #include "Pipeline.hpp"
 #include "PipelineTypes.hpp"
-#include <ShadersCache.hpp>
+
 #include "PipelineHelpers.hpp"
 
 namespace eureka
@@ -46,7 +46,6 @@ namespace eureka
 
 
 
-
     void ImGuiPipeline::Setup(DeviceContext& deviceContext, vk::RenderPass renderPass)
     {
         //
@@ -66,29 +65,7 @@ namespace eureka
         DefaultFixedPiplinePreset preset{};
         SetupFixedPreset<UIFixedPresetTraits>(preset);
 
-        //
-        // Shaders
-        // 
-
-        auto vshader = deviceContext.Shaders()->LoadShaderModule(ImGuiVS);
-        auto fshader = deviceContext.Shaders()->LoadShaderModule(ImGuiFS);
-
-        std::array<vk::PipelineShaderStageCreateInfo, 2> shaderStages
-        {
-            vk::PipelineShaderStageCreateInfo
-            {
-                .stage = vk::ShaderStageFlagBits::eVertex,
-                .module = *vshader,
-                .pName = "main"
-            },
-            vk::PipelineShaderStageCreateInfo
-            {
-                .stage = vk::ShaderStageFlagBits::eFragment,
-                .module = *fshader,
-                .pName = "main"
-            }
-        };
-
+        auto shadersPipeline = MakeShaderPipeline(std::array<ShaderId, 2> { ImGuiVS, ImGuiFS }, * deviceContext.Shaders());
 
         //
         // All Together
@@ -96,8 +73,8 @@ namespace eureka
 
         vk::GraphicsPipelineCreateInfo pipelineCreateInfo
         {
-            .stageCount = static_cast<uint32_t>(shaderStages.size()),
-            .pStages = shaderStages.data(),
+            .stageCount = static_cast<uint32_t>(shadersPipeline.stages.size()),
+            .pStages = shadersPipeline.stages.data(),
             .pVertexInputState = &vertexInputState,
             .pInputAssemblyState = &preset.input_assembly_create_info,
             .pTessellationState = nullptr,
@@ -159,29 +136,7 @@ namespace eureka
         DefaultFixedPiplinePreset preset{};
         SetupFixedPreset<MeshFixedPresetTraits>(preset);
 
-        //
-        // Shaders
-        // 
-
-        auto vshader = deviceContext.Shaders()->LoadShaderModule(ColoredVertexVS);
-        auto fshader = deviceContext.Shaders()->LoadShaderModule(ColoredVertexFS);
-
-        std::array<vk::PipelineShaderStageCreateInfo, 2> shaderStages
-        {
-            vk::PipelineShaderStageCreateInfo
-            {
-                .stage = vk::ShaderStageFlagBits::eVertex,
-                .module = *vshader,
-                .pName = "main"
-            },
-            vk::PipelineShaderStageCreateInfo
-            {
-                .stage = vk::ShaderStageFlagBits::eFragment,
-                .module = *fshader,
-                .pName = "main"
-            }
-        };
-
+        auto shadersPipeline = MakeShaderPipeline(std::array<ShaderId, 2> { ColoredVertexVS, ColoredVertexFS }, *deviceContext.Shaders());
 
         //
         // All Together
@@ -189,8 +144,8 @@ namespace eureka
 
         vk::GraphicsPipelineCreateInfo pipelineCreateInfo
         {
-            .stageCount = static_cast<uint32_t>(shaderStages.size()),
-            .pStages = shaderStages.data(),
+            .stageCount = static_cast<uint32_t>(shadersPipeline.stages.size()),
+            .pStages = shadersPipeline.stages.data(),
             .pVertexInputState = &vertexInputState,
             .pInputAssemblyState = &preset.input_assembly_create_info,
             .pTessellationState = nullptr,
@@ -270,29 +225,8 @@ namespace eureka
         DefaultFixedPiplinePreset preset{};
         SetupFixedPreset<MeshFixedPresetTraits>(preset);
 
-        //
-        // Shaders
-        // 
 
-        auto vshader = deviceContext.Shaders()->LoadShaderModule(ShadedMeshWithNormalMapVS);
-        auto fshader = deviceContext.Shaders()->LoadShaderModule(PhongShadedMeshWithNormalMapFS);
-
-        std::array<vk::PipelineShaderStageCreateInfo, 2> shaderStages
-        {
-            vk::PipelineShaderStageCreateInfo
-            {
-                .stage = vk::ShaderStageFlagBits::eVertex,
-                .module = *vshader,
-                .pName = "main"
-            },
-            vk::PipelineShaderStageCreateInfo
-            {
-                .stage = vk::ShaderStageFlagBits::eFragment,
-                .module = *fshader,
-                .pName = "main"
-            }
-        };
-
+        auto shadersPipeline = MakeShaderPipeline(std::array<ShaderId, 2> { ShadedMeshWithNormalMapVS, PhongShadedMeshWithNormalMapFS }, * deviceContext.Shaders());
 
         //
         // All Together
@@ -300,8 +234,8 @@ namespace eureka
 
         vk::GraphicsPipelineCreateInfo pipelineCreateInfo
         {
-            .stageCount = static_cast<uint32_t>(shaderStages.size()),
-            .pStages = shaderStages.data(),
+            .stageCount = static_cast<uint32_t>(shadersPipeline.stages.size()),
+            .pStages = shadersPipeline.stages.data(),
             .pVertexInputState = &vertexInputState,
             .pInputAssemblyState = &preset.input_assembly_create_info,
             .pTessellationState = nullptr,

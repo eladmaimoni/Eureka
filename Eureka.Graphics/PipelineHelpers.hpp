@@ -1,8 +1,10 @@
 #pragma once
 #include "PipelineTypesReflection.hpp"
+#include <ShadersCache.hpp>
 #include <boost/hana/for_each.hpp>
 //#include <boost/hana/members.hpp>
-#include <boost/hana/size.hpp>
+//#include <boost/hana/size.hpp>
+#include <vulkan/vulkan_raii.hpp>
 
 namespace eureka
 {
@@ -237,9 +239,6 @@ namespace eureka
 
         uint32_t i = 0;
 
-
-
-
         hana::for_each(hana::accessors<VertexStruct>(), [&](auto pair)
             {
                 auto member_access = hana::second(pair);
@@ -258,5 +257,32 @@ namespace eureka
         return layout;
     }
 
+
+    template<std::size_t COUNT>
+    struct ShadersPipeline
+    {
+        svec5<vkr::ShaderModule> modules;
+        //std::array<vkr::ShaderModule, COUNT> modules{ nullptr, nullptr }; // annoying vulkan raii
+        std::array<vk::PipelineShaderStageCreateInfo, COUNT> stages;
+    };
+
+    template<std::size_t COUNT>
+    auto MakeShaderPipeline(std::array<ShaderId, COUNT> ids, ShaderCache& shaderCache)
+    {
+        ShadersPipeline<COUNT> shaderPipeline;
+
+        for (auto i = 0u; i < ids.size(); ++i)
+        {
+            //shaderPipeline.modules[i] = shaderCache.LoadShaderModule(ids[i]);
+            shaderPipeline.modules.emplace_back(shaderCache.LoadShaderModule(ids[i]));
+            shaderPipeline.stages[i] = vk::PipelineShaderStageCreateInfo
+            {
+                .stage = ids[i].shader_type,
+                .module = *shaderPipeline.modules[i],
+                .pName = "main" 
+            };
+        }
+        return shaderPipeline;
+    }
 }
 
