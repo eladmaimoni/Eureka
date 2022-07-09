@@ -1,4 +1,8 @@
 #pragma once
+#include "PipelineTypesReflection.hpp"
+#include <boost/hana/for_each.hpp>
+//#include <boost/hana/members.hpp>
+#include <boost/hana/size.hpp>
 
 namespace eureka
 {
@@ -116,19 +120,143 @@ namespace eureka
     }
 
 
-    //inline MeshPipelinePreset CreateMeshPipelinePreset()
-    //{
-    //    MeshPipelinePreset meshPipelinePreset
-    //    {
-    //        .color_blend_attachment_state = vk::PipelineColorBlendAttachmentState
-    //        {
-    //            .blendEnable = false,
-    //            .colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA
-    //        },
-    //        .enabled_dynamic_states{ vk::DynamicState::eViewport, vk::DynamicState::eScissor }
-    //    };
 
-    //    return meshPipelinePreset;
-    //}
+    //////////////////////////////////////////////////////////////////////////
+    //
+    //                        Vertex Layout       
+    //
+    //////////////////////////////////////////////////////////////////////////
+   
+    template<std::size_t BindingCount, std::size_t AttributeCount>
+    struct VertexLayout
+    {
+        std::array<vk::VertexInputBindingDescription, BindingCount>     bindings;
+        std::array<vk::VertexInputAttributeDescription, AttributeCount> attributes;
+    };
+
+    struct VertexLayoutTraits
+    {
+        static constexpr bool is_interleaved = false;
+    };
+
+    template<typename AttributeType>
+    struct AttributeFormat
+    {
+        //static constexpr vk::Format format = vk::Format::eUndefined;
+
+    };
+    template<>
+    struct AttributeFormat<uint32_t>
+    {
+        static constexpr vk::Format format = vk::Format::eR8G8B8Unorm;
+    };
+
+    template<>
+    struct AttributeFormat<Eigen::Vector2f>
+    {
+        static constexpr vk::Format format = vk::Format::eR32G32Sfloat;
+    };
+    template<>
+    struct AttributeFormat<Eigen::Vector3f> 
+    {
+        static constexpr vk::Format format = vk::Format::eR32G32B32Sfloat; 
+    };
+
+    template<>
+    struct AttributeFormat<Eigen::Vector4f>
+    {
+        static constexpr vk::Format format = vk::Format::eR32G32B32A32Sfloat;
+    };
+
+    template<typename ... Attributes>
+    auto MakeDeinterleavedVertexLayout()
+    {
+        constexpr std::size_t AttributeCount = sizeof...(Attributes);
+
+        VertexLayout< AttributeCount, AttributeCount> layout{};
+        std::array<vk::VertexInputAttributeDescription, AttributeCount> vertexInputAttributs;
+
+        uint32_t i = 0;
+
+        ([&]
+            {
+                layout.bindings[i] =
+                    vk::VertexInputBindingDescription
+                {
+                    .binding = i,
+                    .stride = sizeof(Attributes),
+                    .inputRate = vk::VertexInputRate::eVertex
+                };
+
+                layout.attributes[i] =
+                    vk::VertexInputAttributeDescription
+                {
+                    .location = i,
+                    .binding = i,
+                    .format = AttributeFormat<Attributes>::format,
+                    .offset = 0
+                };
+                ++i;
+            }
+         (), ...);
+
+        return layout;
+    }
+
+    template<typename T>
+    constexpr std::size_t CountFields()
+    {
+        namespace hana = boost::hana;
+        std::size_t count = 0;
+
+        hana::for_each(hana::accessors<T>(), [&](auto )
+            {
+                ++count;
+            });
+
+        return count;
+    }
+
+    template<typename VertexStruct>
+    auto MakeInterleavedVertexLayout()
+    {
+        VertexStruct value{}; // dummy, TODO maybe we can somehow remove this
+        namespace hana = boost::hana;
+        constexpr std::size_t AttributeCount = CountFields<VertexStruct>();
+
+        VertexLayout<1, AttributeCount> layout{};
+        std::array<vk::VertexInputAttributeDescription, AttributeCount> vertexInputAttributs;
+
+        layout.bindings[0] =
+            vk::VertexInputBindingDescription
+        {
+            .binding = 0,
+            .stride = sizeof(VertexStruct),
+            .inputRate = vk::VertexInputRate::eVertex
+        };
+
+        uint32_t i = 0;
+
+
+
+
+        hana::for_each(hana::accessors<VertexStruct>(), [&](auto pair)
+            {
+                auto member_access = hana::second(pair);
+                using value_t = std::decay_t<decltype(member_access(value))>;
+                auto offset = reinterpret_cast<uint64_t>(&member_access(value)) - reinterpret_cast<uint64_t>(&value);
+                layout.attributes[i] =
+                    vk::VertexInputAttributeDescription
+                {
+                    .location = i,
+                    .binding = 0,
+                    .format = AttributeFormat<value_t>::format,
+                    .offset = static_cast<uint32_t>(offset)
+                };
+                ++i;
+            });
+        return layout;
+    }
+
 }
 

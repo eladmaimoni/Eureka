@@ -49,6 +49,7 @@ set_source_group(
     "Pipeline.cpp"
     "PipelineHelpers.hpp" 
     "PipelineHelpers.cpp"
+    "PipelineTypesReflection.hpp"
     "DeviceContext.hpp" 
     "DeviceContext.cpp"
     "Image.hpp"
