@@ -190,6 +190,7 @@ namespace eureka
             *_swapChain,
             _renderPass
         );
+
         auto renderArea = _swapChain->RenderArea();
         _camera.SetFullViewport(renderArea.offset.x, renderArea.offset.y, renderArea.extent.width, renderArea.extent.height);
    

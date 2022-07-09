@@ -2,7 +2,7 @@
 #include <imgui.h>
 #include <Buffer.hpp>
 #include <imgui_internal.h>
-
+#include "Pipeline.hpp"
 namespace eureka
 {
     
@@ -11,7 +11,7 @@ namespace eureka
     class ImGuiRenderer
     {
         VertexAndIndexHostVisibleDeviceBuffer _vertexIndexBuffer;
-
+        std::shared_ptr<ImGuiPipeline>       _pipeline;
         void Layout()
         {
             ImGui::NewFrame();
@@ -21,6 +21,7 @@ namespace eureka
 
         ImGuiRenderer(DeviceContext& deviceContext)
             : _vertexIndexBuffer(deviceContext.Allocator(), BufferConfig{.byte_size = EUREKA_MAX_IMGUI_VERTEX_INDEX_BYTES })
+           
         {
 
         }
@@ -55,6 +56,11 @@ namespace eureka
                 std::memcpy(deviceMappedPtr, cmd_list->VtxBuffer.Data, bytes);
                 deviceMappedPtr += bytes;
             }
+        }
+
+        void RecordDrawCommands()
+        {
+
         }
     };
 

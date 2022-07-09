@@ -6,6 +6,8 @@ set_source_group(
     "ImguiIntegration.cpp"
     "ImGuiRenderer.hpp"
     "ImGuiRenderer.cpp"
+    "SceneController.hpp" 
+    "SceneController.cpp"
 )
 
 set_source_group(
@@ -81,7 +83,8 @@ set_source_group(
     rendering 
     "RenderingSystem.hpp" 
     "RenderingSystem.cpp"
-     
+    "SceneRenderer.hpp" 
+    "SceneRenderer.cpp"
 
 )
 

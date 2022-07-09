@@ -67,4 +67,10 @@ namespace eureka
         std::array< vk::ClearValue, 2> _clearValues{};
         vk::RenderPassBeginInfo        _beginInfo;
     };
+
+
+    class SwapChainDepthColorRenderTarget
+    {
+
+    };
 }
