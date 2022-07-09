@@ -67,6 +67,9 @@ set_source_group(
     "Mesh.cpp"
     "Camera.hpp"
     "Camera.cpp" 
+    "Scene.hpp" 
+    "Scene.cpp" 
+
 )
 
 set_source_group(

@@ -10,6 +10,12 @@
 #include "Mesh.hpp"
 #include "Pipeline.hpp"
 
+
+namespace tinygltf
+{
+    class Model;
+}
+
 namespace eureka
 {
     template<typename T>
@@ -49,7 +55,12 @@ namespace eureka
 
     };
 
-    
+    struct PreparedModelImages
+    {
+        uint64_t                           total_image_memory = 0;
+        std::vector<ImageStageUploadDesc>  upload_descriptors;
+        std::vector<SampledImage2D>        device_images;
+    };
 
     class AssetLoader
     {
@@ -68,6 +79,8 @@ namespace eureka
         );
 
         future_t<LoadedModel> LoadModel(const std::filesystem::path& path, const ModelLoadingConfig& config);
+
+
     private:
         std::atomic_bool                                     _busy{ false };
         DeviceContext&                                       _deviceContext;
@@ -83,6 +96,8 @@ namespace eureka
         CommandPool                                          _uploadCommandPool;
 
         vkr::CommandBuffer RecordUploadCommands(dynamic_span<ImageStageUploadDesc> imageUploads, const BufferDataUploadTransferDesc& bufferUpload, const PoolSequentialStageZone& stageZone);
+        PreparedModelImages PrepareImages(tinygltf::Model& gltfModel);
+
     };
 
 }

@@ -37,10 +37,10 @@ namespace eureka
     };
 
     // CNR - Color, Normal Map, Metallic Roughness. Textured model with color map, normal map and metallic roughness map
-    class CNTexturedPrimitiveGroup
+    struct CNTexturedPrimitiveGroup
     {
         VertexAndIndexTransferableDeviceBuffer buffer;
-        std::vector<SampledImage2D> textures;
+        std::vector<SampledImage2D> images;
 
         std::vector<CNTexturedPrimitiveNode> nodes;
     };

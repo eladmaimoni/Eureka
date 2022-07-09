@@ -199,6 +199,43 @@ namespace eureka
         return uploadCommandBuffer;
     }
 
+    
+
+    PreparedModelImages AssetLoader::PrepareImages(tinygltf::Model& gltfModel)
+    {
+        PreparedModelImages preparedImages{};
+        preparedImages.upload_descriptors.reserve(gltfModel.images.size());
+        preparedImages.device_images.reserve(gltfModel.images.size());
+
+        for (auto i = 0u; i < gltfModel.images.size(); ++i)
+        {
+            auto& glTFImage = gltfModel.images[i];
+            assert(glTFImage.component == 4 && glTFImage.bits == 8 && glTFImage.pixel_type == TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE);
+
+            Image2DProperties imageProps
+            {
+                 .width = static_cast<uint32_t>(glTFImage.width),
+                 .height = static_cast<uint32_t>(glTFImage.height),
+                 .format = vk::Format::eR8G8B8A8Unorm,
+                 .usage_flags = vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
+                 .aspect_flags = vk::ImageAspectFlagBits::eColor,
+                 .use_dedicated_memory_allocation = false // unlikely to be resized
+            };
+            auto& vulkanImage = preparedImages.device_images.emplace_back(_deviceContext, imageProps);
+            preparedImages.upload_descriptors.emplace_back(
+                ImageStageUploadDesc
+                {
+                    .unpinned_src_span = dynamic_cspan<uint8_t>(glTFImage.image.data(), glTFImage.image.size()),
+                    .stage_zone_offset = preparedImages.total_image_memory,
+                    .destination_image = vulkanImage.Get(),
+                    .destination_image_extent = vk::Extent3D{.width = imageProps.width, .height = imageProps.width, .depth = 1}
+                }
+            );
+            preparedImages.total_image_memory += glTFImage.image.size();
+        }
+        return preparedImages;
+    }
+
     future_t<LoadedModel> AssetLoader::LoadModel(
         const std::filesystem::path& path,
         const ModelLoadingConfig& config
@@ -231,7 +268,7 @@ namespace eureka
         if (!ok)
         {
             DEBUGGER_TRACE("failed loading {} : error = {} warning = {}", path, error, warning);
-            throw std::runtime_error("bad gltf");
+            throw file_load_error("bad gltf");
         }
 
         ThrowOnCancelled(cancellationToken);
@@ -240,56 +277,24 @@ namespace eureka
 
         DEBUGGER_TRACE("pool thread fun");
 
-        svec10<ImageStageUploadDesc> imageUploadDescs;
-        imageUploadDescs.reserve(gltfModel.images.size() + gltfModel.nodes.size());
-
-        svec10<SampledImage2D> images;
-        images.reserve(gltfModel.images.size());
-
-
+ 
         svec10<dynamic_cspan<uint8_t>> indicesUploadDesc;
         indicesUploadDesc.reserve(gltfModel.meshes.size());
 
         svec10<dynamic_cspan<uint8_t>> vertexDataUploadDesc;
         vertexDataUploadDesc.reserve(gltfModel.meshes.size());
 
-        std::vector<CNTexturedPrimitiveNode> primitives;
-
-
         auto pipeline = _pipelineCache->GetPhongShadedMeshWithNormalMapPipeline();
         auto descLayout = _pipelineCache->GetColorAndNormalMapFragmentDescriptorSetLayout().Get();
 
-        //
-        // create images and buffers (no transfer yet)
-        //
-        std::size_t totalImageMemory = 0;
 
-        for (auto i = 0u; i < gltfModel.images.size(); ++i)
-        {
-            auto& glTFImage = gltfModel.images[i];
-            assert(glTFImage.component == 4 && glTFImage.bits == 8 && glTFImage.pixel_type == TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE);
-        
-            Image2DProperties imageProps
-            {
-                 .width = static_cast<uint32_t>(glTFImage.width),
-                 .height = static_cast<uint32_t>(glTFImage.height),
-                 .format = vk::Format::eR8G8B8A8Unorm,
-                 .usage_flags = vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
-                 .aspect_flags = vk::ImageAspectFlagBits::eColor,
-                 .use_dedicated_memory_allocation = false // unlikely to be resized
-            };
-            auto& vulkanImage = images.emplace_back(_deviceContext, imageProps);
-            imageUploadDescs.emplace_back(
-                ImageStageUploadDesc
-                { 
-                    .unpinned_src_span = dynamic_cspan<uint8_t>(glTFImage.image.data(), glTFImage.image.size()),
-                    .stage_zone_offset = totalImageMemory,
-                    .destination_image = vulkanImage.Get(),
-                    .destination_image_extent = vk::Extent3D{.width = imageProps.width, .height = imageProps.width, .depth = 1}
-                }
-            );
-            totalImageMemory += glTFImage.image.size();
-        }
+        auto [totalImageMemory, imageUploadDescs, deviceImages] = PrepareImages(gltfModel);
+     
+        CNTexturedPrimitiveGroup primitiveGroup;
+        auto& primitiveNodes = primitiveGroup.nodes;
+
+
+       
 
         const tinygltf::Scene& scene = gltfModel.scenes.at(0);
 
@@ -334,8 +339,8 @@ namespace eureka
                     primitiveNode.fragment_desc_set = _descPool->AllocateSet(descLayout);
 
                     std::array<vk::DescriptorImageInfo, 2> imageInfos;
-                    auto& colorMapImage = images[colorMapIdx];
-                    auto& normalMapImage = images[normalMapIdx];
+                    auto& colorMapImage = deviceImages[colorMapIdx];
+                    auto& normalMapImage = deviceImages[normalMapIdx];
                     imageInfos[0] = vk::DescriptorImageInfo
                     {
                        .sampler = colorMapImage.GetSampler(),
@@ -350,7 +355,7 @@ namespace eureka
                     };
                     primitiveNode.fragment_desc_set.SetBindings(0, vk::DescriptorType::eCombinedImageSampler, imageInfos);
 
-                    primitives.emplace_back(std::move(primitiveNode));
+                    primitiveNodes.emplace_back(std::move(primitiveNode));
 
 
                 }
