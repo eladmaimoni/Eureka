@@ -10,7 +10,7 @@ namespace eureka
 
     RenderingSystem::RenderingSystem(
         DeviceContext& deviceContext,
-        std::shared_ptr<SwapChainDepthColorFrame> swapChainTarget,
+        std::shared_ptr<SwapChainDepthColorFrame> swapChainFrame,
         std::shared_ptr<PipelineCache> pipelineCache,
         std::shared_ptr<SubmissionThreadExecutionContext> submissionThreadExecutionContext,
         std::shared_ptr<OneShotCopySubmissionHandler>     oneShotCopySubmissionHandler,
@@ -20,9 +20,8 @@ namespace eureka
     )
         :
         _deviceContext(deviceContext),
-        _swapChainFrame(std::move(swapChainTarget)),
+        _swapChainFrame(std::move(swapChainFrame)),
         _pipelineCache(std::move(pipelineCache)),
-        //_swapChain(swapChain),
         _descPool(std::move(descPool)),
         _submissionThreadExecutionContext(/*std::move(*/submissionThreadExecutionContext/*)*/), // TODO
         _oneShotCopySubmissionHandler(std::move(oneShotCopySubmissionHandler)),
@@ -30,7 +29,7 @@ namespace eureka
         _graphicsQueue(graphicsQueue),
         _copyQueue(copyQueue)
     {
-        //_maxFramesInFlight = _swapChain->ImageCount();
+
     }
 
     RenderingSystem::~RenderingSystem()
@@ -48,30 +47,6 @@ namespace eureka
     {
         _submissionThreadExecutionContext->SetCurrentThreadAsRenderingThread();
 
-        //InitializeCommandPoolsAndBuffers();
-
-        //bool found = false;
-        //vk::Format depthFormat = DEFAULT_DEPTH_BUFFER_FORMAT;
-        //for (auto format : { vk::Format::eD24UnormS8Uint, vk::Format::eD32Sfloat, vk::Format::eD32SfloatS8Uint })
-        //{
-        //    auto props = _deviceContext.PhysicalDevice()->getFormatProperties(format);
-
-        //    if (props.optimalTilingFeatures & vk::FormatFeatureFlagBits::eDepthStencilAttachment)
-        //    {
-        //        depthFormat = format;
-        //        found = true;
-        //        break;
-        //    }
-        //}
-
-        //DepthColorRenderPassConfig depthColorConfig
-        //{
-        //    .color_output_format = _swapChain->ImageFormat(),
-        //    .depth_output_format = depthFormat
-        //};
-
-        //_renderPass = std::make_shared<DepthColorRenderPass>(_deviceContext, depthColorConfig);
-
 
         _stageZone = HostWriteCombinedBuffer(
             _deviceContext.Allocator(),
@@ -87,8 +62,6 @@ namespace eureka
 
 
         _lastFrameTime = std::chrono::high_resolution_clock::now();
-
-        //_pipelineCache = std::make_shared<PipelineCache>(_deviceContext, _renderPass);
 
         _coloredVertexPipeline = _pipelineCache->GetColoredVertexMeshPipeline();
 
@@ -121,24 +94,23 @@ namespace eureka
 
         _oneShotCopySubmissionHandler->AppendOneShotCommandBufferSubmission(std::move(oneShotCopyTriangleCommandBuffer));
 
+        _resizeConnection = _swapChainFrame->ConnectResizeSlot(
+            [this](uint32_t, uint32_t)
         {
-            HandleSwapChainResize();
-        }
+            HandleResize();
+        });
 
-
+        HandleResize();
     }
 
-    void RenderingSystem::HandleSwapChainResize()
+    void RenderingSystem::HandleResize()
     {
         DEBUGGER_TRACE("handle swap chain resize");
-        //co_await concurrencpp::resume_on(_submissionThreadExecutionContext->PreRenderExecutor());
 
         auto renderArea = _swapChainFrame->RenderArea();
         _camera.SetFullViewport(renderArea.offset.x, renderArea.offset.y, renderArea.extent.width, renderArea.extent.height);
    
         RunOne(); // refresh before next resize
-
-        //co_return;
     }
 
     void RenderingSystem::Deinitialize()
@@ -165,21 +137,8 @@ namespace eureka
     
         auto [commandBuffer, frameAvailableWaitSemaphore] = _swapChainFrame->BeginFrameRecording();
 
-  
-
-        //auto [currentFrame, imageReadySemaphore] = _swapChain->AcquireNextAvailableImageAsync();
-        //
-        //// wait for current frame to finish execution before we reset its command buffer (other frames can be in flight)
-        //auto& currentFrameCommandRecord = _frameCommandBuffer[currentFrame];
-        //auto currentFrameFence = currentFrameCommandRecord.DoneFence();
-        //WaitForFrame(currentFrameFence); 
-
         //PROFILE_CATEGORIZED_SCOPE("Record Submit", Profiling::Color::DarkGray, Profiling::PROFILING_CATEGORY_RENDERING);
-        //currentFrameCommandRecord.Reset(); // reset pool
-        //auto& renderingCommandBuffer = currentFrameCommandRecord.CommandBuffer();
-        // Record pre-frame here
 
-        //auto renderingDoneSemaphore = currentFrameCommandRecord.DoneSemaphore();
         RecordMainRenderPass(commandBuffer);
 
         std::array<vk::Semaphore, 1> waitSemaphores
@@ -193,65 +152,13 @@ namespace eureka
         };
         _swapChainFrame->EndFrameRecordingAndSubmit(waitSemaphores, waitStageMasks);
         _swapChainFrame->Present();
-
-        //SubmitFrame(commandBuffer, frameAvailableWaitSemaphore, frameDoneSignalSemaphore, frameDoneSignalFence);
-
-    
-
     }
 
 
-    void RenderingSystem::WaitForFrame(vk::Fence currentFrameFence)
-    {
-        PROFILE_CATEGORIZED_SCOPE("WaitForFrame", Profiling::Color::DarkSeaGreen, Profiling::PROFILING_CATEGORY_RENDERING);
-        VK_CHECK(_deviceContext.LogicalDevice()->waitForFences(
-            { currentFrameFence },
-            VK_TRUE,
-            UINT64_MAX
-        ));
-
-        _deviceContext.LogicalDevice()->resetFences(
-            { currentFrameFence }
-        );
-    }
-
-    //void RenderingSystem::SubmitFrame(vk::CommandBuffer renderingCommandBuffer, vk::Semaphore imageReadySemaphore, vk::Semaphore renderingDoneSemaphore, vk::Fence renderingDoneFence)
-    //{
-    //    //std::array<vk::Semaphore, 1> waitSemaphores
-    //    //{
-    //    //    imageReadySemaphore
-    //    //};
-
-    //    //std::array<vk::PipelineStageFlags, 1> waitStageMasks
-    //    //{
-    //    //    vk::PipelineStageFlagBits::eColorAttachmentOutput
-    //    //};
-
-    //    //vk::SubmitInfo submitInfo
-    //    //{
-    //    //    .waitSemaphoreCount = static_cast<uint32_t>(waitSemaphores.size()),
-    //    //    .pWaitSemaphores = waitSemaphores.data(),
-    //    //    .pWaitDstStageMask = waitStageMasks.data(),
-    //    //    .commandBufferCount = 1,
-    //    //    .pCommandBuffers = &renderingCommandBuffer,
-    //    //    .signalSemaphoreCount = 1,
-    //    //    .pSignalSemaphores = &renderingDoneSemaphore
-    //    //};
-
-    //    //_graphicsQueue->submit(
-    //    //    { submitInfo },
-    //    //    renderingDoneFence
-    //    //);
-    //}
 
     void RenderingSystem::RecordMainRenderPass(vk::CommandBuffer renderingCommandBuffer)
     {
         _swapChainFrame->BeginPrimaryRenderPass();
-        //ScopedCommands sc(renderingCommandBuffer);
-        //renderingCommandBuffer.begin(vk::CommandBufferBeginInfo()); // TODO inside begin frame record
-
-        //renderingCommandBuffer.beginRenderPass(_renderTargets[currentFrame].BeginInfo(), vk::SubpassContents::eInline);
-
 
         renderingCommandBuffer.setViewport(0, { _camera.Viewport() });
         renderingCommandBuffer.setScissor(0, { _swapChainFrame->RenderArea() }); // TODO from camera, 
@@ -285,24 +192,9 @@ namespace eureka
 
         renderingCommandBuffer.drawIndexed(3, 1, 0, 0, 1);
 
-        //renderingCommandBuffer.endRenderPass();
-
-        //renderingCommandBuffer.end();
 
         _swapChainFrame->EndPrimaryRenderPass();
 
     }
-
-
-
-    //void RenderingSystem::InitializeCommandPoolsAndBuffers()
-    //{
-    //    for (auto i = 0u; i < _maxFramesInFlight; ++i)
-    //    {          
-    //        _frameCommandBuffer.emplace_back(_deviceContext, _graphicsQueue);
-    //    }
-    //}
-
-
 
 }

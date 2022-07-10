@@ -194,12 +194,7 @@ namespace eureka
 
             _renderPass = std::make_shared<DepthColorRenderPass>(_deviceContext, depthColorConfig);
             _renderTargets = CreateDepthColorTargetForSwapChain(_deviceContext, *_swapChain, _renderPass);
-            //for (auto i = 0u; i < _maxFramesInFlight; ++i)
-            //{
-            //    auto renderTarget = CreateDepthColorTargetForSwapChain(_deviceContext, *_swapChain, _renderPass);
 
-            //    _renderTargets.emplace_back(std::move(renderTarget));
-            //}
             _resizeConnection = _swapChain->ConnectResizeSlot(
                 [this](uint32_t w, uint32_t h)
                 {
@@ -253,16 +248,6 @@ namespace eureka
         {
             _currentFrameCommandBuffer.end();
 
-            //std::array<vk::Semaphore, 1> waitSemaphores
-            //{
-            //    imageReadySemaphore
-            //};
-
-            //std::array<vk::PipelineStageFlags, 1> waitStageMasks
-            //{
-            //    vk::PipelineStageFlagBits::eColorAttachmentOutput
-            //};
-
             vk::SubmitInfo submitInfo
             {
                 .waitSemaphoreCount = static_cast<uint32_t>(waitList.size()),
@@ -314,12 +299,9 @@ namespace eureka
         }
 
 
-
-
         void HandleSwapChainResize(uint32_t width, uint32_t height)
         {
             DEBUGGER_TRACE("handle swap chain resize");
-            //co_await concurrencpp::resume_on(_submissionThreadExecutionContext->PreRenderExecutor());
 
             _graphicsQueue->waitIdle();
             _renderTargets = CreateDepthColorTargetForSwapChain(
@@ -328,14 +310,7 @@ namespace eureka
                 _renderPass
             );
 
-
             _resizeSignal(width, height);
-            //auto renderArea = _swapChain->RenderArea();
-            //_camera.SetFullViewport(renderArea.offset.x, renderArea.offset.y, renderArea.extent.width, renderArea.extent.height);
-
-            //RunOne(); // refresh before next resize
-
-            //co_return;
         }
     };
 }
