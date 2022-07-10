@@ -30,11 +30,12 @@ namespace eureka
 
     class RenderingSystem
     {
-        std::shared_ptr<SwapChain>                  _swapChain;
+        //std::shared_ptr<SwapChain>                  _swapChain;
     public:
         RenderingSystem(
             DeviceContext& deviceContext,
-            std::shared_ptr<SwapChain> swapChain,
+            std::shared_ptr<SwapChainDepthColorFrame> swapChainTarget,
+            std::shared_ptr<PipelineCache> pipelineCache,
             std::shared_ptr<SubmissionThreadExecutionContext> submissionThreadExecutionContext,
             std::shared_ptr<OneShotCopySubmissionHandler> oneShotCopySubmissionHandler,
             std::shared_ptr<MTDescriptorAllocator>                   descPool,
@@ -54,23 +55,23 @@ namespace eureka
 
         // temporary until proper hierarchical init
         // TODO REMOVE init from outside
-        std::shared_ptr<PipelineCache> GetPipelineCache()
-        {
-            return _pipelineCache;
-        }
+        //std::shared_ptr<PipelineCache> GetPipelineCache()
+        //{
+        //    return _pipelineCache;
+        //}
     private:
         DeviceContext&                                             _deviceContext;          
         Queue                                                      _graphicsQueue;
         Queue                                                      _copyQueue;
-
+        std::shared_ptr<SwapChainDepthColorFrame>           _swapChainFrame;
         std::shared_ptr<SubmissionThreadExecutionContext>          _submissionThreadExecutionContext;
         std::shared_ptr<OneShotCopySubmissionHandler>              _oneShotCopySubmissionHandler;
 
-        std::shared_ptr<DepthColorRenderPass>                      _renderPass;
-        std::vector<DepthColorRenderTarget>                        _renderTargets;
-        std::vector<FrameCommands>                                 _frameCommandBuffer;
+        //std::shared_ptr<DepthColorRenderPass>                      _renderPass;
+        //std::vector<DepthColorRenderTarget>                        _renderTargets;
+        //std::vector<FrameCommands>                                 _frameCommandBuffer;
 
-        std::shared_ptr<MTDescriptorAllocator>                            _descPool;
+        std::shared_ptr<MTDescriptorAllocator>                     _descPool;
         std::shared_ptr<PipelineCache>                             _pipelineCache;
           
 
@@ -86,24 +87,24 @@ namespace eureka
 
 
         // this section should be a ring buffer of some sort
-        uint32_t                                                   _maxFramesInFlight{};
+        //uint32_t                                                   _maxFramesInFlight{};
 
         std::chrono::high_resolution_clock::time_point             _lastFrameTime;
      
 
-        void InitializeCommandPoolsAndBuffers();
+        //void InitializeCommandPoolsAndBuffers();
 
 
         void WaitForFrame(vk::Fence currentFrameFence);
 
         void SubmitFrame(
-            const vkr::CommandBuffer& renderingCommandBuffer,
+            vk::CommandBuffer renderingCommandBuffer,
             vk::Semaphore imageReadySemaphore,
             vk::Semaphore renderingDoneSemaphore,
             vk::Fence renderingDoneFence
         );
 
-        void RecordMainRenderPass(uint32_t currentFrame, vkr::CommandBuffer& renderingCommandBuffer);
+        void RecordMainRenderPass(vk::CommandBuffer renderingCommandBuffer);
         sigslot::scoped_connection _resizeConnection;
     };
 }

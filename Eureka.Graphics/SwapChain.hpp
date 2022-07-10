@@ -1,3 +1,4 @@
+#pragma once
 #include "DeviceContext.hpp"
 #include "Image.hpp"
 
