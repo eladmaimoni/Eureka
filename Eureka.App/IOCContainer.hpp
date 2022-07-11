@@ -43,7 +43,7 @@ namespace eureka
         std::shared_ptr<PipelineCache>                     _pipelineCache;
 
         std::shared_ptr<MTDescriptorAllocator>              _descPool;
-        void InitializeGraphicsSubsystem();
+        future_t<void> InitializeGraphicsSubsystem();
 
     };
 }

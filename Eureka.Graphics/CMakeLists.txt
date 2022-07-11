@@ -9,7 +9,7 @@ set_source_group(
     "SceneController.hpp" 
     "SceneController.cpp"
 )
-
+ 
 set_source_group(
     infrastructure 
     "GraphicsDefaults.hpp"

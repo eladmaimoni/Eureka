@@ -8,6 +8,7 @@
 #include "../Eureka.Graphics/Window.hpp"
 #include "../Eureka.Graphics/AssetLoading.hpp"
 #include "../Eureka.Graphics/Descriptors.hpp"
+#include "../Eureka.Graphics/ImGuiRenderer.hpp"
 
 namespace eureka
 {
@@ -86,7 +87,7 @@ namespace eureka
             );
     }
 
-    void IOCContainer::InitializeGraphicsSubsystem()
+    future_t<void> IOCContainer::InitializeGraphicsSubsystem()
     {
         _deviceContext.Init(_instance, CreateDeviceContextConfig());
 
@@ -115,10 +116,27 @@ namespace eureka
 
         _pipelineCache = std::make_shared<PipelineCache>(_deviceContext, primaryFrame->GetRenderPass());
 
+
+
+    
+
+        _imguiIntegration = std::make_shared<ImGuiIntegration>(
+            _deviceContext,
+            _submissionThreadExecutionContext,
+            _oneShotCopySubmissionHandler,
+            _uploadPool,
+            _concurrencyRuntime.thread_pool_executor()
+            );
+
+        auto imguiFut = _imguiIntegration->Setup(_pipelineCache);
+       
+        auto imguiRenderer = std::make_shared<ImGuiRenderer>(_deviceContext);
+
         _renderingSystem = std::make_shared<RenderingSystem>(
             _deviceContext,
             primaryFrame,
             _pipelineCache,
+            imguiRenderer,
             _submissionThreadExecutionContext,
             _oneShotCopySubmissionHandler,
             _descPool,
@@ -127,20 +145,14 @@ namespace eureka
             );
 
 
+
         _renderingSystem->Initialize();
 
-    
+        co_await imguiFut;
 
-        _imguiIntegration = std::make_shared<ImGuiIntegration>(
-            _deviceContext,
-            _pipelineCache, // TODO init from outside
-            _submissionThreadExecutionContext,
-            _oneShotCopySubmissionHandler,
-            _uploadPool,
-            _concurrencyRuntime.thread_pool_executor()
-            );
+        imguiRenderer->SetActive(true);
+        co_return;
 
-       
     }
 
 }

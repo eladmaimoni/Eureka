@@ -12,6 +12,7 @@ namespace eureka
         DeviceContext& deviceContext,
         std::shared_ptr<SwapChainDepthColorFrame> swapChainFrame,
         std::shared_ptr<PipelineCache> pipelineCache,
+        std::shared_ptr<ImGuiRenderer> imguiRenderer,
         std::shared_ptr<SubmissionThreadExecutionContext> submissionThreadExecutionContext,
         std::shared_ptr<OneShotCopySubmissionHandler>     oneShotCopySubmissionHandler,
         std::shared_ptr<MTDescriptorAllocator>                   descPool,
@@ -23,6 +24,7 @@ namespace eureka
         _swapChainFrame(std::move(swapChainFrame)),
         _pipelineCache(std::move(pipelineCache)),
         _descPool(std::move(descPool)),
+        _imguiRenderer(std::move(imguiRenderer)),
         _submissionThreadExecutionContext(/*std::move(*/submissionThreadExecutionContext/*)*/), // TODO
         _oneShotCopySubmissionHandler(std::move(oneShotCopySubmissionHandler)),
         _camera(deviceContext, /*std::move(*/submissionThreadExecutionContext/*)*/),  // TODO
@@ -95,21 +97,25 @@ namespace eureka
         _oneShotCopySubmissionHandler->AppendOneShotCommandBufferSubmission(std::move(oneShotCopyTriangleCommandBuffer));
 
         _resizeConnection = _swapChainFrame->ConnectResizeSlot(
-            [this](uint32_t, uint32_t)
+            [this](uint32_t w, uint32_t h)
         {
-            HandleResize();
+            HandleResize(w, h);
         });
-
-        HandleResize();
+        auto renderArea = _swapChainFrame->RenderArea();
+        HandleResize(renderArea.extent.width, renderArea.extent.height);
     }
 
-    void RenderingSystem::HandleResize()
+    void RenderingSystem::HandleResize(uint32_t w, uint32_t h)
     {
         DEBUGGER_TRACE("handle swap chain resize");
 
-        auto renderArea = _swapChainFrame->RenderArea();
-        _camera.SetFullViewport(renderArea.offset.x, renderArea.offset.y, renderArea.extent.width, renderArea.extent.height);
    
+        _camera.SetFullViewport(0, 0, w, h);
+   
+        _imguiRenderer->HandleResize(w, h);
+
+
+
         RunOne(); // refresh before next resize
     }
 
@@ -135,6 +141,11 @@ namespace eureka
         _oneShotCopySubmissionHandler->PollPendingOneShotSubmissions();
         _oneShotCopySubmissionHandler->PollDoneOneShotSubmissions();
     
+        _imguiRenderer->Layout();
+
+        _imguiRenderer->SyncBuffers();
+
+
         auto [commandBuffer, frameAvailableWaitSemaphore] = _swapChainFrame->BeginFrameRecording();
 
         //PROFILE_CATEGORIZED_SCOPE("Record Submit", Profiling::Color::DarkGray, Profiling::PROFILING_CATEGORY_RENDERING);

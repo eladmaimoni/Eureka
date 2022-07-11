@@ -12,13 +12,8 @@ namespace eureka
     {
         VertexAndIndexHostVisibleDeviceBuffer _vertexIndexBuffer;
         std::shared_ptr<ImGuiPipeline>       _pipeline;
-        void Layout()
-        {
-            ImGui::NewFrame();
-            ImGui::ShowDemoWindow();
-            ImGui::Render();
-        }
-
+        bool _active{ false };
+    public:
         ImGuiRenderer(DeviceContext& deviceContext)
             : _vertexIndexBuffer(deviceContext.Allocator(), BufferConfig{.byte_size = EUREKA_MAX_IMGUI_VERTEX_INDEX_BYTES })
            
@@ -26,13 +21,39 @@ namespace eureka
 
         }
 
+        void SetActive(bool active)
+        {
+            _active = active;
+        }
+
+        void Layout()
+        {
+            if (!_active) return;
+
+            ImGui::NewFrame();
+            ImGui::ShowDemoWindow();
+            ImGui::Render();
+        }
         void SyncBuffers()
         {
             PROFILE_CATEGORIZED_SCOPE("imgui vertex update", Profiling::Color::Brown, Profiling::PROFILING_CATEGORY_RENDERING);
+            
             ImDrawData* imDrawData = ImGui::GetDrawData();
 
+            if (!imDrawData)
+            {
+                return;
+            }
             VkDeviceSize vertexBufferSize = imDrawData->TotalVtxCount * sizeof(ImDrawVert);
             VkDeviceSize indexBufferSize = imDrawData->TotalIdxCount * sizeof(ImDrawIdx);
+
+            auto totalSize = vertexBufferSize + indexBufferSize;
+
+            if (totalSize > _vertexIndexBuffer.ByteSize())
+            {
+                DEBUGGER_TRACE("IMGUI rendering failed, vertex buffer not large enough. required size = {} available size = {}", totalSize, _vertexIndexBuffer.ByteSize());
+                return;
+            }
 
             if ((vertexBufferSize == 0) || (indexBufferSize == 0)) 
             {
@@ -62,6 +83,7 @@ namespace eureka
         {
 
         }
+        void HandleResize(uint32_t w, uint32_t h) const;
     };
 
 }

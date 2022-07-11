@@ -4,7 +4,7 @@ namespace eureka
 {
 
 
-    ImGuiIntegration::ImGuiIntegration(DeviceContext& deviceContext, std::shared_ptr<PipelineCache> pipelineCache, std::shared_ptr<SubmissionThreadExecutionContext> submissionThreadExecutionContext, std::shared_ptr<OneShotCopySubmissionHandler> oneShotCopySubmissionHandler, std::shared_ptr<HostWriteCombinedRingPool> uploadPool, PoolExecutor poolExecutor) :
+    ImGuiIntegration::ImGuiIntegration(DeviceContext& deviceContext, std::shared_ptr<SubmissionThreadExecutionContext> submissionThreadExecutionContext, std::shared_ptr<OneShotCopySubmissionHandler> oneShotCopySubmissionHandler, std::shared_ptr<HostWriteCombinedRingPool> uploadPool, PoolExecutor poolExecutor) :
         _deviceContext(deviceContext),
         _uploadPool(std::move(uploadPool)),
         _poolExecutor(std::move(poolExecutor)),
@@ -13,7 +13,6 @@ namespace eureka
     {
         ImGui::CreateContext();
 
-        Setup(std::move(pipelineCache));
     }
 
     future_t<void> ImGuiIntegration::Setup(std::shared_ptr<PipelineCache> pipelineCache)

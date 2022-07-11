@@ -9,6 +9,7 @@
 #include "Camera.hpp"
 #include "SubmissionThreadExecutionContext.hpp"
 #include "OneShotCopySubmission.hpp"
+#include "ImGuiRenderer.hpp"
 
 namespace eureka
 {
@@ -36,6 +37,7 @@ namespace eureka
             DeviceContext& deviceContext,
             std::shared_ptr<SwapChainDepthColorFrame> swapChainFrame,
             std::shared_ptr<PipelineCache> pipelineCache,
+            std::shared_ptr<ImGuiRenderer> imguiRenderer,
             std::shared_ptr<SubmissionThreadExecutionContext> submissionThreadExecutionContext,
             std::shared_ptr<OneShotCopySubmissionHandler> oneShotCopySubmissionHandler,
             std::shared_ptr<MTDescriptorAllocator>                   descPool,
@@ -48,7 +50,7 @@ namespace eureka
         void RunOne();
 
         void Initialize();
-        void HandleResize();
+        void HandleResize(uint32_t w, uint32_t h);
         void Deinitialize();
         
     private:
@@ -61,6 +63,8 @@ namespace eureka
         sigslot::scoped_connection                                 _resizeConnection;
         std::chrono::high_resolution_clock::time_point             _lastFrameTime;
 
+
+        std::shared_ptr<ImGuiRenderer>                             _imguiRenderer;
         std::shared_ptr<MTDescriptorAllocator>                     _descPool; // TODO remove
         std::shared_ptr<PipelineCache>                             _pipelineCache; // TODO remove
         PerspectiveCamera                                          _camera; // TODO remove
