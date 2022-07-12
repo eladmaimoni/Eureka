@@ -93,7 +93,7 @@ namespace eureka
 
         _graphicsQueue = _deviceContext.CreateGraphicsQueue();
         _copyQueue = _deviceContext.CreateCopyQueue();
-
+        //_copyQueue = _graphicsQueue; // HACK
         auto submissionThreadExecutor = _concurrencyRuntime.make_executor<submission_thread_executor>();
 
         _oneShotCopySubmissionHandler = std::make_shared<OneShotCopySubmissionHandler>(_deviceContext, _copyQueue);

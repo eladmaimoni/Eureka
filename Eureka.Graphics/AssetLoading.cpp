@@ -136,12 +136,12 @@ namespace eureka
 
             for (const auto& imageUploadDesc : imageUploads)
             {
-                auto [preTransferBarrier, bufferImageCopy, postTransferBarrier]
-                    = ShaderSampledImageUploadTuple(_copyQueue, graphicsQueue, imageUploadDesc);
+                auto [preTransferBarrier, bufferImageCopy, copyRelease, graphicsAcquire]
+                    = MakeCopyQueueSampledImageUpload(_copyQueue, graphicsQueue, imageUploadDesc);
 
                 preTransferImageMemoryBarriers.emplace_back(preTransferBarrier);
                 bufferImageCopies.emplace_back(bufferImageCopy);
-                postTransferImageMemoryBarriers.emplace_back(postTransferBarrier);
+                postTransferImageMemoryBarriers.emplace_back(copyRelease);
             }
       
             uploadCommandBuffer.pipelineBarrier(

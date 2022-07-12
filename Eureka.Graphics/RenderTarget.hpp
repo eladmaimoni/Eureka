@@ -129,7 +129,7 @@ namespace eureka
         //vk::Fence           frame_done_signal_fence;
     };
 
-    class SwapChainDepthColorFrame
+    class SwapChainColorDepthFrameContext
     {
         /*
         this class represent a frame preparation
@@ -158,7 +158,7 @@ namespace eureka
             return _renderPass;
         }
 
-        SwapChainDepthColorFrame(DeviceContext& deviceContext, Queue graphicsQueue, std::shared_ptr<SwapChain> swapChain)
+        SwapChainColorDepthFrameContext(DeviceContext& deviceContext, Queue graphicsQueue, std::shared_ptr<SwapChain> swapChain)
             : 
             _deviceContext(deviceContext),
             _swapChain(std::move(swapChain)),

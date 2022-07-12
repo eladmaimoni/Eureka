@@ -48,6 +48,44 @@ namespace eureka
 
 
 
+    size_t submission_thread_sub_executor::loop(size_t max_count)
+    {
+        size_t executed = 0;
+
+
+        while (true)
+        {
+            if (executed == max_count)
+            {
+                break;
+            }
+
+            std::unique_lock lock(_sharedState.mtx);
+            if (_sharedState.abort)
+            {
+                break;
+            }
+
+            if (_tasks.empty())
+            {
+                break;
+            }
+
+            auto task = std::move(current_tasks->front());
+            current_tasks->pop_front();
+            lock.unlock();
+            task();
+            ++executed;         
+        }
+
+        if (shutdown_requested())
+        {
+            concurrencpp::details::throw_runtime_shutdown_exception(name);
+        }
+
+        return executed;
+    }
+
     //////////////////////////////////////////////////////////////////////////
     //
     //

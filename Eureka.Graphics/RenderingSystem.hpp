@@ -35,7 +35,7 @@ namespace eureka
     public:
         RenderingSystem(
             DeviceContext& deviceContext,
-            std::shared_ptr<SwapChainDepthColorFrame> swapChainFrame,
+            std::shared_ptr<SwapChainColorDepthFrameContext> frameContext,
             std::shared_ptr<PipelineCache> pipelineCache,
             std::shared_ptr<ImGuiRenderer> imguiRenderer,
             std::shared_ptr<SubmissionThreadExecutionContext> submissionThreadExecutionContext,
@@ -57,7 +57,7 @@ namespace eureka
         DeviceContext&                                             _deviceContext;          
         Queue                                                      _graphicsQueue;
         Queue                                                      _copyQueue;
-        std::shared_ptr<SwapChainDepthColorFrame>                  _swapChainFrame;
+        std::shared_ptr<SwapChainColorDepthFrameContext>                  _frameContext;
         std::shared_ptr<SubmissionThreadExecutionContext>          _submissionThreadExecutionContext;
         std::shared_ptr<OneShotCopySubmissionHandler>              _oneShotCopySubmissionHandler;
         sigslot::scoped_connection                                 _resizeConnection;

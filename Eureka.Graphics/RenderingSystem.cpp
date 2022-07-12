@@ -10,18 +10,18 @@ namespace eureka
 
     RenderingSystem::RenderingSystem(
         DeviceContext& deviceContext,
-        std::shared_ptr<SwapChainDepthColorFrame> swapChainFrame,
+        std::shared_ptr<SwapChainColorDepthFrameContext> frameContext,
         std::shared_ptr<PipelineCache> pipelineCache,
         std::shared_ptr<ImGuiRenderer> imguiRenderer,
         std::shared_ptr<SubmissionThreadExecutionContext> submissionThreadExecutionContext,
         std::shared_ptr<OneShotCopySubmissionHandler>     oneShotCopySubmissionHandler,
-        std::shared_ptr<MTDescriptorAllocator>                   descPool,
+        std::shared_ptr<MTDescriptorAllocator>            descPool,
         Queue graphicsQueue,
         Queue copyQueue
     )
         :
         _deviceContext(deviceContext),
-        _swapChainFrame(std::move(swapChainFrame)),
+        _frameContext(std::move(frameContext)),
         _pipelineCache(std::move(pipelineCache)),
         _descPool(std::move(descPool)),
         _imguiRenderer(std::move(imguiRenderer)),
@@ -96,12 +96,12 @@ namespace eureka
 
         _oneShotCopySubmissionHandler->AppendOneShotCommandBufferSubmission(std::move(oneShotCopyTriangleCommandBuffer));
 
-        _resizeConnection = _swapChainFrame->ConnectResizeSlot(
+        _resizeConnection = _frameContext->ConnectResizeSlot(
             [this](uint32_t w, uint32_t h)
         {
             HandleResize(w, h);
         });
-        auto renderArea = _swapChainFrame->RenderArea();
+        auto renderArea = _frameContext->RenderArea();
         HandleResize(renderArea.extent.width, renderArea.extent.height);
     }
 
@@ -146,7 +146,9 @@ namespace eureka
         _imguiRenderer->SyncBuffers();
 
 
-        auto [commandBuffer, frameAvailableWaitSemaphore] = _swapChainFrame->BeginFrameRecording();
+        auto [commandBuffer, frameAvailableWaitSemaphore] = _frameContext->BeginFrameRecording();
+
+        _submissionThreadExecutionContext->PreRenderExecutor().loop(100);
 
         //PROFILE_CATEGORIZED_SCOPE("Record Submit", Profiling::Color::DarkGray, Profiling::PROFILING_CATEGORY_RENDERING);
 
@@ -161,18 +163,18 @@ namespace eureka
         {
             vk::PipelineStageFlagBits::eColorAttachmentOutput
         };
-        _swapChainFrame->EndFrameRecordingAndSubmit(waitSemaphores, waitStageMasks);
-        _swapChainFrame->Present();
+        _frameContext->EndFrameRecordingAndSubmit(waitSemaphores, waitStageMasks);
+        _frameContext->Present();
     }
 
 
 
     void RenderingSystem::RecordMainRenderPass(vk::CommandBuffer renderingCommandBuffer)
     {
-        _swapChainFrame->BeginPrimaryRenderPass();
+        _frameContext->BeginPrimaryRenderPass();
 
         renderingCommandBuffer.setViewport(0, { _camera.Viewport() });
-        renderingCommandBuffer.setScissor(0, { _swapChainFrame->RenderArea() }); // TODO from camera, 
+        renderingCommandBuffer.setScissor(0, { _frameContext->RenderArea() }); // TODO from camera, 
 
         renderingCommandBuffer.bindDescriptorSets(
             vk::PipelineBindPoint::eGraphics,
@@ -205,7 +207,7 @@ namespace eureka
 
         _imguiRenderer->RecordDrawCommands(renderingCommandBuffer);
 
-        _swapChainFrame->EndPrimaryRenderPass();
+        _frameContext->EndPrimaryRenderPass();
 
     }
 

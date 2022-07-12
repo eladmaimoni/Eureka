@@ -18,9 +18,7 @@ namespace eureka
         Queue                                      _graphicsQueue;
         SubmissionThreadExecutor                   _executor;
         CommandPool                                _oneShotCopyCommandPool;
-        //std::deque<OneShotCopySubmissionPacket>    _oneShotCopyCommandBuffers;
 
-        
     public:
         SubmissionThreadExecutionContext(
             DeviceContext& deviceContext,

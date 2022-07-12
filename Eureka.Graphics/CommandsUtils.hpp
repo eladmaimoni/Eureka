@@ -14,14 +14,15 @@ namespace eureka
     };
 
 
-    struct ImageUploadTuple
+    struct CopyQueueSampledImageUpload
     {
-        vk::ImageMemoryBarrier pre_transform_barrier;
-        vk::BufferImageCopy    copy;
-        vk::ImageMemoryBarrier post_transform_barrier;
+        vk::ImageMemoryBarrier copy_queue_pre_transfer_barrier;
+        vk::BufferImageCopy    copy_queue_transfer;
+        vk::ImageMemoryBarrier copy_queue_release;
+        vk::ImageMemoryBarrier graphics_queue_acquire;
     };
 
-    ImageUploadTuple ShaderSampledImageUploadTuple(
+    CopyQueueSampledImageUpload MakeCopyQueueSampledImageUpload(
         const Queue& copyQueue,
         const Queue& graphicsQueue,
         const ImageStageUploadDesc& imageUploadDesc

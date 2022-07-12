@@ -33,7 +33,9 @@ namespace eureka
 
         void shutdown() override;
         bool shutdown_requested() const override;
+
     public:
+        size_t loop(size_t max_count);
         void enqueue(concurrencpp::task task) override;
         void enqueue(std::span<concurrencpp::task> tasks) override;
 
