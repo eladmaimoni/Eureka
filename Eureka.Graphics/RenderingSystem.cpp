@@ -203,6 +203,7 @@ namespace eureka
 
         renderingCommandBuffer.drawIndexed(3, 1, 0, 0, 1);
 
+        _imguiRenderer->RecordDrawCommands(renderingCommandBuffer);
 
         _swapChainFrame->EndPrimaryRenderPass();
 

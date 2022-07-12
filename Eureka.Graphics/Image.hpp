@@ -39,6 +39,7 @@ namespace eureka
     {
     public:
         virtual ~AllocatedImage();
+        AllocatedImage() = default;
         AllocatedImage(AllocatedImage&& that);
         AllocatedImage& operator=(AllocatedImage&& rhs);        
         AllocatedImage(const DeviceContext& deviceContext);

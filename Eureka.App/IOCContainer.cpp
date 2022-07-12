@@ -116,21 +116,17 @@ namespace eureka
 
         _pipelineCache = std::make_shared<PipelineCache>(_deviceContext, primaryFrame->GetRenderPass());
 
+        _imguiIntegration = std::make_shared<ImGuiIntegration>();
 
-
-    
-
-        _imguiIntegration = std::make_shared<ImGuiIntegration>(
+        auto imguiRenderer = std::make_shared<ImGuiRenderer>(
             _deviceContext,
+            _pipelineCache,
+            _descPool,
             _submissionThreadExecutionContext,
             _oneShotCopySubmissionHandler,
             _uploadPool,
             _concurrencyRuntime.thread_pool_executor()
             );
-
-        auto imguiFut = _imguiIntegration->Setup(_pipelineCache);
-       
-        auto imguiRenderer = std::make_shared<ImGuiRenderer>(_deviceContext);
 
         _renderingSystem = std::make_shared<RenderingSystem>(
             _deviceContext,
@@ -148,9 +144,9 @@ namespace eureka
 
         _renderingSystem->Initialize();
 
-        co_await imguiFut;
 
-        imguiRenderer->SetActive(true);
+
+
         co_return;
 
     }

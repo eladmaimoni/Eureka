@@ -42,7 +42,10 @@ namespace eureka
     //////////////////////////////////////////////////////////////////////////
     class ImGuiPipeline : public PipelineBase
     {
+        vk::DescriptorSetLayout _fragmentShaderSetLayout;
         void Setup(DeviceContext& deviceContext, vk::RenderPass renderPass);
+
+        
     public:
         ImGuiPipeline(
             DeviceContext& deviceContext,
@@ -50,6 +53,11 @@ namespace eureka
             const SingleFragmentShaderCombinedImageSamplerDescriptorSetLayout& fragmentShaderSetLayout
         );
         EUREKA_DEFAULT_MOVEABLE(ImGuiPipeline);
+    
+        vk::DescriptorSetLayout GetFragmentShaderDescriptorSetLayout() const
+        {
+            return _fragmentShaderSetLayout;
+        }
     };
 
 

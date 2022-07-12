@@ -16,7 +16,7 @@ namespace eureka
         DeviceContext& deviceContext,
         const DepthColorRenderPass& renderPass,
         const SingleFragmentShaderCombinedImageSamplerDescriptorSetLayout& fragmentShaderSetLayout
-    )
+    ) : _fragmentShaderSetLayout(fragmentShaderSetLayout.Get())
     {
         std::array<vk::DescriptorSetLayout, 1> setLayouts
         {
