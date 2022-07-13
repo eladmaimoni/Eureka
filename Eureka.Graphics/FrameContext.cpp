@@ -16,7 +16,8 @@ namespace eureka
         // init commands
         for (auto i = 0u; i < _maxFramesInFlight; ++i)
         {
-            _frameCommands.emplace_back(_deviceContext, _graphicsQueue);
+            _frameGraphicsCommands.emplace_back(_deviceContext, _graphicsQueue);
+            _frameCopyCommands.emplace_back(_deviceContext, _copyQueue);
         }
 
         bool found = false;

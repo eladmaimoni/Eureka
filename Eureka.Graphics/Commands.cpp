@@ -13,7 +13,7 @@ namespace eureka
 
         _frameCommandsDoneFence = deviceContext.LogicalDevice()->createFence(vk::FenceCreateInfo{ .flags = vk::FenceCreateFlagBits::eSignaled });
         _frameDoneSemaphore = deviceContext.LogicalDevice()->createSemaphore(vk::SemaphoreCreateInfo{});
-
+        _device->resetFences({ *_frameCommandsDoneFence });
         for (auto i = 0u; i < _config.preallocated_command_buffers; ++i)
         {
             _availableCommandBuffers.emplace_back(_pool.AllocatePrimaryCommandBuffer());
@@ -38,13 +38,16 @@ namespace eureka
 
     void FrameCommands::Reset()
     {
-        VK_CHECK(_device->waitForFences({ *_frameCommandsDoneFence }, VK_TRUE, UINT64_MAX));
-        _device->resetFences({ *_frameCommandsDoneFence });
+        if (!_usedCommandBuffers.empty())
+        {
+            VK_CHECK(_device->waitForFences({ *_frameCommandsDoneFence }, VK_TRUE, UINT64_MAX));
+            _device->resetFences({ *_frameCommandsDoneFence });
+            _pool.Reset();
 
-        _pool.Reset();
+            std::ranges::move(_usedCommandBuffers, std::back_inserter(_availableCommandBuffers));
+            _usedCommandBuffers.clear();
+        }
 
-        std::ranges::move(_usedCommandBuffers, std::back_inserter(_availableCommandBuffers));
-        _usedCommandBuffers.clear();
     }
 
 }

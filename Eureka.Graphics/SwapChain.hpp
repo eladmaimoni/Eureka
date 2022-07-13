@@ -20,6 +20,7 @@ namespace eureka
 
     struct SwapChainImageReference
     {
+        bool          valid;
         uint32_t      image_index{ 0u };
         vk::Semaphore image_ready{nullptr};
     };

@@ -77,8 +77,7 @@ namespace eureka
         return std::make_unique<AssetLoader>(
             _deviceContext,
             _copyQueue,
-            _submissionThreadExecutionContext,
-            _oneShotCopySubmissionHandler,
+            _oneShotSubmissionHandler,
             _uploadPool,
             _pipelineCache,
             _descPool,
@@ -96,7 +95,7 @@ namespace eureka
         //_copyQueue = _graphicsQueue; // HACK
         auto submissionThreadExecutor = _concurrencyRuntime.make_executor<submission_thread_executor>();
 
-        _oneShotCopySubmissionHandler = std::make_shared<OneShotCopySubmissionHandler>(_deviceContext, _copyQueue);
+
 
         _submissionThreadExecutionContext = std::make_shared<SubmissionThreadExecutionContext>(
             _deviceContext,
@@ -104,6 +103,7 @@ namespace eureka
             _graphicsQueue,
             std::move(submissionThreadExecutor)
             );
+
 
         _uploadPool = std::make_shared<HostWriteCombinedRingPool>(_deviceContext, STAGE_ZONE_SIZE);
 
@@ -114,6 +114,8 @@ namespace eureka
 
         auto primaryFrame = std::make_shared<SwapChainFrameContext>(_deviceContext, _copyQueue, _graphicsQueue, _window->GetSwapChain());
 
+        _oneShotSubmissionHandler = std::make_shared<OneShotSubmissionHandler>(_deviceContext, _copyQueue, _graphicsQueue, primaryFrame, _submissionThreadExecutionContext);
+
         _pipelineCache = std::make_shared<PipelineCache>(_deviceContext, primaryFrame->GetRenderPass());
 
         _imguiIntegration = std::make_shared<ImGuiIntegration>();
@@ -122,8 +124,7 @@ namespace eureka
             _deviceContext,
             _pipelineCache,
             _descPool,
-            _submissionThreadExecutionContext,
-            _oneShotCopySubmissionHandler,
+            _oneShotSubmissionHandler,
             _uploadPool,
             _concurrencyRuntime.thread_pool_executor()
             );
@@ -134,7 +135,7 @@ namespace eureka
             _pipelineCache,
             imguiRenderer,
             _submissionThreadExecutionContext,
-            _oneShotCopySubmissionHandler,
+            _oneShotSubmissionHandler,
             _descPool,
             _graphicsQueue,
             _copyQueue

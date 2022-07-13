@@ -6,16 +6,25 @@ namespace eureka
 
 
 
-    OneShotCopySubmissionHandler::OneShotCopySubmissionHandler(DeviceContext& deviceContext, Queue copyQueue) :
+    OneShotSubmissionHandler::OneShotSubmissionHandler(
+        DeviceContext& deviceContext,
+        Queue copyQueue,
+        Queue graphicsQueue,
+        std::shared_ptr<SwapChainFrameContext> frameContext,
+        std::shared_ptr<SubmissionThreadExecutionContext> submissionThreadExecutionContext
+    ) :
         _deviceContext(deviceContext),
-        _copyQueue(copyQueue)
+        _frameContext(std::move(frameContext)),
+        _submissionThreadExecutionContext(std::move(submissionThreadExecutionContext)),
+        _copyQueue(copyQueue),
+        _graphicsQueue(graphicsQueue)
     {
         _executingOneShotCopies.reserve(100);
         _executingOneShotSignalValues.reserve(100);
         _executingOneShotSignalSemaphores.reserve(100);
     }
 
-    future_t<void> OneShotCopySubmissionHandler::AppendOneShotCommandBufferSubmission(vkr::CommandBuffer buffer)
+    future_t<void> OneShotSubmissionHandler::AppendOneShotCopyCommandBufferSubmission(vk::CommandBuffer buffer)
     {
         assert(tls_is_rendering_thread);
 
@@ -32,7 +41,7 @@ namespace eureka
 
         OneShotCopySubmissionPacket sumbissionPacket
         {
-            .command_buffer = std::move(buffer),
+            .command_buffer = buffer,
             .done_timeline_semaphore = _deviceContext.LogicalDevice()->createSemaphore(semaphoreCreateInfo)
         };
 
@@ -43,8 +52,12 @@ namespace eureka
         return result;
     }
 
-    void OneShotCopySubmissionHandler::PollPendingOneShotSubmissions()
+
+
+    void OneShotSubmissionHandler::SubmitPendingOneShotCopies(vk::Fence signalFence)
     {
+
+
         if (!_pendingOneShotCopies.empty())
         {
             // TODO: find the first linear range that can be reused
@@ -58,7 +71,7 @@ namespace eureka
 
                 _executingOneShotSignalValues.emplace_back(1);
                 _executingOneShotSignalSemaphores.emplace_back(*pkt.done_timeline_semaphore);
-                _executingOneShotCommandBuffers.emplace_back(*pkt.command_buffer);
+                _executingOneShotCommandBuffers.emplace_back(pkt.command_buffer);
                 _executingOneShotCopies.emplace_back(std::move(pkt));
             }
 
@@ -80,11 +93,11 @@ namespace eureka
                 .pSignalSemaphores = _executingOneShotSignalSemaphores.data() + currentExecutingCount
             };
 
-            _copyQueue->submit(uploadsSubmitInfo, nullptr);
+            _copyQueue->submit(uploadsSubmitInfo, signalFence);
         }
     }
 
-    void OneShotCopySubmissionHandler::PollDoneOneShotSubmissions()
+    void OneShotSubmissionHandler::PollDoneOneShotSubmissions()
     {
         if (!_executingOneShotCopies.empty())
         {

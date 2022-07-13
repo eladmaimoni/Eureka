@@ -84,8 +84,7 @@ namespace eureka
     AssetLoader::AssetLoader(
         DeviceContext& deviceContext,
         Queue queue,
-        std::shared_ptr<SubmissionThreadExecutionContext> submissionThreadExecutionContext,
-        std::shared_ptr<OneShotCopySubmissionHandler>     oneShotCopySubmissionHandler,
+        std::shared_ptr<OneShotSubmissionHandler>     oneShotSubmissionHandler,
         std::shared_ptr<HostWriteCombinedRingPool>        uploadPool,
         std::shared_ptr<PipelineCache >                   pipelineCache,
         std::shared_ptr<MTDescriptorAllocator>                   descPool,
@@ -95,8 +94,7 @@ namespace eureka
         _copyQueue(queue),
         _descPool(std::move(descPool)), 
         _pipelineCache(std::move(pipelineCache)),
-        _submissionThreadExecutionContext(std::move(submissionThreadExecutionContext)),
-        _oneShotCopySubmissionHandler(std::move(oneShotCopySubmissionHandler)),
+        _oneShotSubmissionHandler(std::move(oneShotSubmissionHandler)),
         _ioExecutor(std::move(ioExecutor)),
         _poolExecutor(std::move(poolExecutor)),
         _uploadPool(std::move(uploadPool)),
@@ -113,7 +111,7 @@ namespace eureka
         }
     }
 
-    vkr::CommandBuffer AssetLoader::RecordUploadCommands(
+    vk::CommandBuffer AssetLoader::RecordUploadCommands(
         dynamic_span<ImageStageUploadDesc> imageUploads,
         const BufferDataUploadTransferDesc& bufferUpload,
         const PoolSequentialStageZone& stageZone    
@@ -122,10 +120,10 @@ namespace eureka
         PROFILE_CATEGORIZED_SCOPE("Asset Loading Command Recording", Profiling::Color::Green, Profiling::PROFILING_CATEGORY_RENDERING);
         DEBUGGER_TRACE("rendering thread fun - recording one shot copy");
 
-        auto uploadCommandBuffer = _submissionThreadExecutionContext->OneShotCopySubmitCommandPool().AllocatePrimaryCommandBuffer();
+        auto uploadCommandBuffer = _oneShotSubmissionHandler->NewOneShotCopyCommandBuffer();
 
-        auto& copyQueue = _submissionThreadExecutionContext->CopyQueue();
-        auto& graphicsQueue = _submissionThreadExecutionContext->GraphicsQueue();
+        auto& copyQueue = _oneShotSubmissionHandler->CopyQueue();
+        auto& graphicsQueue = _oneShotSubmissionHandler->GraphicsQueue();
 
         {
             ScopedCommands commands(uploadCommandBuffer);
@@ -377,11 +375,11 @@ namespace eureka
 
         ThrowOnCancelled(cancellationToken);
   
-        co_await concurrencpp::resume_on(_submissionThreadExecutionContext->OneShotCopySubmitExecutor());
+        co_await _oneShotSubmissionHandler->ResumeOnRecordingContext();
 
         auto uploadCommandBuffer = RecordUploadCommands(imageUploadDescs, bufferUploadDesc, stageZone);
-
-        co_await _oneShotCopySubmissionHandler->AppendOneShotCommandBufferSubmission(std::move(uploadCommandBuffer));
+        DEBUGGER_TRACE("rendering thread fun - recording on rendering thread");
+        co_await _oneShotSubmissionHandler->AppendOneShotCopyCommandBufferSubmission(uploadCommandBuffer);
         
 
         DEBUGGER_TRACE("rendering thread fun - copy submitted and signaled as done");

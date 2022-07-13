@@ -9,14 +9,19 @@ namespace eureka
 {
     class ScopedCommands
     {
-        vkr::CommandBuffer& _commandBuffer;
+        vk::CommandBuffer _commandBuffer;
     public:
+        EUREKA_NO_COPY_NO_MOVE(ScopedCommands)
         ScopedCommands(vkr::CommandBuffer& commandBuffer)
+            : _commandBuffer(*commandBuffer)
+        {
+            _commandBuffer.begin(vk::CommandBufferBeginInfo());
+        }
+        ScopedCommands(vk::CommandBuffer commandBuffer)
             : _commandBuffer(commandBuffer)
         {
             _commandBuffer.begin(vk::CommandBufferBeginInfo());
         }
-
         ~ScopedCommands()
         {
             _commandBuffer.end();

@@ -39,7 +39,7 @@ namespace eureka
             std::shared_ptr<PipelineCache> pipelineCache,
             std::shared_ptr<ImGuiRenderer> imguiRenderer,
             std::shared_ptr<SubmissionThreadExecutionContext> submissionThreadExecutionContext,
-            std::shared_ptr<OneShotCopySubmissionHandler> oneShotCopySubmissionHandler,
+            std::shared_ptr<OneShotSubmissionHandler> oneShotSubmissionHandler,
             std::shared_ptr<MTDescriptorAllocator>                   descPool,
             Queue graphicsQueue,
             Queue copyQueue
@@ -49,7 +49,7 @@ namespace eureka
 
         void RunOne();
 
-        void Initialize();
+        future_t<void> Initialize();
         void HandleResize(uint32_t w, uint32_t h);
         void Deinitialize();
         
@@ -59,7 +59,7 @@ namespace eureka
         Queue                                                      _copyQueue;
         std::shared_ptr<SwapChainFrameContext>                     _frameContext;
         std::shared_ptr<SubmissionThreadExecutionContext>          _submissionThreadExecutionContext;
-        std::shared_ptr<OneShotCopySubmissionHandler>              _oneShotCopySubmissionHandler;
+        std::shared_ptr<OneShotSubmissionHandler>              _oneShotSubmissionHandler;
         sigslot::scoped_connection                                 _resizeConnection;
         std::chrono::high_resolution_clock::time_point             _lastFrameTime;
 

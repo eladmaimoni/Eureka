@@ -78,8 +78,7 @@ namespace eureka
         AssetLoader(
             DeviceContext& deviceContext,
             Queue queue,
-            std::shared_ptr<SubmissionThreadExecutionContext> submissionThreadExecutionContext,
-            std::shared_ptr<OneShotCopySubmissionHandler>     oneShotCopySubmissionHandler,
+            std::shared_ptr<OneShotSubmissionHandler>     oneShotSubmissionHandler,
             std::shared_ptr<HostWriteCombinedRingPool>        uploadPool,
             std::shared_ptr<PipelineCache >                   pipelineCache,
             std::shared_ptr<MTDescriptorAllocator>            descPool,
@@ -121,14 +120,13 @@ namespace eureka
         std::shared_ptr<MTDescriptorAllocator>                      _descPool;
         std::shared_ptr<PipelineCache>                       _pipelineCache;
 
-        std::shared_ptr<SubmissionThreadExecutionContext>    _submissionThreadExecutionContext;
-        std::shared_ptr<OneShotCopySubmissionHandler>        _oneShotCopySubmissionHandler;
+        std::shared_ptr<OneShotSubmissionHandler>            _oneShotSubmissionHandler;
         IOExecutor                                           _ioExecutor;
         PoolExecutor                                         _poolExecutor;
         std::shared_ptr<HostWriteCombinedRingPool>           _uploadPool;
         CommandPool                                          _uploadCommandPool;
 
-        vkr::CommandBuffer RecordUploadCommands(dynamic_span<ImageStageUploadDesc> imageUploads, const BufferDataUploadTransferDesc& bufferUpload, const PoolSequentialStageZone& stageZone);
+        vk::CommandBuffer RecordUploadCommands(dynamic_span<ImageStageUploadDesc> imageUploads, const BufferDataUploadTransferDesc& bufferUpload, const PoolSequentialStageZone& stageZone);
         PreparedModelImages PrepareImages(tinygltf::Model& gltfModel);
 
     };

@@ -19,3 +19,11 @@
     ObjType(const ObjType& that) = delete; \
     ObjType& operator=(const ObjType& rhs) = delete;
 #endif
+
+#ifndef EUREKA_NO_COPY_NO_MOVE
+#define EUREKA_NO_COPY_NO_MOVE(ObjType) \
+    ObjType(ObjType&& that) noexcept = delete; \
+    ObjType& operator=(ObjType&& rhs) noexcept = delete; \
+    ObjType(const ObjType& that) = delete; \
+    ObjType& operator=(const ObjType& rhs) = delete; 
+#endif

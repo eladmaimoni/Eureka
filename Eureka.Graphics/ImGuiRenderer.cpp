@@ -4,12 +4,11 @@ namespace eureka
 {
 
 
-    ImGuiRenderer::ImGuiRenderer(DeviceContext& deviceContext, std::shared_ptr<PipelineCache> pipelineCache, std::shared_ptr<MTDescriptorAllocator> descPool, std::shared_ptr<SubmissionThreadExecutionContext> submissionThreadExecutionContext, std::shared_ptr<OneShotCopySubmissionHandler> oneShotCopySubmissionHandler, std::shared_ptr<HostWriteCombinedRingPool> uploadPool, PoolExecutor poolExecutor) :
+    ImGuiRenderer::ImGuiRenderer(DeviceContext& deviceContext, std::shared_ptr<PipelineCache> pipelineCache, std::shared_ptr<MTDescriptorAllocator> descPool, std::shared_ptr<OneShotSubmissionHandler> oneShotSubmissionHandler, std::shared_ptr<HostWriteCombinedRingPool> uploadPool, PoolExecutor poolExecutor) :
         _deviceContext(deviceContext),
         _uploadPool(std::move(uploadPool)),
         _poolExecutor(std::move(poolExecutor)),
-        _submissionThreadExecutionContext(std::move(submissionThreadExecutionContext)),
-        _oneShotCopySubmissionHandler(std::move(oneShotCopySubmissionHandler))
+        _oneShotSubmissionHandler(std::move(oneShotSubmissionHandler))
     {
         Setup(std::move(pipelineCache), std::move(descPool));
     }
@@ -58,8 +57,8 @@ namespace eureka
 
         auto [preTransferBarrier, bufferImageCopy, copyRelease, graphicsAcquire] =
             MakeCopyQueueSampledImageUpload(
-                _submissionThreadExecutionContext->CopyQueue(),
-                _submissionThreadExecutionContext->GraphicsQueue(),
+                _oneShotSubmissionHandler->CopyQueue(),
+                _oneShotSubmissionHandler->GraphicsQueue(),
                 transferDesc
             );
 
@@ -82,9 +81,9 @@ namespace eureka
 
         _descriptorSet.SetBindings(0, vk::DescriptorType::eCombinedImageSampler, imageInfo);
 
-        co_await concurrencpp::resume_on(_submissionThreadExecutionContext->OneShotCopySubmitExecutor());
+        co_await _oneShotSubmissionHandler->ResumeOnRecordingContext();
 
-        auto uploadCommandBuffer = _submissionThreadExecutionContext->OneShotCopySubmitCommandPool().AllocatePrimaryCommandBuffer();
+        auto uploadCommandBuffer = _oneShotSubmissionHandler->NewOneShotCopyCommandBuffer();
         {
             PROFILE_CATEGORIZED_SCOPE("imgui commands", Profiling::Color::Green, Profiling::PROFILING_CATEGORY_RENDERING);
             ScopedCommands commands(uploadCommandBuffer);
@@ -117,14 +116,13 @@ namespace eureka
             
         }
 
-        auto fut = _oneShotCopySubmissionHandler->AppendOneShotCommandBufferSubmission(std::move(uploadCommandBuffer));
+        co_await _oneShotSubmissionHandler->AppendOneShotCopyCommandBufferSubmission(uploadCommandBuffer);
 
         // record graphics queue acquire
 
 
-        co_await fut;
 
-        co_await concurrencpp::resume_on(_submissionThreadExecutionContext->OneShotCopySubmitExecutor());
+
 
         _active = true;
 

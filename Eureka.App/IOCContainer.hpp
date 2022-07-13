@@ -10,7 +10,7 @@ namespace eureka
     class RenderingSystem;
     class AssetLoader;
     class SubmissionThreadExecutionContext;
-    class OneShotCopySubmissionHandler;
+    class OneShotSubmissionHandler;
     class ImGuiIntegration;
     class Window;
     class MTDescriptorAllocator;
@@ -35,7 +35,7 @@ namespace eureka
                                                           
         concurrencpp::runtime                              _concurrencyRuntime;
         std::shared_ptr<SubmissionThreadExecutionContext>  _submissionThreadExecutionContext;
-        std::shared_ptr<OneShotCopySubmissionHandler>      _oneShotCopySubmissionHandler;
+        std::shared_ptr<OneShotSubmissionHandler>      _oneShotSubmissionHandler;
         std::shared_ptr<HostWriteCombinedRingPool>         _uploadPool;
         std::shared_ptr<ImGuiIntegration>                  _imguiIntegration;
         std::shared_ptr<RenderingSystem>                   _renderingSystem;

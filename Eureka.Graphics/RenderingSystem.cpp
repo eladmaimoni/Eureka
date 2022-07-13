@@ -14,7 +14,7 @@ namespace eureka
         std::shared_ptr<PipelineCache> pipelineCache,
         std::shared_ptr<ImGuiRenderer> imguiRenderer,
         std::shared_ptr<SubmissionThreadExecutionContext> submissionThreadExecutionContext,
-        std::shared_ptr<OneShotCopySubmissionHandler>     oneShotCopySubmissionHandler,
+        std::shared_ptr<OneShotSubmissionHandler>     oneShotSubmissionHandler,
         std::shared_ptr<MTDescriptorAllocator>            descPool,
         Queue graphicsQueue,
         Queue copyQueue
@@ -26,7 +26,7 @@ namespace eureka
         _descPool(std::move(descPool)),
         _imguiRenderer(std::move(imguiRenderer)),
         _submissionThreadExecutionContext(/*std::move(*/submissionThreadExecutionContext/*)*/), // TODO
-        _oneShotCopySubmissionHandler(std::move(oneShotCopySubmissionHandler)),
+        _oneShotSubmissionHandler(std::move(oneShotSubmissionHandler)),
         _camera(deviceContext, /*std::move(*/submissionThreadExecutionContext/*)*/),  // TODO
         _graphicsQueue(graphicsQueue),
         _copyQueue(copyQueue)
@@ -45,7 +45,7 @@ namespace eureka
     //
     //////////////////////////////////////////////////////////////////////////
 
-    void RenderingSystem::Initialize()
+    future_t<void> RenderingSystem::Initialize()
     {
         _submissionThreadExecutionContext->SetCurrentThreadAsRenderingThread();
 
@@ -79,11 +79,28 @@ namespace eureka
         _constantBufferSet.SetBinding(0, descType, descInfo);
 
 
-        auto oneShotCopyTriangleCommandBuffer = _submissionThreadExecutionContext->OneShotCopySubmitCommandPool().AllocatePrimaryCommandBuffer();
 
-
+        // TODO REMOVE
         _stageZone.Assign(std::span(mesh::COLORED_TRIANGLE_INDEX_DATA), 0);
         _stageZone.Assign(std::span(mesh::COLORED_TRIANGLE_VERTEX_DATA), sizeof(mesh::COLORED_TRIANGLE_INDEX_DATA));
+
+
+
+
+       
+
+        _resizeConnection = _frameContext->ConnectResizeSlot(
+            [this](uint32_t w, uint32_t h)
+        {
+            HandleResize(w, h);
+        });
+        auto renderArea = _frameContext->RenderArea();
+        HandleResize(renderArea.extent.width, renderArea.extent.height);
+
+
+        co_await _oneShotSubmissionHandler->ResumeOnRecordingContext();
+     
+        auto oneShotCopyTriangleCommandBuffer = _oneShotSubmissionHandler->NewOneShotCopyCommandBuffer();
         {
             ScopedCommands commands(oneShotCopyTriangleCommandBuffer);
 
@@ -93,16 +110,7 @@ namespace eureka
                 { vk::BufferCopy{.srcOffset = 0, .dstOffset = 0, .size = _triangle.ByteSize()} }
             );
         }
-
-        _oneShotCopySubmissionHandler->AppendOneShotCommandBufferSubmission(std::move(oneShotCopyTriangleCommandBuffer));
-
-        _resizeConnection = _frameContext->ConnectResizeSlot(
-            [this](uint32_t w, uint32_t h)
-        {
-            HandleResize(w, h);
-        });
-        auto renderArea = _frameContext->RenderArea();
-        HandleResize(renderArea.extent.width, renderArea.extent.height);
+        _oneShotSubmissionHandler->AppendOneShotCopyCommandBufferSubmission(oneShotCopyTriangleCommandBuffer);
     }
 
     void RenderingSystem::HandleResize(uint32_t w, uint32_t h)
@@ -135,56 +143,71 @@ namespace eureka
 
     void RenderingSystem::RunOne()
     {
-        PROFILE_CATEGORIZED_SCOPE("RunOne", Profiling::Color::Blue, Profiling::PROFILING_CATEGORY_RENDERING);
-        _submissionThreadExecutionContext->Executor().loop_all(MAX_COPY_SUBMITS_PER_FRAME);
-
-        _oneShotCopySubmissionHandler->PollPendingOneShotSubmissions();
-        _oneShotCopySubmissionHandler->PollDoneOneShotSubmissions();
-    
-        _imguiRenderer->Layout();
-
-        _imguiRenderer->SyncBuffers();
-
-
-        auto [frameAvailableWaitSemaphore, frameDoneSignalSemaphore, frameDoneSignalFence] = _frameContext->BeginFrame();
-
-
-        _submissionThreadExecutionContext->PreRenderExecutor().loop(100);
-
-        auto mainCommandBuffer = _frameContext->NewCommandBuffer();
-        
-        //PROFILE_CATEGORIZED_SCOPE("Record Submit", Profiling::Color::DarkGray, Profiling::PROFILING_CATEGORY_RENDERING);
-
-        mainCommandBuffer.begin(vk::CommandBufferBeginInfo());
-
-        RecordMainRenderPass(mainCommandBuffer);
-
-        mainCommandBuffer.end();
-
-        std::array<vk::Semaphore, 1> waitSemaphores
+     
+        try
         {
-            frameAvailableWaitSemaphore
-        };
+            PROFILE_CATEGORIZED_SCOPE("RunOne", Profiling::Color::Blue, Profiling::PROFILING_CATEGORY_RENDERING);
+
+            //DEBUGGER_TRACE("RUN ONE START");
+
+            auto beginFrameInfo = _frameContext->BeginFrame();
          
-        std::array<vk::PipelineStageFlags, 1> waitStageMasks
-        {
-            vk::PipelineStageFlagBits::eColorAttachmentOutput
-        };
+            if (!beginFrameInfo.frame_valid)
+            {
+                return;
+            }
+        
+            _imguiRenderer->Layout();
 
-        vk::SubmitInfo submitInfo
-        {
-            .waitSemaphoreCount = static_cast<uint32_t>(waitSemaphores.size()),
-            .pWaitSemaphores = waitSemaphores.data(),
-            .pWaitDstStageMask = waitStageMasks.data(),
-            .commandBufferCount = 1,
-            .pCommandBuffers = &mainCommandBuffer,
-            .signalSemaphoreCount = 1,
-            .pSignalSemaphores = &frameDoneSignalSemaphore
-        };
-        _graphicsQueue->submit({ submitInfo }, frameDoneSignalFence);
+            _submissionThreadExecutionContext->Executor().loop_all(MAX_COPY_SUBMITS_PER_FRAME);
 
-        //_frameContext->EndFrameRecordingAndSubmit(waitSemaphores, waitStageMasks);
-        _frameContext->Present();
+            _oneShotSubmissionHandler->SubmitPendingOneShotCopies(beginFrameInfo.frame_done_copy_signal_fence);
+            _oneShotSubmissionHandler->PollDoneOneShotSubmissions();
+
+            _imguiRenderer->SyncBuffers();
+
+            _submissionThreadExecutionContext->PreRenderExecutor().loop(100);
+
+            auto mainCommandBuffer = _frameContext->NewGraphicsCommandBuffer();
+        
+            //PROFILE_CATEGORIZED_SCOPE("Record Submit", Profiling::Color::DarkGray, Profiling::PROFILING_CATEGORY_RENDERING);
+
+            mainCommandBuffer.begin(vk::CommandBufferBeginInfo());
+
+            RecordMainRenderPass(mainCommandBuffer);
+
+            mainCommandBuffer.end();
+
+            std::array<vk::Semaphore, 1> waitSemaphores
+            {
+                beginFrameInfo.frame_available_wait_semaphore
+            };
+         
+            std::array<vk::PipelineStageFlags, 1> waitStageMasks
+            {
+                vk::PipelineStageFlagBits::eColorAttachmentOutput
+            };
+
+            vk::SubmitInfo submitInfo
+            {
+                .waitSemaphoreCount = static_cast<uint32_t>(waitSemaphores.size()),
+                .pWaitSemaphores = waitSemaphores.data(),
+                .pWaitDstStageMask = waitStageMasks.data(),
+                .commandBufferCount = 1,
+                .pCommandBuffers = &mainCommandBuffer,
+                .signalSemaphoreCount = 1,
+                .pSignalSemaphores = &beginFrameInfo.frame_done_signal_semaphore
+            };
+            _graphicsQueue->submit({ submitInfo }, beginFrameInfo.frame_done_graphics_signal_fence);
+
+
+            _frameContext->EndFrame();
+        }
+        catch (const std::exception& err)
+        {
+
+        }
+        //DEBUGGER_TRACE("RUN ONE END");
     }
 
 
