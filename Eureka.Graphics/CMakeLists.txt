@@ -21,6 +21,8 @@ set_source_group(
     "SubmissionThreadExecutor.cpp"
     "SubmissionThreadExecutionContext.hpp"
     "SubmissionThreadExecutionContext.cpp"
+    "FrameContext.hpp"
+    "FrameContext.cpp"
     "OneShotCopySubmission.hpp"
     "OneShotCopySubmission.cpp"
 )

@@ -10,7 +10,7 @@
 #include "SubmissionThreadExecutionContext.hpp"
 #include "OneShotCopySubmission.hpp"
 #include "ImGuiRenderer.hpp"
-
+#include "FrameContext.hpp"
 namespace eureka
 {
     class SwapChain;
@@ -35,7 +35,7 @@ namespace eureka
     public:
         RenderingSystem(
             DeviceContext& deviceContext,
-            std::shared_ptr<SwapChainColorDepthFrameContext> frameContext,
+            std::shared_ptr<SwapChainFrameContext> frameContext,
             std::shared_ptr<PipelineCache> pipelineCache,
             std::shared_ptr<ImGuiRenderer> imguiRenderer,
             std::shared_ptr<SubmissionThreadExecutionContext> submissionThreadExecutionContext,
@@ -57,15 +57,15 @@ namespace eureka
         DeviceContext&                                             _deviceContext;          
         Queue                                                      _graphicsQueue;
         Queue                                                      _copyQueue;
-        std::shared_ptr<SwapChainColorDepthFrameContext>                  _frameContext;
+        std::shared_ptr<SwapChainFrameContext>                  _frameContext;
         std::shared_ptr<SubmissionThreadExecutionContext>          _submissionThreadExecutionContext;
         std::shared_ptr<OneShotCopySubmissionHandler>              _oneShotCopySubmissionHandler;
         sigslot::scoped_connection                                 _resizeConnection;
         std::chrono::high_resolution_clock::time_point             _lastFrameTime;
 
 
-        std::shared_ptr<ImGuiRenderer>                             _imguiRenderer;
         std::shared_ptr<MTDescriptorAllocator>                     _descPool; // TODO remove
+        std::shared_ptr<ImGuiRenderer>                             _imguiRenderer; 
         std::shared_ptr<PipelineCache>                             _pipelineCache; // TODO remove
         PerspectiveCamera                                          _camera; // TODO remove
         HostWriteCombinedBuffer                                    _stageZone;  // TODO remove                                                                

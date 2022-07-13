@@ -112,7 +112,7 @@ namespace eureka
 
         _descPool = std::make_shared<MTDescriptorAllocator>(_deviceContext);
 
-        auto primaryFrame = std::make_shared<SwapChainDepthColorFrame>(_deviceContext, _graphicsQueue, _window->GetSwapChain());
+        auto primaryFrame = std::make_shared<SwapChainFrameContext>(_deviceContext, _copyQueue, _graphicsQueue, _window->GetSwapChain());
 
         _pipelineCache = std::make_shared<PipelineCache>(_deviceContext, primaryFrame->GetRenderPass());
 

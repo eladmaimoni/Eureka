@@ -10,7 +10,7 @@ namespace eureka
 
     RenderingSystem::RenderingSystem(
         DeviceContext& deviceContext,
-        std::shared_ptr<SwapChainColorDepthFrameContext> frameContext,
+        std::shared_ptr<SwapChainFrameContext> frameContext,
         std::shared_ptr<PipelineCache> pipelineCache,
         std::shared_ptr<ImGuiRenderer> imguiRenderer,
         std::shared_ptr<SubmissionThreadExecutionContext> submissionThreadExecutionContext,
@@ -205,7 +205,7 @@ namespace eureka
 
         renderingCommandBuffer.drawIndexed(3, 1, 0, 0, 1);
 
-        _imguiRenderer->RecordDrawCommands(renderingCommandBuffer);
+        //_imguiRenderer->RecordDrawCommands(renderingCommandBuffer);
 
         _frameContext->EndPrimaryRenderPass();
 

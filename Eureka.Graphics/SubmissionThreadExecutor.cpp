@@ -71,8 +71,8 @@ namespace eureka
                 break;
             }
 
-            auto task = std::move(current_tasks->front());
-            current_tasks->pop_front();
+            auto task = std::move(_tasks.front());
+            _tasks.pop_front();
             lock.unlock();
             task();
             ++executed;         
