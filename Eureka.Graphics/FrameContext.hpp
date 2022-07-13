@@ -105,7 +105,7 @@ namespace eureka
             _currentFrame = currentFrame;
             _currentFrameDoneSignalFence = currentFrameCommandRecord.DoneFence();
             _currentFrameDoneSignalSemaphore = currentFrameCommandRecord.DoneSemaphore();
-            _currentFrameCommandBuffer = *currentFrameCommandRecord.CommandBuffer();
+            _currentFrameCommandBuffer = currentFrameCommandRecord.NewCommandBuffer();
 
             WaitForFrame(_currentFrameDoneSignalFence);
             currentFrameCommandRecord.Reset(); // reset pool

@@ -80,39 +80,41 @@ namespace eureka
         }
     };
 
+    struct FrameCommandsConfig
+    {
+        uint64_t max_command_buffers = 10;
+        uint64_t preallocated_command_buffers = 5;
+    };
 
     class FrameCommands
     {
-    private:
-        CommandPool _pool;
+        /*
+           FrameCommands -
+           the idea is to represent all command buffers that emanate from the same frame pool each frame
+           and the sync variables associated with synchronizing these commands with external
+           presentation engine.
 
-        vkr::CommandBuffer _commandBuffer{ nullptr }; // could probably be allocated on demand
+        */
+    private:
+        FrameCommandsConfig _config;
+        CommandPool _pool;
+        uint64_t _totalCommandBuffers{ 0 };
+        svec15<vkr::CommandBuffer> _availableCommandBuffers;
+        svec15<vkr::CommandBuffer> _usedCommandBuffers;
+
+
         vkr::Fence         _frameDoneFence{ nullptr };
         vkr::Semaphore     _frameDoneSemaphore{ nullptr };
-        //
-        // FrameCommands - 
-        // the idea is to represent all command buffers that emanate from the same frame pool,
-        // and the sync variables associated with synchronizing these commands with external
-        // presentation engine.
-        //
+
     public:
         FrameCommands(FrameCommands&& that) = default;
         FrameCommands& operator=(FrameCommands&& rhs) = default;
         FrameCommands() = default;
         FrameCommands(
             DeviceContext& deviceContext,
-            Queue graphicsQueue
-        ) : _pool(deviceContext.LogicalDevice(), CommandPoolDesc{.type = CommandPoolType::eLinear, .queue_family = graphicsQueue.Family() })
-        {
-
-            vk::FenceCreateInfo{ .flags = vk::FenceCreateFlagBits::eSignaled };
-
-            _frameDoneFence = deviceContext.LogicalDevice()->createFence(vk::FenceCreateInfo{ .flags = vk::FenceCreateFlagBits::eSignaled });
-            _frameDoneSemaphore = deviceContext.LogicalDevice()->createSemaphore(vk::SemaphoreCreateInfo{});
-            _commandBuffer = _pool.AllocatePrimaryCommandBuffer();
-
-       
-        }
+            Queue queue,
+            FrameCommandsConfig config = FrameCommandsConfig{}
+        );
 
         vk::Fence DoneFence() const 
         {
@@ -123,14 +125,10 @@ namespace eureka
         {
             return *_frameDoneSemaphore;
         }
-        vkr::CommandBuffer& CommandBuffer()
-        {
-            return _commandBuffer;
-        }
-        void Reset()
-        {
-            _pool.Reset();
-        }
+
+        vk::CommandBuffer NewCommandBuffer();
+
+        void Reset();
     };
 
 

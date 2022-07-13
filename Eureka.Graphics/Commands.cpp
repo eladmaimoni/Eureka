@@ -3,4 +3,44 @@
 namespace eureka
 {
 
+
+    FrameCommands::FrameCommands(DeviceContext& deviceContext, Queue queue, FrameCommandsConfig config) :
+        _config(config),
+        _pool(deviceContext.LogicalDevice(), CommandPoolDesc{ .type = CommandPoolType::eLinear, .queue_family = queue.Family() })
+    {
+        vk::FenceCreateInfo{ .flags = vk::FenceCreateFlagBits::eSignaled };
+
+        _frameDoneFence = deviceContext.LogicalDevice()->createFence(vk::FenceCreateInfo{ .flags = vk::FenceCreateFlagBits::eSignaled });
+        _frameDoneSemaphore = deviceContext.LogicalDevice()->createSemaphore(vk::SemaphoreCreateInfo{});
+
+        for (auto i = 0u; i < _config.preallocated_command_buffers; ++i)
+        {
+            _availableCommandBuffers.emplace_back(_pool.AllocatePrimaryCommandBuffer());
+        }
+        _totalCommandBuffers = _config.preallocated_command_buffers;
+    }
+
+    vk::CommandBuffer FrameCommands::NewCommandBuffer()
+    {
+        if (_availableCommandBuffers.empty())
+        {
+            if (_totalCommandBuffers >= _config.max_command_buffers) throw std::logic_error("too many command buffers per frame");
+            _availableCommandBuffers.emplace_back(_pool.AllocatePrimaryCommandBuffer());
+            ++_totalCommandBuffers;
+        }
+
+        _usedCommandBuffers.emplace_back(std::move(_availableCommandBuffers.back()));
+        _availableCommandBuffers.pop_back();
+
+        return *_usedCommandBuffers.back();
+    }
+
+    void FrameCommands::Reset()
+    {
+        _pool.Reset();
+
+        std::ranges::move(_usedCommandBuffers, std::back_inserter(_availableCommandBuffers));
+        _usedCommandBuffers.clear();
+    }
+
 }
