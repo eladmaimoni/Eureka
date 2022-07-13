@@ -146,24 +146,44 @@ namespace eureka
         _imguiRenderer->SyncBuffers();
 
 
-        auto [commandBuffer, frameAvailableWaitSemaphore] = _frameContext->BeginFrameRecording();
+        auto [frameAvailableWaitSemaphore, frameDoneSignalSemaphore, frameDoneSignalFence] = _frameContext->BeginFrame();
+
 
         _submissionThreadExecutionContext->PreRenderExecutor().loop(100);
 
+        auto mainCommandBuffer = _frameContext->NewCommandBuffer();
+        
         //PROFILE_CATEGORIZED_SCOPE("Record Submit", Profiling::Color::DarkGray, Profiling::PROFILING_CATEGORY_RENDERING);
 
-        RecordMainRenderPass(commandBuffer);
+        mainCommandBuffer.begin(vk::CommandBufferBeginInfo());
+
+        RecordMainRenderPass(mainCommandBuffer);
+
+        mainCommandBuffer.end();
 
         std::array<vk::Semaphore, 1> waitSemaphores
         {
             frameAvailableWaitSemaphore
         };
-
+         
         std::array<vk::PipelineStageFlags, 1> waitStageMasks
         {
             vk::PipelineStageFlagBits::eColorAttachmentOutput
         };
-        _frameContext->EndFrameRecordingAndSubmit(waitSemaphores, waitStageMasks);
+
+        vk::SubmitInfo submitInfo
+        {
+            .waitSemaphoreCount = static_cast<uint32_t>(waitSemaphores.size()),
+            .pWaitSemaphores = waitSemaphores.data(),
+            .pWaitDstStageMask = waitStageMasks.data(),
+            .commandBufferCount = 1,
+            .pCommandBuffers = &mainCommandBuffer,
+            .signalSemaphoreCount = 1,
+            .pSignalSemaphores = &frameDoneSignalSemaphore
+        };
+        _graphicsQueue->submit({ submitInfo }, frameDoneSignalFence);
+
+        //_frameContext->EndFrameRecordingAndSubmit(waitSemaphores, waitStageMasks);
         _frameContext->Present();
     }
 
@@ -171,7 +191,8 @@ namespace eureka
 
     void RenderingSystem::RecordMainRenderPass(vk::CommandBuffer renderingCommandBuffer)
     {
-        _frameContext->BeginPrimaryRenderPass();
+        renderingCommandBuffer.beginRenderPass(_frameContext->PrimaryRenderPassBeginInfo(), vk::SubpassContents::eInline);
+       
 
         renderingCommandBuffer.setViewport(0, { _camera.Viewport() });
         renderingCommandBuffer.setScissor(0, { _frameContext->RenderArea() }); // TODO from camera, 
@@ -207,7 +228,7 @@ namespace eureka
 
         //_imguiRenderer->RecordDrawCommands(renderingCommandBuffer);
 
-        _frameContext->EndPrimaryRenderPass();
+        renderingCommandBuffer.endRenderPass();
 
     }
 

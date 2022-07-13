@@ -90,21 +90,25 @@ namespace eureka
     {
         /*
            FrameCommands -
-           the idea is to represent all command buffers that emanate from the same frame pool each frame
-           and the sync variables associated with synchronizing these commands with external
-           presentation engine.
+           the idea is to represent
+           - all command buffers that are associated with a {Frame, Queue, thread}
+           - sync variables associated associated with all of these command buffers
+          
+           - when the last queue submit of each frame, the user should use fence and semaphore to signal all
+           commands have been executed
+           - prior to each frame, the user should wait on the Fence to ensure that the command buffers are no longer in use
 
         */
     private:
         FrameCommandsConfig _config;
+        std::shared_ptr<vkr::Device> _device;
         CommandPool _pool;
         uint64_t _totalCommandBuffers{ 0 };
         svec15<vkr::CommandBuffer> _availableCommandBuffers;
         svec15<vkr::CommandBuffer> _usedCommandBuffers;
 
-
-        vkr::Fence         _frameDoneFence{ nullptr };
-        vkr::Semaphore     _frameDoneSemaphore{ nullptr };
+        vkr::Fence         _frameCommandsDoneFence{ nullptr };
+        vkr::Semaphore     _frameDoneSemaphore{ nullptr }; // TODO remove
 
     public:
         FrameCommands(FrameCommands&& that) = default;
@@ -118,7 +122,7 @@ namespace eureka
 
         vk::Fence DoneFence() const 
         {
-            return *_frameDoneFence;
+            return *_frameCommandsDoneFence;
         }
 
         vk::Semaphore DoneSemaphore() const

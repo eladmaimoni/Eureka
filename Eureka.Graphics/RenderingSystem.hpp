@@ -57,7 +57,7 @@ namespace eureka
         DeviceContext&                                             _deviceContext;          
         Queue                                                      _graphicsQueue;
         Queue                                                      _copyQueue;
-        std::shared_ptr<SwapChainFrameContext>                  _frameContext;
+        std::shared_ptr<SwapChainFrameContext>                     _frameContext;
         std::shared_ptr<SubmissionThreadExecutionContext>          _submissionThreadExecutionContext;
         std::shared_ptr<OneShotCopySubmissionHandler>              _oneShotCopySubmissionHandler;
         sigslot::scoped_connection                                 _resizeConnection;

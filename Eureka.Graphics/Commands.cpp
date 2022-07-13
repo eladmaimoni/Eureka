@@ -6,11 +6,12 @@ namespace eureka
 
     FrameCommands::FrameCommands(DeviceContext& deviceContext, Queue queue, FrameCommandsConfig config) :
         _config(config),
+        _device(deviceContext.LogicalDevice()),
         _pool(deviceContext.LogicalDevice(), CommandPoolDesc{ .type = CommandPoolType::eLinear, .queue_family = queue.Family() })
     {
         vk::FenceCreateInfo{ .flags = vk::FenceCreateFlagBits::eSignaled };
 
-        _frameDoneFence = deviceContext.LogicalDevice()->createFence(vk::FenceCreateInfo{ .flags = vk::FenceCreateFlagBits::eSignaled });
+        _frameCommandsDoneFence = deviceContext.LogicalDevice()->createFence(vk::FenceCreateInfo{ .flags = vk::FenceCreateFlagBits::eSignaled });
         _frameDoneSemaphore = deviceContext.LogicalDevice()->createSemaphore(vk::SemaphoreCreateInfo{});
 
         for (auto i = 0u; i < _config.preallocated_command_buffers; ++i)
@@ -37,6 +38,9 @@ namespace eureka
 
     void FrameCommands::Reset()
     {
+        VK_CHECK(_device->waitForFences({ *_frameCommandsDoneFence }, VK_TRUE, UINT64_MAX));
+        _device->resetFences({ *_frameCommandsDoneFence });
+
         _pool.Reset();
 
         std::ranges::move(_usedCommandBuffers, std::back_inserter(_availableCommandBuffers));

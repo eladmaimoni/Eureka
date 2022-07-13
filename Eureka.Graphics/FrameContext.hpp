@@ -5,10 +5,10 @@ namespace eureka
 {
     struct FrameRecording
     {
-        vk::CommandBuffer   command_buffer;
+        //vk::CommandBuffer   command_buffer;
         vk::Semaphore       frame_available_wait_semaphore;
-        //vk::Semaphore       frame_done_signal_semaphore;
-        //vk::Fence           frame_done_signal_fence;
+        vk::Semaphore       frame_done_signal_semaphore;
+        vk::Fence           frame_done_signal_fence;
     };
 
     class SwapChainFrameContext
@@ -31,10 +31,12 @@ namespace eureka
 
         uint32_t                                    _maxFramesInFlight{};
         // current frame
-        uint32_t                                    _currentFrame;
-        vk::CommandBuffer                           _currentFrameCommandBuffer;
-        vk::Semaphore                               _currentFrameDoneSignalSemaphore;
-        vk::Fence                                   _currentFrameDoneSignalFence;
+        //uint32_t                                    _currentFrame;
+        FrameCommands*                              _currentFrameCommnds{ nullptr };
+        DepthColorRenderTarget*                     _currentRenderTarget{ nullptr };
+        //vk::CommandBuffer                           _currentFrameCommandBuffer;
+        //vk::Semaphore                               _currentFrameDoneSignalSemaphore;
+        //vk::Fence                                   _currentFrameDoneSignalFence;
     public:
         std::shared_ptr<DepthColorRenderPass> GetRenderPass() const
         {
@@ -46,118 +48,84 @@ namespace eureka
             Queue copyQueue,
             Queue graphicsQueue,
             std::shared_ptr<SwapChain> swapChain
-        )
-            :
-            _deviceContext(deviceContext),
-            _swapChain(std::move(swapChain)),
-            _copyQueue(copyQueue),
-            _graphicsQueue(graphicsQueue)
-        {
-            _maxFramesInFlight = _swapChain->ImageCount();
-
-
-            // init commands
-            for (auto i = 0u; i < _maxFramesInFlight; ++i)
-            {
-                _frameCommands.emplace_back(_deviceContext, _graphicsQueue);
-            }
-
-            bool found = false;
-            vk::Format depthFormat = DEFAULT_DEPTH_BUFFER_FORMAT;
-            for (auto format : { vk::Format::eD24UnormS8Uint, vk::Format::eD32Sfloat, vk::Format::eD32SfloatS8Uint })
-            {
-                auto props = _deviceContext.PhysicalDevice()->getFormatProperties(format);
-
-                if (props.optimalTilingFeatures & vk::FormatFeatureFlagBits::eDepthStencilAttachment)
-                {
-                    depthFormat = format;
-                    found = true;
-                    break;
-                }
-            }
-            DepthColorRenderPassConfig depthColorConfig
-            {
-                .color_output_format = _swapChain->ImageFormat(),
-                .depth_output_format = depthFormat
-            };
-
-            _renderPass = std::make_shared<DepthColorRenderPass>(_deviceContext, depthColorConfig);
-            _renderTargets = CreateDepthColorTargetForSwapChain(_deviceContext, *_swapChain, _renderPass);
-
-            _resizeConnection = _swapChain->ConnectResizeSlot(
-                [this](uint32_t w, uint32_t h)
-                {
-                    HandleSwapChainResize(w, h);
-                }
-            );
-        }
+        );
 
         vk::Rect2D RenderArea() const
         {
             return _swapChain->RenderArea();
         }
 
-        FrameRecording BeginFrameRecording()
+        FrameRecording BeginFrame()
         {
             auto [currentFrame, imageReadySemaphore] = _swapChain->AcquireNextAvailableImageAsync();
             // wait for current frame to finish execution before we reset its command pool (other frames can be in flight)
-            auto& currentFrameCommandRecord = _frameCommands[currentFrame];
-            _currentFrame = currentFrame;
-            _currentFrameDoneSignalFence = currentFrameCommandRecord.DoneFence();
-            _currentFrameDoneSignalSemaphore = currentFrameCommandRecord.DoneSemaphore();
-            _currentFrameCommandBuffer = currentFrameCommandRecord.NewCommandBuffer();
+            _currentFrameCommnds = &_frameCommands[currentFrame];
+            _currentRenderTarget = &_renderTargets[currentFrame];
+            _currentFrameCommnds->Reset();
+            //_currentFrame = currentFrame;
 
-            WaitForFrame(_currentFrameDoneSignalFence);
-            currentFrameCommandRecord.Reset(); // reset pool
+            //_currentFrameDoneSignalFence = currentFrameCommandRecord.DoneFence();
+            //_currentFrameDoneSignalSemaphore = currentFrameCommandRecord.DoneSemaphore();
+            //_currentFrameCommandBuffer = _currentFrameCommnds->NewCommandBuffer();
 
+            //_currentFrameCommandBuffer.begin(vk::CommandBufferBeginInfo());
 
-
-            _currentFrameCommandBuffer.begin(vk::CommandBufferBeginInfo());
-
-            return FrameRecording{
-                _currentFrameCommandBuffer,
-                imageReadySemaphore
-            };
-        }
-
-        void BeginPrimaryRenderPass()
-        {
-            _currentFrameCommandBuffer.beginRenderPass(_renderTargets[_currentFrame].BeginInfo(), vk::SubpassContents::eInline);
-        }
-
-        void EndPrimaryRenderPass()
-        {
-            _currentFrameCommandBuffer.endRenderPass();
-        }
-
-        void EndFrameRecordingAndSubmit(
-            dynamic_span<vk::Semaphore> waitList,
-            dynamic_span<vk::PipelineStageFlags> waitStageMasks
-        )
-        {
-            _currentFrameCommandBuffer.end();
-
-            vk::SubmitInfo submitInfo
+            return FrameRecording
             {
-                .waitSemaphoreCount = static_cast<uint32_t>(waitList.size()),
-                .pWaitSemaphores = waitList.data(),
-                .pWaitDstStageMask = waitStageMasks.data(),
-                .commandBufferCount = 1,
-                .pCommandBuffers = &_currentFrameCommandBuffer,
-                .signalSemaphoreCount = 1,
-                .pSignalSemaphores = &_currentFrameDoneSignalSemaphore
+                .frame_available_wait_semaphore = imageReadySemaphore,
+                .frame_done_signal_semaphore = _currentFrameCommnds->DoneSemaphore(),            
+                .frame_done_signal_fence = _currentFrameCommnds->DoneFence()
             };
-
-            _graphicsQueue->submit(
-                { submitInfo },
-                _currentFrameDoneSignalFence
-            );
         }
+
+        vk::CommandBuffer NewCommandBuffer()
+        {
+            return _currentFrameCommnds->NewCommandBuffer();
+        }
+
+        const vk::RenderPassBeginInfo& PrimaryRenderPassBeginInfo()
+        {
+            return _currentRenderTarget->BeginInfo();
+        }
+
+        //void BeginPrimaryRenderPass()
+        //{
+        //    _currentFrameCommandBuffer.beginRenderPass(_renderTargets[_currentFrame].BeginInfo(), vk::SubpassContents::eInline);
+        //}
+
+        //void EndPrimaryRenderPass()
+        //{
+        //    _currentFrameCommandBuffer.endRenderPass();
+        //}
+
+        //void EndFrameRecordingAndSubmit(
+        //    dynamic_span<vk::Semaphore> waitList,
+        //    dynamic_span<vk::PipelineStageFlags> waitStageMasks
+        //)
+        //{
+        //    //_currentFrameCommandBuffer.end();
+
+        //    vk::SubmitInfo submitInfo
+        //    {
+        //        .waitSemaphoreCount = static_cast<uint32_t>(waitList.size()),
+        //        .pWaitSemaphores = waitList.data(),
+        //        .pWaitDstStageMask = waitStageMasks.data(),
+        //        .commandBufferCount = 1,
+        //        .pCommandBuffers = &_currentFrameCommandBuffer,
+        //        .signalSemaphoreCount = 1,
+        //        .pSignalSemaphores = &_currentFrameDoneSignalSemaphore
+        //    };
+
+        //    _graphicsQueue->submit(
+        //        { submitInfo },
+        //        _currentFrameDoneSignalFence
+        //    );
+        //}
 
         void Present()
         {
             PROFILE_CATEGORIZED_SCOPE("Present", Profiling::Color::Gray, Profiling::PROFILING_CATEGORY_RENDERING);
-            auto result = _swapChain->PresentLastAcquiredImageAsync(_currentFrameDoneSignalSemaphore);
+            auto result = _swapChain->PresentLastAcquiredImageAsync(_currentFrameCommnds->DoneSemaphore());
 
             if (result != vk::Result::eSuccess)
             {
@@ -171,20 +139,6 @@ namespace eureka
             return _resizeSignal.connect(std::forward<Callable>(slot));
         }
     private:
-        void WaitForFrame(vk::Fence currentFrameFence)
-        {
-            PROFILE_CATEGORIZED_SCOPE("WaitForFrame", Profiling::Color::DarkSeaGreen, Profiling::PROFILING_CATEGORY_RENDERING);
-            VK_CHECK(_deviceContext.LogicalDevice()->waitForFences(
-                { currentFrameFence },
-                VK_TRUE,
-                UINT64_MAX
-            ));
-
-            _deviceContext.LogicalDevice()->resetFences(
-                { currentFrameFence }
-            );
-        }
-
 
         void HandleSwapChainResize(uint32_t width, uint32_t height)
         {
