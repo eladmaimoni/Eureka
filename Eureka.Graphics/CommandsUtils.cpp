@@ -45,8 +45,8 @@ namespace eureka
             },
             .copy_queue_release = vk::ImageMemoryBarrier
             {
-                .srcAccessMask = vk::AccessFlagBits::eTransferWrite,
-                .dstAccessMask = vk::AccessFlagBits::eShaderRead,
+                .srcAccessMask = vk::AccessFlagBits::eTransferWrite, 
+                .dstAccessMask = vk::AccessFlagBits::eShaderRead, // ignored
                 .oldLayout = vk::ImageLayout::eTransferDstOptimal,
                 .newLayout = vk::ImageLayout::eShaderReadOnlyOptimal,
                 .srcQueueFamilyIndex = copyQueue.Family(),
@@ -62,7 +62,7 @@ namespace eureka
             },
             .graphics_queue_acquire = vk::ImageMemoryBarrier
             {
-                .srcAccessMask = vk::AccessFlagBits::eTransferWrite,
+                .srcAccessMask = vk::AccessFlagBits::eTransferWrite, // ignored
                 .dstAccessMask = vk::AccessFlagBits::eShaderRead,
                 .oldLayout = vk::ImageLayout::eTransferDstOptimal,
                 .newLayout = vk::ImageLayout::eShaderReadOnlyOptimal,
@@ -76,7 +76,7 @@ namespace eureka
                    .levelCount = 1,
                    .layerCount = 1
                 }
-            },
+            }
         };
     }
 

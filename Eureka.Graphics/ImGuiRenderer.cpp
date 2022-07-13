@@ -55,7 +55,7 @@ namespace eureka
 
         stageBuffer.Assign(transferDesc.unpinned_src_span, 0);
 
-        auto [preTransferBarrier, bufferImageCopy, copyRelease, graphicsAcquire] =
+        auto uploadCommands =
             MakeCopyQueueSampledImageUpload(
                 _oneShotSubmissionHandler->CopyQueue(),
                 _oneShotSubmissionHandler->GraphicsQueue(),
@@ -94,14 +94,14 @@ namespace eureka
                 {},
                 nullptr,
                 nullptr,
-                { preTransferBarrier }
+                { uploadCommands.copy_queue_pre_transfer_barrier }
             );
 
             uploadCommandBuffer.copyBufferToImage(
                 stageBuffer.Buffer(),
                 transferDesc.destination_image,
                 vk::ImageLayout::eTransferDstOptimal,
-                { bufferImageCopy }
+                { uploadCommands.copy_queue_transfer }
             );
 
             uploadCommandBuffer.pipelineBarrier(
@@ -110,14 +110,28 @@ namespace eureka
                 {},
                 nullptr,
                 nullptr,
-                { copyRelease }
+                { uploadCommands.copy_queue_release }
             );
-
-            
         }
 
-        co_await _oneShotSubmissionHandler->AppendOneShotCopyCommandBufferSubmission(uploadCommandBuffer);
+        co_await _oneShotSubmissionHandler->AppendCopyCommandSubmission(uploadCommandBuffer);
 
+        auto graphicsQueue = _oneShotSubmissionHandler->GraphicsQueue();
+
+        //auto graphicsCommandBuffer = _oneShotSubmissionHandler->NewOneShotGraphicsCommandBuffer();
+
+        //{
+        //    ScopedCommands sc(graphicsCommandBuffer);
+
+        //    graphicsCommandBuffer.pipelineBarrier(
+        //        vk::PipelineStageFlagBits::eTransfer,
+        //        vk::PipelineStageFlagBits::eBottomOfPipe,
+        //        {},
+        //        nullptr,
+        //        nullptr,
+        //        { uploadCommands.graphics_queue_acquire }
+        //    );
+        //}
         // record graphics queue acquire
 
 

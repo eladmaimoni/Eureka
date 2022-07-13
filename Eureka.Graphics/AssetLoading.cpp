@@ -379,7 +379,7 @@ namespace eureka
 
         auto uploadCommandBuffer = RecordUploadCommands(imageUploadDescs, bufferUploadDesc, stageZone);
         DEBUGGER_TRACE("rendering thread fun - recording on rendering thread");
-        co_await _oneShotSubmissionHandler->AppendOneShotCopyCommandBufferSubmission(uploadCommandBuffer);
+        co_await _oneShotSubmissionHandler->AppendCopyCommandSubmission(uploadCommandBuffer);
         
 
         DEBUGGER_TRACE("rendering thread fun - copy submitted and signaled as done");

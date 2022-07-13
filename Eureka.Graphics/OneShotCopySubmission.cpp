@@ -19,12 +19,30 @@ namespace eureka
         _copyQueue(copyQueue),
         _graphicsQueue(graphicsQueue)
     {
-        _executingOneShotCopies.reserve(100);
-        _executingOneShotSignalValues.reserve(100);
-        _executingOneShotSignalSemaphores.reserve(100);
+
     }
 
-    future_t<void> OneShotSubmissionHandler::AppendOneShotCopyCommandBufferSubmission(vk::CommandBuffer buffer)
+    future_t<void> OneShotSubmissionHandler::AppendCopyCommandSubmission(vk::CommandBuffer buffer)
+    {
+        return DoAppendSubmission(buffer, _pendingOneShotCopies);
+    }
+
+    future_t<void> OneShotSubmissionHandler::AppendGraphicsSubmission(vk::CommandBuffer buffer)
+    {
+        return DoAppendSubmission(buffer, _pendingOneShotGraphics);
+    }
+
+    void OneShotSubmissionHandler::SubmitPendingGraphics(vk::Fence signalFence)
+    {
+        DoSubmitPending(signalFence, _graphicsQueue, _executingGraphics, _pendingOneShotGraphics);
+    }
+
+    void OneShotSubmissionHandler::PollraphicsCompletions()
+    {
+        DoPollCompletions(_executingGraphics);
+    }
+
+    future_t<void> OneShotSubmissionHandler::DoAppendSubmission(vk::CommandBuffer buffer, std::deque<OneShotSubmissionPacket>& vec)
     {
         assert(tls_is_rendering_thread);
 
@@ -39,7 +57,7 @@ namespace eureka
             .pNext = &semaphoreTypeCreateInfo
         };
 
-        OneShotCopySubmissionPacket sumbissionPacket
+        OneShotSubmissionPacket sumbissionPacket
         {
             .command_buffer = buffer,
             .done_timeline_semaphore = _deviceContext.LogicalDevice()->createSemaphore(semaphoreCreateInfo)
@@ -47,38 +65,33 @@ namespace eureka
 
         auto result = sumbissionPacket.done_promise.get_result();
 
-        _pendingOneShotCopies.emplace_back(std::move(sumbissionPacket));
+        vec.emplace_back(std::move(sumbissionPacket));
 
         return result;
     }
 
-
-
-    void OneShotSubmissionHandler::SubmitPendingOneShotCopies(vk::Fence signalFence)
+    void OneShotSubmissionHandler::DoSubmitPending(vk::Fence signalFence, Queue& queue, ExecutingneShotSubmissions& executing, std::deque<OneShotSubmissionPacket>& pending)
     {
-
-
-        if (!_pendingOneShotCopies.empty())
+        if (!pending.empty())
         {
-            // TODO: find the first linear range that can be reused
-            auto currentExecutingCount = _executingOneShotCopies.size();
-            auto addedExecutingCount = static_cast<uint32_t>(std::min(_pendingOneShotCopies.size(), _executingOneShotCopies.capacity() - currentExecutingCount));
+            auto currentExecutingCount = executing.pkts.size();
+            auto addedExecutingCount = static_cast<uint32_t>(std::min(pending.size(), executing.command_buffers.capacity() - currentExecutingCount));
 
             for (auto i = 0u; i < addedExecutingCount; ++i)
             {
                 auto pkt = std::move(_pendingOneShotCopies.front());
                 _pendingOneShotCopies.pop_front();
 
-                _executingOneShotSignalValues.emplace_back(1);
-                _executingOneShotSignalSemaphores.emplace_back(*pkt.done_timeline_semaphore);
-                _executingOneShotCommandBuffers.emplace_back(pkt.command_buffer);
-                _executingOneShotCopies.emplace_back(std::move(pkt));
+                executing.done_signal_values.emplace_back(DONE_VAL);
+                executing.done_semaphores.emplace_back(*pkt.done_timeline_semaphore);
+                executing.command_buffers.emplace_back(pkt.command_buffer);
+                executing.pkts.emplace_back(std::move(pkt));
             }
 
             vk::TimelineSemaphoreSubmitInfo timelineInfo
             {
                 .signalSemaphoreValueCount = addedExecutingCount,
-                .pSignalSemaphoreValues = _executingOneShotSignalValues.data() + currentExecutingCount,
+                .pSignalSemaphoreValues = executing.done_signal_values.data() + currentExecutingCount,
             };
 
             vk::SubmitInfo uploadsSubmitInfo
@@ -88,32 +101,42 @@ namespace eureka
                 .pWaitSemaphores = nullptr,
                 .pWaitDstStageMask = {},
                 .commandBufferCount = addedExecutingCount,
-                .pCommandBuffers = _executingOneShotCommandBuffers.data() + currentExecutingCount,
+                .pCommandBuffers = executing.command_buffers.data() + currentExecutingCount,
                 .signalSemaphoreCount = addedExecutingCount,
-                .pSignalSemaphores = _executingOneShotSignalSemaphores.data() + currentExecutingCount
+                .pSignalSemaphores = executing.done_semaphores.data() + currentExecutingCount
             };
 
-            _copyQueue->submit(uploadsSubmitInfo, signalFence);
+            queue->submit(uploadsSubmitInfo, signalFence);
         }
     }
 
-    void OneShotSubmissionHandler::PollDoneOneShotSubmissions()
+    void OneShotSubmissionHandler::SubmitPendingCopies(vk::Fence signalFence)
     {
-        if (!_executingOneShotCopies.empty())
+        DoSubmitPending(signalFence, _copyQueue, _executingCopies, _pendingOneShotCopies);
+    }
+
+    void OneShotSubmissionHandler::PollCopyCompletions()
+    {
+        DoPollCompletions(_executingCopies);
+    }
+
+    void OneShotSubmissionHandler::DoPollCompletions(ExecutingneShotSubmissions& executing)
+    {
+        if (!_executingCopies.pkts.empty())
         {
             svec5<vk::Semaphore> waitSemaphores;
             auto totalExecuting = 0;
             auto totalDone = 0;
-            for (auto i = 0; i < _executingOneShotCopies.size(); ++i)
+            for (auto i = 0; i < _executingCopies.pkts.size(); ++i)
             {
-                if (_executingOneShotSignalValues[i] == 1)
+                if (_executingCopies.done_signal_values[i] == DONE_VAL)
                 {
                     ++totalExecuting;
                     vk::SemaphoreWaitInfo waitInfo
                     {
                         .semaphoreCount = 1,
-                        .pSemaphores = &_executingOneShotSignalSemaphores[i],
-                        .pValues = &_executingOneShotSignalValues[i]
+                        .pSemaphores = &executing.done_semaphores[i],
+                        .pValues = &executing.done_signal_values[i]
                     };
 
                     auto result = _deviceContext.LogicalDevice()->waitSemaphores(waitInfo, 0);
@@ -127,9 +150,9 @@ namespace eureka
                         ++totalDone;
                         DEBUGGER_TRACE("pending semaphore {} done", i);
 
-                        _executingOneShotCopies[i].done_promise.set_result();
-                        _executingOneShotSignalValues[i] = 0;
-                        _executingOneShotCopies[i] = {}; // destroy
+                        _executingCopies.pkts[i].done_promise.set_result();
+                        _executingCopies.done_signal_values[i] = 0;
+                        _executingCopies.pkts[i] = {}; // destroy
                     }
 
                 }
@@ -137,10 +160,10 @@ namespace eureka
 
             if (totalExecuting == totalDone)
             {
-                _executingOneShotCopies.clear();
-                _executingOneShotSignalValues.clear();
-                _executingOneShotSignalSemaphores.clear();
-                _executingOneShotCommandBuffers.clear();
+                _executingCopies.pkts.clear();
+                _executingCopies.command_buffers.clear();
+                _executingCopies.done_semaphores.clear();
+                _executingCopies.done_signal_values.clear();
             }
         }
     }

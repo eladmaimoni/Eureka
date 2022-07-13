@@ -110,7 +110,7 @@ namespace eureka
                 { vk::BufferCopy{.srcOffset = 0, .dstOffset = 0, .size = _triangle.ByteSize()} }
             );
         }
-        _oneShotSubmissionHandler->AppendOneShotCopyCommandBufferSubmission(oneShotCopyTriangleCommandBuffer);
+        _oneShotSubmissionHandler->AppendCopyCommandSubmission(oneShotCopyTriangleCommandBuffer);
     }
 
     void RenderingSystem::HandleResize(uint32_t w, uint32_t h)
@@ -161,8 +161,8 @@ namespace eureka
 
             _submissionThreadExecutionContext->Executor().loop_all(MAX_COPY_SUBMITS_PER_FRAME);
 
-            _oneShotSubmissionHandler->SubmitPendingOneShotCopies(beginFrameInfo.frame_done_copy_signal_fence);
-            _oneShotSubmissionHandler->PollDoneOneShotSubmissions();
+            _oneShotSubmissionHandler->SubmitPendingCopies(beginFrameInfo.frame_done_copy_signal_fence);
+            _oneShotSubmissionHandler->PollCopyCompletions();
 
             _imguiRenderer->SyncBuffers();
 
@@ -205,7 +205,7 @@ namespace eureka
         }
         catch (const std::exception& err)
         {
-
+            DEBUGGER_TRACE("RUN ONE error {}", err.what());
         }
         //DEBUGGER_TRACE("RUN ONE END");
     }

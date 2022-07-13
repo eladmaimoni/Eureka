@@ -5,47 +5,74 @@
 
 namespace eureka
 {
-    struct OneShotCopySubmissionPacket
+    struct OneShotSubmissionPacket
     {
         vk::CommandBuffer                  command_buffer{ nullptr };
         vkr::Semaphore                     done_timeline_semaphore{ nullptr };
         concurrencpp::result_promise<void> done_promise;
     };
 
+    struct ExecutingneShotSubmissions
+    {
+        ExecutingneShotSubmissions()
+        {
+            // TODO fixed capacity vector or array
+            done_signal_values.reserve(100);
+            done_signal_values.reserve(100);
+            command_buffers.reserve(100);
+        }
+        std::vector<OneShotSubmissionPacket>  pkts;
+        std::vector<uint64_t>                 done_signal_values;
+        std::vector<vk::Semaphore>            done_semaphores;
+        std::vector<vk::CommandBuffer>        command_buffers;
+
+    };
+
     class OneShotSubmissionHandler
     {
+        static constexpr uint64_t             DONE_VAL = 1;
+
         DeviceContext&                            _deviceContext;
         Queue                                     _copyQueue;
         Queue                                     _graphicsQueue;
-        std::deque<OneShotCopySubmissionPacket>   _pendingOneShotCopies;
+        std::deque<OneShotSubmissionPacket>       _pendingOneShotCopies;
+        std::deque<OneShotSubmissionPacket>       _pendingOneShotGraphics;
 
+        ExecutingneShotSubmissions            _executingCopies{};
+        ExecutingneShotSubmissions            _executingGraphics{};
         // TODO linear ranges with fixed capacity and holes fixing
-        std::vector<OneShotCopySubmissionPacket>  _executingOneShotCopies;
-        std::vector<uint64_t>                     _executingOneShotSignalValues;
-        std::vector<vk::Semaphore>                _executingOneShotSignalSemaphores;
-        std::vector<vk::CommandBuffer>            _executingOneShotCommandBuffers;
+
 
         std::shared_ptr<SubmissionThreadExecutionContext> _submissionThreadExecutionContext;
         std::shared_ptr<SwapChainFrameContext> _frameContext;
-
+        future_t<void> DoAppendSubmission(vk::CommandBuffer buffer, std::deque<OneShotSubmissionPacket>& vec);
+        void DoSubmitPending(vk::Fence signalFence, Queue& queue, ExecutingneShotSubmissions& executing, std::deque<OneShotSubmissionPacket>& pending);
+        void DoPollCompletions(ExecutingneShotSubmissions& executing);
     public:
         OneShotSubmissionHandler(DeviceContext& deviceContext, Queue copyQueue, Queue graphicsQueue, std::shared_ptr<SwapChainFrameContext> frameContext, std::shared_ptr<SubmissionThreadExecutionContext> submissionThreadExecutionContext);
-        future_t<void> AppendOneShotCopyCommandBufferSubmission(vk::CommandBuffer buffer);
+        future_t<void> AppendCopyCommandSubmission(vk::CommandBuffer buffer);
+        void SubmitPendingCopies(vk::Fence signalFence);
+        void PollCopyCompletions();
 
+        future_t<void> AppendGraphicsSubmission(vk::CommandBuffer buffer);
+        void SubmitPendingGraphics(vk::Fence signalFence);
+        void PollraphicsCompletions();
 
         [[nodiscard]] auto ResumeOnRecordingContext()
         {
             return concurrencpp::resume_on(_submissionThreadExecutionContext->OneShotCopySubmitExecutor());
         }
 
-
-
         vk::CommandBuffer NewOneShotCopyCommandBuffer()
         {
             assert(tls_is_rendering_thread);
             return _frameContext->NewCopyCommandBuffer();
         }
-
+        vk::CommandBuffer NewOneShotGraphicsCommandBuffer()
+        {
+            assert(tls_is_rendering_thread);
+            return _frameContext->NewGraphicsCommandBuffer();
+        }
         Queue& CopyQueue()
         {
             return _copyQueue;
@@ -56,8 +83,7 @@ namespace eureka
             return _graphicsQueue;
         }
 
-        void SubmitPendingOneShotCopies(vk::Fence signalFence);
 
-        void PollDoneOneShotSubmissions();
+
     };
 }
