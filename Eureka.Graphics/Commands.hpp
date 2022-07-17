@@ -91,6 +91,12 @@ namespace eureka
         uint64_t preallocated_command_buffers = 5;
     };
 
+    struct SubmitCommandBuffer
+    {
+        vk::CommandBuffer command_buffer;
+        vk::Semaphore     done_semaphore;
+    };
+
     class FrameCommands
     {
         /*
@@ -109,11 +115,16 @@ namespace eureka
         std::shared_ptr<vkr::Device> _device;
         CommandPool _pool;
         uint64_t _totalCommandBuffers{ 0 };
-        svec15<vkr::CommandBuffer> _availableCommandBuffers;
-        svec15<vkr::CommandBuffer> _usedCommandBuffers;
+        std::vector<vkr::CommandBuffer> _availableCommandBuffers;
+        std::vector<vkr::CommandBuffer> _usedCommandBuffers;
+        std::vector<vkr::Fence> _availableDoneFences;
+        std::vector<vkr::Fence> _usedDoneFences;
+        std::vector<vk::Fence> _usedDoneFencesHandles;
+        std::vector<vkr::Semaphore> _availableDoneSemaphore;
+        std::vector<vkr::Semaphore> _usedDoneSemaphore;
 
-        vkr::Fence         _frameCommandsDoneFence{ nullptr };
-        vkr::Semaphore     _frameDoneSemaphore{ nullptr }; // TODO remove
+        //vkr::Fence         _frameCommandsDoneFence{ nullptr };
+        //vkr::Semaphore     _frameDoneSemaphore{ nullptr }; // TODO remove
 
     public:
         FrameCommands(FrameCommands&& that) = default;
@@ -125,17 +136,8 @@ namespace eureka
             FrameCommandsConfig config = FrameCommandsConfig{}
         );
 
-        vk::Fence DoneFence() const 
-        {
-            return *_frameCommandsDoneFence;
-        }
-
-        vk::Semaphore DoneSemaphore() const
-        {
-            return *_frameDoneSemaphore;
-        }
-
-        vk::CommandBuffer NewCommandBuffer();
+        vk::Fence NewSubmitFence();
+        SubmitCommandBuffer NewCommandBuffer();
 
         void Reset();
     };

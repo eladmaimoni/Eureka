@@ -120,7 +120,7 @@ namespace eureka
         PROFILE_CATEGORIZED_SCOPE("Asset Loading Command Recording", Profiling::Color::Green, Profiling::PROFILING_CATEGORY_RENDERING);
         DEBUGGER_TRACE("rendering thread fun - recording one shot copy");
 
-        auto uploadCommandBuffer = _oneShotSubmissionHandler->NewOneShotCopyCommandBuffer();
+        auto [uploadCommandBuffer, uploadDoneSemaphore] = _oneShotSubmissionHandler->NewOneShotCopyCommandBuffer();
 
         auto& copyQueue = _oneShotSubmissionHandler->CopyQueue();
         auto& graphicsQueue = _oneShotSubmissionHandler->GraphicsQueue();

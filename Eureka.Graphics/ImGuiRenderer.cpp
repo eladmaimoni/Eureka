@@ -83,7 +83,7 @@ namespace eureka
 
         co_await _oneShotSubmissionHandler->ResumeOnRecordingContext();
 
-        auto uploadCommandBuffer = _oneShotSubmissionHandler->NewOneShotCopyCommandBuffer();
+        auto [uploadCommandBuffer, semaphore] = _oneShotSubmissionHandler->NewOneShotCopyCommandBuffer();
         {
             PROFILE_CATEGORIZED_SCOPE("imgui commands", Profiling::Color::Green, Profiling::PROFILING_CATEGORY_RENDERING);
             ScopedCommands commands(uploadCommandBuffer);

@@ -100,17 +100,17 @@ namespace eureka
 
         co_await _oneShotSubmissionHandler->ResumeOnRecordingContext();
      
-        auto oneShotCopyTriangleCommandBuffer = _oneShotSubmissionHandler->NewOneShotCopyCommandBuffer();
+        auto [uploadCommandBuffer, uploadDoneSemaphore] = _oneShotSubmissionHandler->NewOneShotCopyCommandBuffer();
         {
-            ScopedCommands commands(oneShotCopyTriangleCommandBuffer);
+            ScopedCommands commands(uploadCommandBuffer);
 
-            oneShotCopyTriangleCommandBuffer.copyBuffer(
+            uploadCommandBuffer.copyBuffer(
                 _stageZone.Buffer(),
                 _triangle.Buffer(),
                 { vk::BufferCopy{.srcOffset = 0, .dstOffset = 0, .size = _triangle.ByteSize()} }
             );
         }
-        _oneShotSubmissionHandler->AppendCopyCommandSubmission(oneShotCopyTriangleCommandBuffer);
+        _oneShotSubmissionHandler->AppendCopyCommandSubmission(uploadCommandBuffer);
     }
 
     void RenderingSystem::HandleResize(uint32_t w, uint32_t h)
@@ -161,14 +161,16 @@ namespace eureka
 
             _submissionThreadExecutionContext->Executor().loop_all(MAX_COPY_SUBMITS_PER_FRAME);
 
-            _oneShotSubmissionHandler->SubmitPendingCopies(beginFrameInfo.frame_done_copy_signal_fence);
+            _oneShotSubmissionHandler->SubmitPendingCopies();
             _oneShotSubmissionHandler->PollCopyCompletions();
+            //_oneShotSubmissionHandler->SubmitPendingGraphics(vk::Fence signalFence);
+            //_oneShotSubmissionHandler->PollraphicsCompletions();
 
             _imguiRenderer->SyncBuffers();
 
             _submissionThreadExecutionContext->PreRenderExecutor().loop(100);
 
-            auto mainCommandBuffer = _frameContext->NewGraphicsCommandBuffer();
+            auto [mainCommandBuffer,doneSemaphore] = _frameContext->NewGraphicsCommandBuffer();
         
             //PROFILE_CATEGORIZED_SCOPE("Record Submit", Profiling::Color::DarkGray, Profiling::PROFILING_CATEGORY_RENDERING);
 
@@ -196,12 +198,13 @@ namespace eureka
                 .commandBufferCount = 1,
                 .pCommandBuffers = &mainCommandBuffer,
                 .signalSemaphoreCount = 1,
-                .pSignalSemaphores = &beginFrameInfo.frame_done_signal_semaphore
+                .pSignalSemaphores = &doneSemaphore
             };
-            _graphicsQueue->submit({ submitInfo }, beginFrameInfo.frame_done_graphics_signal_fence);
+            
+            _graphicsQueue->submit({ submitInfo }, _frameContext->NewGraphicsSubmitFence());
 
 
-            _frameContext->EndFrame();
+            _frameContext->EndFrame(doneSemaphore);
         }
         catch (const std::exception& err)
         {

@@ -7,9 +7,9 @@ namespace eureka
     {
         bool           frame_valid;
         vk::Semaphore  frame_available_wait_semaphore;
-        vk::Semaphore  frame_done_signal_semaphore;
-        vk::Fence      frame_done_graphics_signal_fence;
-        vk::Fence      frame_done_copy_signal_fence;
+        //vk::Semaphore  frame_done_signal_semaphore;
+        //vk::Fence      frame_done_graphics_signal_fence;
+        //vk::Fence      frame_done_copy_signal_fence;
     };
 
     class SwapChainFrameContext
@@ -68,10 +68,10 @@ namespace eureka
                 return BeginFrameInfo
                 {
                     .frame_valid = true,
-                    .frame_available_wait_semaphore = imageReadySemaphore,
+                    .frame_available_wait_semaphore = imageReadySemaphore/*,
                     .frame_done_signal_semaphore = _currentFrameGraphicsCommnds->DoneSemaphore(),
                     .frame_done_graphics_signal_fence = _currentFrameGraphicsCommnds->DoneFence(),
-                    .frame_done_copy_signal_fence = _currentFrameCopyCommnds->DoneFence()
+                    .frame_done_copy_signal_fence = _currentFrameCopyCommnds->DoneFence()*/
                 };
             }
             else
@@ -85,11 +85,11 @@ namespace eureka
 
         }
 
-        vk::CommandBuffer NewGraphicsCommandBuffer()
+        SubmitCommandBuffer NewGraphicsCommandBuffer()
         {
             return _currentFrameGraphicsCommnds->NewCommandBuffer();
         }
-        vk::CommandBuffer NewCopyCommandBuffer()
+        SubmitCommandBuffer NewCopyCommandBuffer()
         {
             return _currentFrameCopyCommnds->NewCommandBuffer();
         }
@@ -98,10 +98,10 @@ namespace eureka
             return _currentRenderTarget->BeginInfo();
         }
 
-        void EndFrame()
+        void EndFrame(vk::Semaphore waitSemaphore)
         {
             PROFILE_CATEGORIZED_SCOPE("Present", Profiling::Color::Gray, Profiling::PROFILING_CATEGORY_RENDERING);
-            auto result = _swapChain->PresentLastAcquiredImageAsync(_currentFrameGraphicsCommnds->DoneSemaphore());
+            auto result = _swapChain->PresentLastAcquiredImageAsync(waitSemaphore);
 
             if (result == vk::Result::eErrorOutOfDateKHR)
             {
@@ -121,6 +121,15 @@ namespace eureka
         sigslot::connection ConnectResizeSlot(Callable&& slot)
         {
             return _resizeSignal.connect(std::forward<Callable>(slot));
+        }
+
+        vk::Fence NewGraphicsSubmitFence()
+        {
+            return _currentFrameGraphicsCommnds->NewSubmitFence();
+        }        
+        vk::Fence NewCopySubmitFence()
+        {
+            return _currentFrameCopyCommnds->NewSubmitFence();
         }
     private:
 

@@ -46,16 +46,16 @@ namespace eureka
         std::shared_ptr<SubmissionThreadExecutionContext> _submissionThreadExecutionContext;
         std::shared_ptr<SwapChainFrameContext> _frameContext;
         future_t<void> DoAppendSubmission(vk::CommandBuffer buffer, std::deque<OneShotSubmissionPacket>& vec);
-        void DoSubmitPending(vk::Fence signalFence, Queue& queue, ExecutingneShotSubmissions& executing, std::deque<OneShotSubmissionPacket>& pending);
+        void DoSubmitPending(vk::Fence submitFence, Queue& queue, ExecutingneShotSubmissions& executing, std::deque<OneShotSubmissionPacket>& pending);
         void DoPollCompletions(ExecutingneShotSubmissions& executing);
     public:
         OneShotSubmissionHandler(DeviceContext& deviceContext, Queue copyQueue, Queue graphicsQueue, std::shared_ptr<SwapChainFrameContext> frameContext, std::shared_ptr<SubmissionThreadExecutionContext> submissionThreadExecutionContext);
         future_t<void> AppendCopyCommandSubmission(vk::CommandBuffer buffer);
-        void SubmitPendingCopies(vk::Fence signalFence);
+        void SubmitPendingCopies();
         void PollCopyCompletions();
 
         future_t<void> AppendGraphicsSubmission(vk::CommandBuffer buffer);
-        void SubmitPendingGraphics(vk::Fence signalFence);
+        void SubmitPendingGraphics();
         void PollraphicsCompletions();
 
         [[nodiscard]] auto ResumeOnRecordingContext()
@@ -63,12 +63,12 @@ namespace eureka
             return concurrencpp::resume_on(_submissionThreadExecutionContext->OneShotCopySubmitExecutor());
         }
 
-        vk::CommandBuffer NewOneShotCopyCommandBuffer()
+        SubmitCommandBuffer NewOneShotCopyCommandBuffer()
         {
             assert(tls_is_rendering_thread);
             return _frameContext->NewCopyCommandBuffer();
         }
-        vk::CommandBuffer NewOneShotGraphicsCommandBuffer()
+        SubmitCommandBuffer NewOneShotGraphicsCommandBuffer()
         {
             assert(tls_is_rendering_thread);
             return _frameContext->NewGraphicsCommandBuffer();

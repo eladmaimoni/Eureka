@@ -32,9 +32,12 @@ namespace eureka
         return DoAppendSubmission(buffer, _pendingOneShotGraphics);
     }
 
-    void OneShotSubmissionHandler::SubmitPendingGraphics(vk::Fence signalFence)
+    void OneShotSubmissionHandler::SubmitPendingGraphics()
     {
-        DoSubmitPending(signalFence, _graphicsQueue, _executingGraphics, _pendingOneShotGraphics);
+        if (!_pendingOneShotGraphics.empty())
+        {
+            DoSubmitPending(_frameContext->NewGraphicsSubmitFence(), _graphicsQueue, _executingGraphics, _pendingOneShotGraphics);
+        }
     }
 
     void OneShotSubmissionHandler::PollraphicsCompletions()
@@ -70,49 +73,52 @@ namespace eureka
         return result;
     }
 
-    void OneShotSubmissionHandler::DoSubmitPending(vk::Fence signalFence, Queue& queue, ExecutingneShotSubmissions& executing, std::deque<OneShotSubmissionPacket>& pending)
-    {
-        if (!pending.empty())
+    void OneShotSubmissionHandler::DoSubmitPending(vk::Fence submitFence, Queue& queue, ExecutingneShotSubmissions& executing, std::deque<OneShotSubmissionPacket>& pending)
+    {        
+        auto currentExecutingCount = executing.pkts.size();
+        auto addedExecutingCount = static_cast<uint32_t>(std::min(pending.size(), executing.command_buffers.capacity() - currentExecutingCount));
+
+        for (auto i = 0u; i < addedExecutingCount; ++i)
         {
-            auto currentExecutingCount = executing.pkts.size();
-            auto addedExecutingCount = static_cast<uint32_t>(std::min(pending.size(), executing.command_buffers.capacity() - currentExecutingCount));
+            auto pkt = std::move(_pendingOneShotCopies.front());
+            _pendingOneShotCopies.pop_front();
 
-            for (auto i = 0u; i < addedExecutingCount; ++i)
-            {
-                auto pkt = std::move(_pendingOneShotCopies.front());
-                _pendingOneShotCopies.pop_front();
-
-                executing.done_signal_values.emplace_back(DONE_VAL);
-                executing.done_semaphores.emplace_back(*pkt.done_timeline_semaphore);
-                executing.command_buffers.emplace_back(pkt.command_buffer);
-                executing.pkts.emplace_back(std::move(pkt));
-            }
-
-            vk::TimelineSemaphoreSubmitInfo timelineInfo
-            {
-                .signalSemaphoreValueCount = addedExecutingCount,
-                .pSignalSemaphoreValues = executing.done_signal_values.data() + currentExecutingCount,
-            };
-
-            vk::SubmitInfo uploadsSubmitInfo
-            {
-                .pNext = &timelineInfo,
-                .waitSemaphoreCount = 0,
-                .pWaitSemaphores = nullptr,
-                .pWaitDstStageMask = {},
-                .commandBufferCount = addedExecutingCount,
-                .pCommandBuffers = executing.command_buffers.data() + currentExecutingCount,
-                .signalSemaphoreCount = addedExecutingCount,
-                .pSignalSemaphores = executing.done_semaphores.data() + currentExecutingCount
-            };
-
-            queue->submit(uploadsSubmitInfo, signalFence);
+            executing.done_signal_values.emplace_back(DONE_VAL);
+            executing.done_semaphores.emplace_back(*pkt.done_timeline_semaphore);
+            executing.command_buffers.emplace_back(pkt.command_buffer);
+            executing.pkts.emplace_back(std::move(pkt));
         }
+
+        vk::TimelineSemaphoreSubmitInfo timelineInfo
+        {
+            .signalSemaphoreValueCount = addedExecutingCount,
+            .pSignalSemaphoreValues = executing.done_signal_values.data() + currentExecutingCount,
+        };
+
+        vk::SubmitInfo uploadsSubmitInfo
+        {
+            .pNext = &timelineInfo,
+            .waitSemaphoreCount = 0,
+            .pWaitSemaphores = nullptr,
+            .pWaitDstStageMask = {},
+            .commandBufferCount = addedExecutingCount,
+            .pCommandBuffers = executing.command_buffers.data() + currentExecutingCount,
+            .signalSemaphoreCount = addedExecutingCount,
+            .pSignalSemaphores = executing.done_semaphores.data() + currentExecutingCount
+        };
+
+
+        queue->submit(uploadsSubmitInfo, submitFence);
+        
     }
 
-    void OneShotSubmissionHandler::SubmitPendingCopies(vk::Fence signalFence)
+    void OneShotSubmissionHandler::SubmitPendingCopies()
     {
-        DoSubmitPending(signalFence, _copyQueue, _executingCopies, _pendingOneShotCopies);
+        if (!_pendingOneShotCopies.empty())
+        {
+            DoSubmitPending(_frameContext->NewCopySubmitFence(), _copyQueue, _executingCopies, _pendingOneShotCopies);
+        }
+  
     }
 
     void OneShotSubmissionHandler::PollCopyCompletions()
