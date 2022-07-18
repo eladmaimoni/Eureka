@@ -27,6 +27,15 @@ namespace eureka
         );
     }
 
+    bool Window::ShouldClose()
+    {
+        return glfwWindowShouldClose(_window.get());
+    }
+    void Window::PollEvents()
+    {
+        glfwPollEvents();
+    }
+
     void Window::InitializeSwapChain(GLFWVulkanSurface& windowSurface)
     {
         SwapChainTargetConfig swapChainDesc{};

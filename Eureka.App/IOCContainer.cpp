@@ -10,6 +10,7 @@
 #include "../Eureka.Graphics/Descriptors.hpp"
 #include "../Eureka.Graphics/ImGuiRenderer.hpp"
 
+
 namespace eureka
 {
     InstanceConfig CreateInstanceConfig(const GLFWRuntime& glfw)
@@ -50,6 +51,7 @@ namespace eureka
         _instance(CreateInstanceConfig(_glfw))
 
     {
+        RenderDockIntegrationInstance = &_renderDocIntegration;
         Profiling::InitProfilingCategories();
 
         InitializeGraphicsSubsystem();
@@ -59,7 +61,7 @@ namespace eureka
 
     IOCContainer::~IOCContainer()
     {
-       
+        RenderDockIntegrationInstance = nullptr;
     }
 
     std::shared_ptr<RenderingSystem> IOCContainer::GetRenderingSystem() 

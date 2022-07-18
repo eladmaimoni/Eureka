@@ -34,19 +34,10 @@ namespace eureka
     {
         Initialize();
    
-        auto i = 0;
-        while (!glfwWindowShouldClose(_window->WindowHandle()))
+        while (!_window->ShouldClose())
         {
-            glfwPollEvents();
+            _window->PollEvents();
             _renderingSystem->RunOne();
-            //std::this_thread::sleep_for(100ms);
-            if (0 == (i % 100))
-            {
-                //DEBUGGER_TRACE("app loop {}", i);
-            }
-
-   
-            ++i;
         }
    
         _renderingSystem->Deinitialize();

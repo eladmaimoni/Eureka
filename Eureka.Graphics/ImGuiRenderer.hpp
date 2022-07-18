@@ -47,7 +47,10 @@ namespace eureka
         );
         ~ImGuiRenderer();
         future_t<void> Setup(std::shared_ptr<Window> window, std::shared_ptr<PipelineCache> pipelineCache, std::shared_ptr<MTDescriptorAllocator> descPool);
-
+        bool Active() const
+        {
+            return _active;
+        }
         void Layout();
         void SyncBuffers();
         void RecordDrawCommands(vk::CommandBuffer commandBuffer);

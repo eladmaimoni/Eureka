@@ -3,7 +3,7 @@
 #include "RenderTarget.hpp"
 #include "GraphicsDefaults.hpp"
 #include <profiling_macros.hpp>
-
+#include "RenderDocIntegration.hpp"
 
 namespace eureka
 {
@@ -144,8 +144,18 @@ namespace eureka
     void RenderingSystem::RunOne()
     {
      
+        static int HACK = 0;
         try
         {
+            if (_imguiRenderer->Active())
+            {
+                HACK += 1;
+            }
+            if (HACK > 0 && HACK < 3)
+            {
+                RenderDockIntegrationInstance->StartCapture();
+            }
+        
             PROFILE_CATEGORIZED_SCOPE("RunOne", Profiling::Color::Blue, Profiling::PROFILING_CATEGORY_RENDERING);
 
             //DEBUGGER_TRACE("RUN ONE START");
@@ -205,6 +215,11 @@ namespace eureka
 
 
             _frameContext->EndFrame(doneSemaphore);
+            if (HACK > 0 && HACK < 3)
+            {
+                RenderDockIntegrationInstance->EndCapture();
+            }
+      
         }
         catch (const std::exception& err)
         {

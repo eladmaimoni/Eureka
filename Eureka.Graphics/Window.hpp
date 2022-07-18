@@ -27,7 +27,13 @@ namespace eureka
             Queue graphicsQueue
         );
         
+        bool ShouldClose();
+        void PollEvents();
+
+
         GLFWwindow* WindowHandle() { return _window.get(); }
+
+
         std::shared_ptr<SwapChain> GetSwapChain() const
         {
             return _swapChain;

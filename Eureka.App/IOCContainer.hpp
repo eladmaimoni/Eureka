@@ -3,7 +3,7 @@
 #include <DeviceContext.hpp>
 #include <GraphicsDefaults.hpp>
 #include <Pool.hpp>
-
+#include "../Eureka.Graphics/RenderDocIntegration.hpp"
 
 namespace eureka
 {
@@ -15,6 +15,7 @@ namespace eureka
     class Window;
     class MTDescriptorAllocator;
     class PipelineCache;
+    class RenderDocIntegration;
 
     class IOCContainer
     {
@@ -32,17 +33,18 @@ namespace eureka
         DeviceContext                                      _deviceContext;
         Queue                                              _graphicsQueue;
         Queue                                              _copyQueue;
-                                                          
+        RenderDocIntegration                               _renderDocIntegration;
+
         concurrencpp::runtime                              _concurrencyRuntime;
         std::shared_ptr<SubmissionThreadExecutionContext>  _submissionThreadExecutionContext;
-        std::shared_ptr<OneShotSubmissionHandler>      _oneShotSubmissionHandler;
+        std::shared_ptr<OneShotSubmissionHandler>          _oneShotSubmissionHandler;
         std::shared_ptr<HostWriteCombinedRingPool>         _uploadPool;
         std::shared_ptr<ImGuiIntegration>                  _imguiIntegration;
         std::shared_ptr<RenderingSystem>                   _renderingSystem;
         std::shared_ptr<Window>                            _window;
         std::shared_ptr<PipelineCache>                     _pipelineCache;
 
-        std::shared_ptr<MTDescriptorAllocator>              _descPool;
+        std::shared_ptr<MTDescriptorAllocator>             _descPool;
         future_t<void> InitializeGraphicsSubsystem();
 
     };

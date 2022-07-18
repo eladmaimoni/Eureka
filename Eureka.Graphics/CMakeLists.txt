@@ -11,7 +11,12 @@ set_source_group(
     "imgui_impl_glfw.h"
     "imgui_impl_glfw.cpp"
 )
- 
+set_source_group(
+    renderdoc 
+    "RenderDocIntegration.hpp"
+    "RenderDocIntegration.cpp"
+    "renderdoc_app.h"
+)
 set_source_group(
     infrastructure 
     "GraphicsDefaults.hpp"
@@ -112,6 +117,7 @@ add_library(
     ${ui}
     ${vulkan}
     ${windowing}
+    ${renderdoc}
  )
 
 
