@@ -5,6 +5,7 @@
 
 namespace eureka
 {
+
     struct OneShotSubmissionPacket
     {
         vk::CommandBuffer                  command_buffer{ nullptr };
@@ -30,7 +31,7 @@ namespace eureka
 
     class OneShotSubmissionHandler
     {
-        static constexpr uint64_t             DONE_VAL = 1;
+        std::shared_ptr<vkr::Device>              _device;
 
         DeviceContext&                            _deviceContext;
         Queue                                     _copyQueue;
@@ -38,16 +39,14 @@ namespace eureka
         std::deque<OneShotSubmissionPacket>       _pendingOneShotCopies;
         std::deque<OneShotSubmissionPacket>       _pendingOneShotGraphics;
 
-        ExecutingneShotSubmissions            _executingCopies{};
-        ExecutingneShotSubmissions            _executingGraphics{};
+        ExecutingneShotSubmissions                _executingCopies{};
+        ExecutingneShotSubmissions                _executingGraphics{};
         // TODO linear ranges with fixed capacity and holes fixing
-
-
         std::shared_ptr<SubmissionThreadExecutionContext> _submissionThreadExecutionContext;
-        std::shared_ptr<SwapChainFrameContext> _frameContext;
-        future_t<void> DoAppendSubmission(vk::CommandBuffer buffer, std::deque<OneShotSubmissionPacket>& vec);
-        void DoSubmitPending(vk::Fence submitFence, Queue& queue, ExecutingneShotSubmissions& executing, std::deque<OneShotSubmissionPacket>& pending);
-        void DoPollCompletions(ExecutingneShotSubmissions& executing);
+        std::shared_ptr<SwapChainFrameContext>            _frameContext;
+        //future_t<void> DoAppendSubmission(vk::CommandBuffer buffer, std::deque<OneShotSubmissionPacket>& vec);
+        //void DoSubmitPending(vk::Fence submitFence, Queue& queue, ExecutingneShotSubmissions& executing, std::deque<OneShotSubmissionPacket>& pending);
+        //void DoPollCompletions(ExecutingneShotSubmissions& executing);
     public:
         OneShotSubmissionHandler(DeviceContext& deviceContext, Queue copyQueue, Queue graphicsQueue, std::shared_ptr<SwapChainFrameContext> frameContext, std::shared_ptr<SubmissionThreadExecutionContext> submissionThreadExecutionContext);
         future_t<void> AppendCopyCommandSubmission(vk::CommandBuffer buffer);
@@ -56,7 +55,7 @@ namespace eureka
 
         future_t<void> AppendGraphicsSubmission(vk::CommandBuffer buffer);
         void SubmitPendingGraphics();
-        void PollraphicsCompletions();
+        void PollGraphicsCompletions();
 
         [[nodiscard]] auto ResumeOnRecordingContext()
         {

@@ -163,8 +163,8 @@ namespace eureka
 
             _oneShotSubmissionHandler->SubmitPendingCopies();
             _oneShotSubmissionHandler->PollCopyCompletions();
-            //_oneShotSubmissionHandler->SubmitPendingGraphics(vk::Fence signalFence);
-            //_oneShotSubmissionHandler->PollraphicsCompletions();
+            _oneShotSubmissionHandler->SubmitPendingGraphics();
+            _oneShotSubmissionHandler->PollGraphicsCompletions();
 
             _imguiRenderer->SyncBuffers();
 

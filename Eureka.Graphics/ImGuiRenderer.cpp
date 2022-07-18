@@ -118,23 +118,23 @@ namespace eureka
 
         auto graphicsQueue = _oneShotSubmissionHandler->GraphicsQueue();
 
-        //auto graphicsCommandBuffer = _oneShotSubmissionHandler->NewOneShotGraphicsCommandBuffer();
+        auto [graphicsCommandBuffer, _] = _oneShotSubmissionHandler->NewOneShotGraphicsCommandBuffer();
 
-        //{
-        //    ScopedCommands sc(graphicsCommandBuffer);
+        {
+            ScopedCommands sc(graphicsCommandBuffer);
 
-        //    graphicsCommandBuffer.pipelineBarrier(
-        //        vk::PipelineStageFlagBits::eTransfer,
-        //        vk::PipelineStageFlagBits::eBottomOfPipe,
-        //        {},
-        //        nullptr,
-        //        nullptr,
-        //        { uploadCommands.graphics_queue_acquire }
-        //    );
-        //}
+            graphicsCommandBuffer.pipelineBarrier(
+                vk::PipelineStageFlagBits::eBottomOfPipe,
+                vk::PipelineStageFlagBits::eFragmentShader,
+                {},
+                nullptr,
+                nullptr,
+                { uploadCommands.graphics_queue_acquire }
+            );
+        }
         // record graphics queue acquire
 
-
+        co_await _oneShotSubmissionHandler->AppendGraphicsSubmission(graphicsCommandBuffer);
 
 
 
