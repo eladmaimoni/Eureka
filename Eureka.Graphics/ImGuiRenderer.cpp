@@ -207,6 +207,8 @@ namespace eureka
     void ImGuiRenderer::RecordDrawCommands(vk::CommandBuffer commandBuffer)
     {
         if (!_active) return;
+        ImDrawData* imDrawData = ImGui::GetDrawData();
+        if (!imDrawData) return;
 
         ImGuiIO& io = ImGui::GetIO();
 
@@ -234,7 +236,8 @@ namespace eureka
 
 
         // Render commands
-        ImDrawData* imDrawData = ImGui::GetDrawData();
+
+    
         int32_t vertexOffset = 0;
         int32_t indexOffset = 0;
 
