@@ -8,6 +8,8 @@ set_source_group(
     "ImGuiRenderer.cpp"
     "SceneController.hpp" 
     "SceneController.cpp"
+    "imgui_impl_glfw.h"
+    "imgui_impl_glfw.cpp"
 )
  
 set_source_group(

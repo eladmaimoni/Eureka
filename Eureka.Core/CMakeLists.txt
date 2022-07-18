@@ -3,7 +3,7 @@
 set_source_group(utils "macros.hpp" "basic_utils.hpp")
 set_source_group(compiler "compiler.hpp")
 set_source_group(concepts "basic_concepts.hpp")
-set_source_group(debugging "debugger_trace.hpp" "debugger_trace_impl.hpp" "debugger_trace_impl.cpp")
+set_source_group(debugging "debugger_trace.hpp" "debugger_trace_impl.hpp" "debugger_trace_impl.cpp" "trigger_debugger_breakpoint.hpp")
 set_source_group(error "basic_errors.hpp")
 set_source_group(formatting "formatter_specializations.hpp")
 set_source_group(logging "logging.hpp" "logging_impl.hpp" "logging_impl.cpp")

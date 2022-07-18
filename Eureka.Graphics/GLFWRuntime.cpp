@@ -1,11 +1,18 @@
 #include "GLFWRuntime.hpp"
 #include "vk_error_handling.hpp"
-
+#include <debugger_trace.hpp>
+#include <trigger_debugger_breakpoint.hpp>
 namespace eureka
 {
+    void glfw_error_callback(int error, const char* description)
+    {
+        DEBUGGER_TRACE("Glfw Error {}: {}", error, description);
+        trigger_debugger_breakpoint();
+    }
 
     GLFWRuntime::GLFWRuntime()
     {
+        glfwSetErrorCallback(glfw_error_callback);
         [[maybe_unused]] auto result = glfwInit();
         assert(result == GLFW_TRUE);
     }

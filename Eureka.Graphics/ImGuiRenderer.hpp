@@ -13,6 +13,7 @@
 #include "CommandsUtils.hpp"
 #include "Pipeline.hpp"
 #include "PipelineTypes.hpp"
+#include "Window.hpp"
 
 namespace eureka
 {
@@ -30,21 +31,22 @@ namespace eureka
         SampledImage2D _fontImage;
         VertexAndIndexHostVisibleDeviceBuffer _vertexIndexBuffer;
 
-        //HostVisibleDeviceConstantBuffer      _constantBuffer;
+
         std::shared_ptr<ImGuiPipeline>       _pipeline;
         bool _active{ false };
         uint64_t _vertexBufferOffset{ 0 };
     public:
         ImGuiRenderer(
             DeviceContext& deviceContext,
+            std::shared_ptr<Window> window,
             std::shared_ptr<PipelineCache> pipelineCache,
             std::shared_ptr<MTDescriptorAllocator> descPool,
             std::shared_ptr<OneShotSubmissionHandler> oneShotSubmissionHandler,
             std::shared_ptr<HostWriteCombinedRingPool> uploadPool,
             PoolExecutor poolExecutor
         );
-
-        future_t<void> Setup(std::shared_ptr<PipelineCache> pipelineCache, std::shared_ptr<MTDescriptorAllocator> descPool);
+        ~ImGuiRenderer();
+        future_t<void> Setup(std::shared_ptr<Window> window, std::shared_ptr<PipelineCache> pipelineCache, std::shared_ptr<MTDescriptorAllocator> descPool);
 
         void Layout();
         void SyncBuffers();

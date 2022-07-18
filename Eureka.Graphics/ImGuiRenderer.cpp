@@ -1,27 +1,49 @@
 #include "ImGuiRenderer.hpp"
+#include "imgui_impl_glfw.h"
 
 namespace eureka
 {
 
 
-    ImGuiRenderer::ImGuiRenderer(DeviceContext& deviceContext, std::shared_ptr<PipelineCache> pipelineCache, std::shared_ptr<MTDescriptorAllocator> descPool, std::shared_ptr<OneShotSubmissionHandler> oneShotSubmissionHandler, std::shared_ptr<HostWriteCombinedRingPool> uploadPool, PoolExecutor poolExecutor) :
+    ImGuiRenderer::ImGuiRenderer(DeviceContext& deviceContext, std::shared_ptr<Window> window, std::shared_ptr<PipelineCache> pipelineCache, std::shared_ptr<MTDescriptorAllocator> descPool, std::shared_ptr<OneShotSubmissionHandler> oneShotSubmissionHandler, std::shared_ptr<HostWriteCombinedRingPool> uploadPool, PoolExecutor poolExecutor) :
         _deviceContext(deviceContext),
         _uploadPool(std::move(uploadPool)),
         _poolExecutor(std::move(poolExecutor)),
         _oneShotSubmissionHandler(std::move(oneShotSubmissionHandler))
     {
-        Setup(std::move(pipelineCache), std::move(descPool));
+        Setup(std::move(window), std::move(pipelineCache), std::move(descPool));
     }
 
-    future_t<void> ImGuiRenderer::Setup(std::shared_ptr<PipelineCache> pipelineCache, std::shared_ptr<MTDescriptorAllocator> descPool)
+    ImGuiRenderer::~ImGuiRenderer()
+    {
+        ImGui_ImplGlfw_Shutdown();
+    }
+
+    future_t<void> ImGuiRenderer::Setup(std::shared_ptr<Window> window, std::shared_ptr<PipelineCache> pipelineCache, std::shared_ptr<MTDescriptorAllocator> descPool)
     {
         PROFILE_CATEGORIZED_UNTHREADED_SCOPE("imgui setup", Profiling::Color::Red, Profiling::PROFILING_CATEGORY_INIT);
         co_await concurrencpp::resume_on(*_poolExecutor);
 
+        //
+        // ImGui Stuff
+        //
+        ImGui::StyleColorsDark();
 
-        _vertexIndexBuffer = VertexAndIndexHostVisibleDeviceBuffer(_deviceContext.Allocator(), BufferConfig{ .byte_size = EUREKA_MAX_IMGUI_VERTEX_INDEX_BYTES });
 
         ImGuiIO& io = ImGui::GetIO();
+        io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;       // Enable Keyboard Controls
+        //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+        io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // Enable Docking
+        io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // Enable Multi-Viewport / Platform Windows
+
+
+        ImGui_ImplGlfw_InitForVulkan(window->WindowHandle(), true);
+        //
+        // vulkan stuff
+        //
+        _pipeline = pipelineCache->GetImGuiPipeline();
+        _vertexIndexBuffer = VertexAndIndexHostVisibleDeviceBuffer(_deviceContext.Allocator(), BufferConfig{ .byte_size = EUREKA_MAX_IMGUI_VERTEX_INDEX_BYTES });
+
 
         // Create font texture
         unsigned char* fontData;
@@ -53,7 +75,7 @@ namespace eureka
         auto stageBuffer = co_await _uploadPool->EnqueueAllocation(uploadSize);
 
 
-        stageBuffer.Assign(transferDesc.unpinned_src_span, 0);
+        stageBuffer.Assign(transferDesc.unpinned_src_span, transferDesc.stage_zone_offset);
 
         auto uploadCommands =
             MakeCopyQueueSampledImageUpload(
@@ -64,7 +86,7 @@ namespace eureka
 
 
 
-        _pipeline = pipelineCache->GetImGuiPipeline();
+        
 
         _descriptorSet = descPool->AllocateSet(_pipeline->GetFragmentShaderDescriptorSetLayout());
 
@@ -146,7 +168,7 @@ namespace eureka
     void ImGuiRenderer::Layout()
     {
         if (!_active) return;
-
+        ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
         ImGui::ShowDemoWindow();
         ImGui::Render();

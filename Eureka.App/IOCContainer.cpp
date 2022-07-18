@@ -122,6 +122,7 @@ namespace eureka
 
         auto imguiRenderer = std::make_shared<ImGuiRenderer>(
             _deviceContext,
+            _window,
             _pipelineCache,
             _descPool,
             _oneShotSubmissionHandler,
