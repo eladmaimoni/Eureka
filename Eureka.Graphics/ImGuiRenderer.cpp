@@ -182,6 +182,8 @@ namespace eureka
         if (!_active) return;
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
+        auto vp = ImGui::GetMainViewport();
+        ImGui::DockSpaceOverViewport(vp, ImGuiDockNodeFlags_PassthruCentralNode);
         ImGui::SetNextWindowSize(ImVec2(128, 64), ImGuiCond_FirstUseEver);
         ImGui::Begin("Test Window", nullptr);
         ImGui::Text("Test Text");
