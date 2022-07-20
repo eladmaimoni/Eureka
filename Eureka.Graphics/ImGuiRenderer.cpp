@@ -5,6 +5,12 @@
 namespace eureka
 {
 
+    static_assert(sizeof(ImDrawVert) == sizeof(ImGuiVertex));
+    static_assert(offsetof(ImDrawVert, pos) == offsetof(ImGuiVertex, position));
+    static_assert(offsetof(ImDrawVert, uv) == offsetof(ImGuiVertex, uv));
+    static_assert(offsetof(ImDrawVert, col) == offsetof(ImGuiVertex, color));
+
+
 
     ImGuiRenderer::ImGuiRenderer(DeviceContext& deviceContext, std::shared_ptr<Window> window, std::shared_ptr<PipelineCache> pipelineCache, std::shared_ptr<MTDescriptorAllocator> descPool, std::shared_ptr<OneShotSubmissionHandler> oneShotSubmissionHandler, std::shared_ptr<HostWriteCombinedRingPool> uploadPool, PoolExecutor poolExecutor) :
         _deviceContext(deviceContext),
@@ -28,7 +34,12 @@ namespace eureka
         //
         // ImGui Stuff
         //
-        ImGui::StyleColorsDark();
+        ImGuiStyle& style = ImGui::GetStyle();
+        style.Colors[ImGuiCol_TitleBg] = ImVec4(1.0f, 0.0f, 0.0f, 0.6f);
+        style.Colors[ImGuiCol_TitleBgActive] = ImVec4(1.0f, 0.0f, 0.0f, 0.8f);
+        style.Colors[ImGuiCol_MenuBarBg] = ImVec4(1.0f, 0.0f, 0.0f, 0.4f);
+        style.Colors[ImGuiCol_Header] = ImVec4(1.0f, 0.0f, 0.0f, 0.4f);
+        style.Colors[ImGuiCol_CheckMark] = ImVec4(0.0f, 1.0f, 0.0f, 1.0f);
 
 
         ImGuiIO& io = ImGui::GetIO();
@@ -171,7 +182,10 @@ namespace eureka
         if (!_active) return;
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
-        ImGui::ShowDemoWindow();
+        ImGui::SetNextWindowSize(ImVec2(128, 64), ImGuiCond_FirstUseEver);
+        ImGui::Begin("Test Window", nullptr);
+        ImGui::Text("Test Text");
+        ImGui::End();
         ImGui::Render();
     }
 

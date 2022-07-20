@@ -11,11 +11,16 @@ namespace eureka
     struct SingleColorOutputAttachmentPreset
     {
         std::array<vk::PipelineColorBlendAttachmentState, 1> color_blend_attachment_state
-        { 
+        {
             vk::PipelineColorBlendAttachmentState
             {
-                .blendEnable = false,
-                .colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA
+                .blendEnable = true,
+                .srcColorBlendFactor = vk::BlendFactor::eSrcAlpha,
+                .dstColorBlendFactor = vk::BlendFactor::eOneMinusSrcAlpha,
+                .colorBlendOp = vk::BlendOp::eAdd,
+                .srcAlphaBlendFactor = vk::BlendFactor::eOneMinusSrcAlpha,
+                .dstAlphaBlendFactor = vk::BlendFactor::eZero,
+                .colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA,
             }
         };
     };
@@ -150,7 +155,7 @@ namespace eureka
     template<>
     struct AttributeFormat<uint32_t>
     {
-        static constexpr vk::Format format = vk::Format::eR8G8B8Unorm;
+        static constexpr vk::Format format = vk::Format::eR8G8B8A8Unorm;
     };
 
     template<>

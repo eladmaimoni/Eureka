@@ -34,6 +34,9 @@ EUREKA_SHADER_IDENTIFIER(ShadedMeshWithNormalMapVS, vk::ShaderStageFlagBits::eVe
 EUREKA_SHADER_IDENTIFIER(PhongShadedMeshWithNormalMapFS, vk::ShaderStageFlagBits::eFragment);
 EUREKA_SHADER_IDENTIFIER(TriangleVS, vk::ShaderStageFlagBits::eVertex);
 EUREKA_SHADER_IDENTIFIER(TriangleFS, vk::ShaderStageFlagBits::eFragment);
-EUREKA_SHADER_IDENTIFIER(ImGuiFS, vk::ShaderStageFlagBits::eFragment);
 EUREKA_SHADER_IDENTIFIER(ImGuiVS, vk::ShaderStageFlagBits::eVertex);
+EUREKA_SHADER_IDENTIFIER(ImGuiFS, vk::ShaderStageFlagBits::eFragment);
+EUREKA_SHADER_IDENTIFIER(ImGuiGLSLVS, vk::ShaderStageFlagBits::eVertex);
+EUREKA_SHADER_IDENTIFIER(ImGuiGLSLFS, vk::ShaderStageFlagBits::eFragment);
+
 #endif // SHADERS_HEADER

@@ -1,5 +1,7 @@
 #include <ImGuiVS.spvhpp>
 #include <ImGuiFS.spvhpp>
+#include <ImGuiGLSLVS.spvhpp>
+#include <ImGuiGLSLFS.spvhpp>
 #include <ColoredVertexVS.spvhpp>
 #include <ColoredVertexFS.spvhpp>
 #include <TriangleVS.spvhpp>
