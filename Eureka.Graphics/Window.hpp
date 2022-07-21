@@ -33,23 +33,13 @@ namespace eureka
 
         GLFWwindow* WindowHandle() { return _window.get(); }
 
-
         std::shared_ptr<SwapChain> GetSwapChain() const
         {
             return _swapChain;
         }
         
-
         void InitializeSwapChain(GLFWVulkanSurface& windowSurface);
-
-
-        void HandleResize(uint32_t width, uint32_t height)
-        {
-            DEBUGGER_TRACE("HandleResize({},{})", width, height);
-
-            // recreate swap chain images and views
-            _swapChain->Resize(width, height);
-        }
+        void HandleResize(uint32_t width, uint32_t height);
 
 
     };

@@ -10,7 +10,7 @@ namespace eureka
     static_assert(offsetof(ImDrawVert, uv) == offsetof(ImGuiVertex, uv));
     static_assert(offsetof(ImDrawVert, col) == offsetof(ImGuiVertex, color));
 
-
+    inline constexpr uint64_t EUREKA_MAX_IMGUI_VERTEX_INDEX_BYTES = 4 * 1024 * 1024;
 
     ImGuiRenderer::ImGuiRenderer(DeviceContext& deviceContext, std::shared_ptr<Window> window, std::shared_ptr<PipelineCache> pipelineCache, std::shared_ptr<MTDescriptorAllocator> descPool, std::shared_ptr<OneShotSubmissionHandler> oneShotSubmissionHandler, std::shared_ptr<HostWriteCombinedRingPool> uploadPool, PoolExecutor poolExecutor) :
         _deviceContext(deviceContext),
@@ -47,7 +47,7 @@ namespace eureka
         //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // Enable Docking
         io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // Enable Multi-Viewport / Platform Windows
-
+        io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;
 
         ImGui_ImplGlfw_InitForVulkan(window->WindowHandle(), true);
         //
@@ -180,13 +180,67 @@ namespace eureka
     void ImGuiRenderer::Layout()
     {
         if (!_active) return;
+
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
         auto vp = ImGui::GetMainViewport();
-        ImGui::DockSpaceOverViewport(vp, ImGuiDockNodeFlags_PassthruCentralNode);
+        auto mainDockSpaceId = ImGui::DockSpaceOverViewport(vp, ImGuiDockNodeFlags_PassthruCentralNode);
+
         ImGui::SetNextWindowSize(ImVec2(128, 64), ImGuiCond_FirstUseEver);
         ImGui::Begin("Test Window", nullptr);
+
+        if (_first)
+        {
+            auto node = ImGui::DockBuilderGetNode(mainDockSpaceId);
+            //node->ChildNodes
+            //auto leftDockSpaceId = ImGui::DockBuilderSplitNode(mainDockSpaceId, ImGuiDir_Left, 0.20f, NULL, &mainDockSpaceId);
+
+            ImGui::DockBuilderDockWindow("Test Window", node->ChildNodes[0]->ID);
+            _first = false;
+        }
+  
+
+
         ImGui::Text("Test Text");
+
+        //////////////////////////////////////////////////////////////////////////
+
+        ImGui::Separator();
+
+        if (ImGui::TreeNode("0001: Renderer: Large Mesh Support"))
+        {
+            ImDrawList* draw_list = ImGui::GetWindowDrawList();
+            {
+                static int vtx_count = 60000;
+                ImGui::SliderInt("VtxCount##1", &vtx_count, 0, 100000);
+                ImVec2 p = ImGui::GetCursorScreenPos();
+                for (int n = 0; n < vtx_count / 4; n++)
+                {
+                    float off_x = (float)(n % 100) * 3.0f;
+                    float off_y = (float)(n % 100) * 1.0f;
+                    ImU32 col = IM_COL32(((n * 17) & 255), ((n * 59) & 255), ((n * 83) & 255), 255);
+                    draw_list->AddRectFilled(ImVec2(p.x + off_x, p.y + off_y), ImVec2(p.x + off_x + 50, p.y + off_y + 50), col);
+                }
+                ImGui::Dummy(ImVec2(300 + 50, 100 + 50));
+                ImGui::Text("VtxBuffer.Size = %d", draw_list->VtxBuffer.Size);
+            }
+            {
+                static int vtx_count = 60000;
+                ImGui::SliderInt("VtxCount##2", &vtx_count, 0, 100000);
+                ImVec2 p = ImGui::GetCursorScreenPos();
+                for (int n = 0; n < vtx_count / (10 * 4); n++)
+                {
+                    float off_x = (float)(n % 100) * 3.0f;
+                    float off_y = (float)(n % 100) * 1.0f;
+                    ImU32 col = IM_COL32(((n * 17) & 255), ((n * 59) & 255), ((n * 83) & 255), 255);
+                    draw_list->AddText(ImVec2(p.x + off_x, p.y + off_y), col, "ABCDEFGHIJ");
+                }
+                ImGui::Dummy(ImVec2(300 + 50, 100 + 20));
+                ImGui::Text("VtxBuffer.Size = %d", draw_list->VtxBuffer.Size);
+            }
+            ImGui::TreePop();
+        }
+        //////////////////////////////////////////////////////////////////////////
         ImGui::End();
         ImGui::Render();
     }
@@ -276,15 +330,11 @@ namespace eureka
 
         // Render commands
 
-    
-        int32_t vertexOffset = 0;
-        int32_t indexOffset = 0;
+        int32_t globalVertexOffset = 0;
+        int32_t globalIndexOffset = 0;
 
         if (imDrawData->CmdListsCount > 0)
         {
-
-            //VkDeviceSize offsets[1] = { 0 };
-
             commandBuffer.bindIndexBuffer(
                 _vertexIndexBuffer.Buffer(),
                 0,
@@ -297,30 +347,23 @@ namespace eureka
                 { _vertexBufferOffset }
             );
 
-            //vkCmdBindVertexBuffers(commandBuffer, 0, 1, &vertexBuffer.buffer, offsets);
-            //vkCmdBindIndexBuffer(commandBuffer, indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT16);
-
             for (auto i = 0; i < imDrawData->CmdListsCount; ++i)
             {
-                const ImDrawList* cmd_list = imDrawData->CmdLists[i];
-                for (auto j = 0; j < cmd_list->CmdBuffer.Size; ++j)
+                const ImDrawList* imDrawList = imDrawData->CmdLists[i];
+                for (auto j = 0; j < imDrawList->CmdBuffer.Size; ++j)
                 {
-                    const ImDrawCmd* pcmd = &cmd_list->CmdBuffer[j];
+                    const ImDrawCmd* imDrawCommand = &imDrawList->CmdBuffer[j];
                     vk::Rect2D scissorRect;
-                    scissorRect.offset.x = std::max((int32_t)(pcmd->ClipRect.x), 0);
-                    scissorRect.offset.y = std::max((int32_t)(pcmd->ClipRect.y), 0);
-                    scissorRect.extent.width = (uint32_t)(pcmd->ClipRect.z - pcmd->ClipRect.x);
-                    scissorRect.extent.height = (uint32_t)(pcmd->ClipRect.w - pcmd->ClipRect.y);
+                    scissorRect.offset.x = std::max((int32_t)(imDrawCommand->ClipRect.x), 0);
+                    scissorRect.offset.y = std::max((int32_t)(imDrawCommand->ClipRect.y), 0);
+                    scissorRect.extent.width = (uint32_t)(imDrawCommand->ClipRect.z - imDrawCommand->ClipRect.x);
+                    scissorRect.extent.height = (uint32_t)(imDrawCommand->ClipRect.w - imDrawCommand->ClipRect.y);
 
                     commandBuffer.setScissor(0, { scissorRect });
-
-                    commandBuffer.drawIndexed(pcmd->ElemCount, 1, indexOffset, vertexOffset, 1);
-                    //vkCmdSetScissor(commandBuffer, 0, 1, &scissorRect);
-
-                    //vkCmdDrawIndexed(commandBuffer, pcmd->ElemCount, 1, indexOffset, vertexOffset, 0);
-                    indexOffset += pcmd->ElemCount;
+                    commandBuffer.drawIndexed(imDrawCommand->ElemCount, 1, globalIndexOffset + imDrawCommand->IdxOffset, globalVertexOffset + imDrawCommand->VtxOffset, 1);
                 }
-                vertexOffset += cmd_list->VtxBuffer.Size;
+                globalIndexOffset += imDrawList->IdxBuffer.Size;
+                globalVertexOffset += imDrawList->VtxBuffer.Size;
             }
         }
     }

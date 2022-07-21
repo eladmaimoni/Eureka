@@ -59,7 +59,7 @@ namespace eureka
         Queue                                                      _copyQueue;
         std::shared_ptr<SwapChainFrameContext>                     _frameContext;
         std::shared_ptr<SubmissionThreadExecutionContext>          _submissionThreadExecutionContext;
-        std::shared_ptr<OneShotSubmissionHandler>              _oneShotSubmissionHandler;
+        std::shared_ptr<OneShotSubmissionHandler>                  _oneShotSubmissionHandler;
         sigslot::scoped_connection                                 _resizeConnection;
         std::chrono::high_resolution_clock::time_point             _lastFrameTime;
 

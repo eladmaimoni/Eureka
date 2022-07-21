@@ -17,9 +17,6 @@
 
 namespace eureka
 {
-    
-    inline constexpr uint64_t EUREKA_MAX_IMGUI_VERTEX_INDEX_BYTES = 1024 * 1024;
-
 
     class ImGuiRenderer
     {
@@ -35,6 +32,8 @@ namespace eureka
         std::shared_ptr<ImGuiPipeline>       _pipeline;
         bool _active{ false };
         uint64_t _vertexBufferOffset{ 0 };
+        FreeableDescriptorSet _descriptorSet;
+        bool _first{ true };
     public:
         ImGuiRenderer(
             DeviceContext& deviceContext,
@@ -55,8 +54,8 @@ namespace eureka
         void SyncBuffers();
         void RecordDrawCommands(vk::CommandBuffer commandBuffer);
         void HandleResize(uint32_t w, uint32_t h) const;
-private:
-    FreeableDescriptorSet _descriptorSet;
+
+
     };
 
 }

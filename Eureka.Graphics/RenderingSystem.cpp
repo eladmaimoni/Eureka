@@ -84,11 +84,6 @@ namespace eureka
         _stageZone.Assign(std::span(mesh::COLORED_TRIANGLE_INDEX_DATA), 0);
         _stageZone.Assign(std::span(mesh::COLORED_TRIANGLE_VERTEX_DATA), sizeof(mesh::COLORED_TRIANGLE_INDEX_DATA));
 
-
-
-
-       
-
         _resizeConnection = _frameContext->ConnectResizeSlot(
             [this](uint32_t w, uint32_t h)
         {
