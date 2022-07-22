@@ -1,4 +1,11 @@
 
+////////////////////////////////////////////////////////////////////////////
+// 
+//                         Common Descriptor Sets layout 
+// 
+////////////////////////////////////////////////////////////////////////////
+
+
 //
 // Set 0 - per frame, per view data
 //
@@ -10,7 +17,7 @@ struct PerView
 };
 
 
-cbuffer perView : register(b0) 
+cbuffer perView : register(b0, space0)
 { 
 	PerView perView;
 }

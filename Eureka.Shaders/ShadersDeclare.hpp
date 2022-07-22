@@ -1,4 +1,6 @@
 
+#ifndef EUREKA_SHADER_ID
+#define EUREKA_SHADER_ID 
 namespace eureka
 {
     struct ShaderId
@@ -13,6 +15,7 @@ namespace eureka
         }
     };
 }
+#endif
 
 #ifndef EUREKA_SHADERS_HEADER
 #define EUREKA_SHADERS_HEADER

@@ -21,6 +21,11 @@ namespace eureka
         };
         fixed_capacity_vector(fixed_capacity_vector&& that) = default;
         fixed_capacity_vector& operator=(fixed_capacity_vector&& rhs) = default;
+        fixed_capacity_vector(base_t&& that) : base_t(std::move(that)) {};
+        fixed_capacity_vector& operator=(base_t&& rhs)
+        {
+            return base_t::operator=(std::move(rhs));
+        }
 
         void resize(std::size_t size)
         {

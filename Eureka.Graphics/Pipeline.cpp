@@ -2,6 +2,7 @@
 #include "PipelineTypes.hpp"
 
 #include "PipelineHelpers.hpp"
+#include "ShaderReflection.hpp"
 
 namespace eureka
 {
@@ -114,6 +115,8 @@ namespace eureka
 
         _pipelineLayout = deviceContext.LogicalDevice()->createPipelineLayout(pipelineLayoutCreateInfo);
 
+        
+
         Setup(deviceContext, renderPass.Get());
     }
 
@@ -136,7 +139,10 @@ namespace eureka
         DefaultFixedPiplinePreset preset{};
         SetupFixedPreset<MeshFixedPresetTraits>(preset);
 
-        auto shadersPipeline = MakeShaderPipeline(std::array<ShaderId, 2> { ColoredVertexVS, ColoredVertexFS }, *deviceContext.Shaders());
+        std::array<ShaderId, 2> ids{ ColoredVertexVS, ColoredVertexFS };
+        auto shadersPipeline = MakeShaderPipeline(ids, *deviceContext.Shaders());
+
+        //auto _pipelineLayout2 = ReflectPipeline(dynamic_span<ShaderId>(ids.data(), ids.size()));
 
         //
         // All Together
