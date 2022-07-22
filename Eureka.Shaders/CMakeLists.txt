@@ -63,11 +63,12 @@ function(configure_hlsl_shader_compilation shader_file)
         #MAIN_DEPENDENCY ${shader_file} # tried with and without
 
         COMMAND
-        ${dxc_executable} -spirv -HV 2021 -E main -fspv-target-env=vulkan1.2
+        ${dxc_executable} -spirv -HV 2021 -E main -fspv-target-env=vulkan1.2 
         -T ${shader_type}        
         ${CMAKE_CURRENT_SOURCE_DIR}/${shader_file}
         -Fo
         ${EUREKA_COMPILED_SHADERS_DIRECTORY}/${shader_name}.spv
+        -I ${CMAKE_CURRENT_SOURCE_DIR}
         COMMAND
         bin2h
         ${EUREKA_COMPILED_SHADERS_DIRECTORY}/${shader_name}.spv
@@ -137,6 +138,7 @@ configure_hlsl_shaders_compilation(${hlsl_fragment_shaders})
 
 set_source_group(
     shader_cache 
+    "common_sets.hlsli"
     "ShadersCache.cpp"
     "ShadersCache.hpp"
     "ShadersDeclare.hpp"

@@ -18,6 +18,7 @@
         },
         "nlohmann-json",
         "palsigslot",
+		"spirv-reflect",
         "tinygltf",
         "vulkan",
         "vulkan-headers",

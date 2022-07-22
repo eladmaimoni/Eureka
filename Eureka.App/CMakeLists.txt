@@ -7,7 +7,7 @@ set_source_group(app
     "UIView.cpp"
     "IOCContainer.hpp"
     "IOCContainer.cpp"
-)
+) 
 
 add_executable(
     Eureka.App

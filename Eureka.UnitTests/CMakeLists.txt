@@ -6,6 +6,7 @@ add_executable(
     "tests.cpp"
     "formatting.tests.cpp"
     "transform.tests.cpp"
+    "fixed_capacity_vector.tests.cpp"
 ) 
 
 target_include_directories(

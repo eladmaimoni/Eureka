@@ -50,6 +50,8 @@ find_package(nlohmann_json CONFIG REQUIRED)
 find_package(PalSigslot CONFIG REQUIRED)
 find_package(Vulkan REQUIRED COMPONENTS glslc)  
 find_package(unofficial-vulkan-memory-allocator CONFIG REQUIRED)
+find_package(unofficial-spirv-reflect CONFIG REQUIRED)
+
 find_program(glslc_executable NAMES glslc HINTS Vulkan::glslc)
 find_path(TINYGLTF_INCLUDE_DIRS "tiny_gltf.h")
 
@@ -83,6 +85,14 @@ configure_default_output_directories()
 
 message("Eureka: dxc_executable = ${dxc_executable}")
 message("Eureka: glslc_executable = ${glslc_executable}")
+
+
+if (CMAKE_GENERATOR MATCHES "Visual Studio")
+    # Do Visual Studio specific stuff
+	message("ZZZZ addinig include path ${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/include")
+    # it seems that vcpkg based cmake solutions don't add the vcpkg generated include directories to vcproj files' 
+    include_directories("${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/include")
+endif()
 
 # HACK
 if (MSVC)

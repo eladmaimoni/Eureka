@@ -32,6 +32,8 @@ set_source_group(
     "FrameContext.cpp"
     "OneShotCopySubmission.hpp"
     "OneShotCopySubmission.cpp"
+    "ShaderReflection.hpp"
+    "ShaderReflection.cpp"
 )
 
 set_source_group(
@@ -150,6 +152,7 @@ target_link_libraries(
     Eureka.Types
     imgui::imgui
     concurrencpp::concurrencpp
-    unofficial::vulkan-memory-allocator::vulkan-memory-allocator     
+    unofficial::vulkan-memory-allocator::vulkan-memory-allocator
+    unofficial::spirv-reflect::spirv-reflect
 )
 

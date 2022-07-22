@@ -191,11 +191,11 @@ namespace eureka
 
         if (_first)
         {
-            auto node = ImGui::DockBuilderGetNode(mainDockSpaceId);
+            //auto node = ImGui::DockBuilderGetNode(mainDockSpaceId);
             //node->ChildNodes
             //auto leftDockSpaceId = ImGui::DockBuilderSplitNode(mainDockSpaceId, ImGuiDir_Left, 0.20f, NULL, &mainDockSpaceId);
 
-            ImGui::DockBuilderDockWindow("Test Window", node->ChildNodes[0]->ID);
+            //ImGui::DockBuilderDockWindow("Test Window", node->ChildNodes[0]->ID);
             _first = false;
         }
   

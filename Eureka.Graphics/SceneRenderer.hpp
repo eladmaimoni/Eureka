@@ -11,7 +11,7 @@ namespace eureka
 
     class MainScene
     {
-        PerspectiveCamera  _camera; // TODO remove
+        PerspectiveCamera  _camera; 
     };
 
     class MainSceneRenderer

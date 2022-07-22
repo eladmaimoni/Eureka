@@ -1,6 +1,7 @@
 #pragma once
 
 #include "DeviceContext.hpp"
+#include <fixed_capacity_vector.hpp>
 
 namespace eureka
 {
@@ -183,16 +184,25 @@ namespace eureka
 
     };
 
+    struct DescriptorSetLayoutCreateInfoE
+    {
+
+        fixed_capacity_vector<vk::DescriptorSetLayoutBinding> bindings;
+        vk::DescriptorSetLayoutCreateInfo create_info;
+    };
  
     class DescriptorSetLayout
     {
     protected:
         vkr::DescriptorSetLayout _layout{ nullptr };
         EUREKA_DEFAULT_MOVEABLE(DescriptorSetLayout);
+        DescriptorSetLayout(const vkr::Device& device, const vk::DescriptorSetLayoutCreateInfo& info);
+
     public:
         vk::DescriptorSetLayout Get() const { return *_layout; }
-   
     };
+
+    
 
     //////////////////////////////////////////////////////////////////////////
     //
@@ -223,4 +233,8 @@ namespace eureka
         ColorAndNormalMapFragmentDescriptorSetLayout(DeviceContext& deviceContext);
         EUREKA_DEFAULT_MOVEABLE(ColorAndNormalMapFragmentDescriptorSetLayout);
     };
+
+
+
+
 }

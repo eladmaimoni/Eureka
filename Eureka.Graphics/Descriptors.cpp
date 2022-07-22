@@ -114,6 +114,11 @@ namespace eureka
         vk::throwResultException(result, "allocation failed");
     }
 
+    DescriptorSetLayout::DescriptorSetLayout(const vkr::Device& device, const vk::DescriptorSetLayoutCreateInfo& info)
+        : _layout(device.createDescriptorSetLayout(info))
+    {
+    }
+
     SingleVertexShaderUBODescriptorSetLayout::SingleVertexShaderUBODescriptorSetLayout(DeviceContext& deviceContext)
     {
         // describe the relation between the shader indices (set 0, binding 0)
@@ -186,6 +191,8 @@ namespace eureka
 
         _layout = deviceContext.LogicalDevice()->createDescriptorSetLayout(descriptorSetLayoutCreateInfo);
     }
+
+
 
 
 

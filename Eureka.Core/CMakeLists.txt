@@ -8,6 +8,7 @@ set_source_group(error "basic_errors.hpp")
 set_source_group(formatting "formatter_specializations.hpp")
 set_source_group(logging "logging.hpp" "logging_impl.hpp" "logging_impl.cpp")
 set_source_group(profiling "profiling.cpp" "profiling.hpp" "profiling_macros.hpp")
+set_source_group(containers "fixed_capacity_vector.hpp")
 
 
 
@@ -21,6 +22,7 @@ add_library(
     ${formatting}
     ${profiling}
     ${utils}
+    ${containers}
 )
 
 set_compiler_flags(Eureka.Core) 
