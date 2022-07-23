@@ -56,6 +56,8 @@ set_source_group(
     "CommandsUtils.cpp" 
     "Descriptors.hpp"
     "Descriptors.cpp"
+    "DescriptorSetsLayout.hpp"
+    "DescriptorSetsLayout.cpp"    
     "SwapChain.hpp" 
     "SwapChain.cpp" 
     "Pipeline.hpp" 

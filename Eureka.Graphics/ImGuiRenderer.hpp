@@ -14,6 +14,7 @@
 #include "Pipeline.hpp"
 #include "PipelineTypes.hpp"
 #include "Window.hpp"
+#include "Descriptors.hpp"
 
 namespace eureka
 {

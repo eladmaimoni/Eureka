@@ -102,11 +102,36 @@ namespace eureka
     //////////////////////////////////////////////////////////////////////////
     ColoredVertexMeshPipeline::ColoredVertexMeshPipeline(
         DeviceContext& deviceContext, 
-        const DepthColorRenderPass& renderPass,
-        const SingleVertexShaderUBODescriptorSetLayout& descriptorSetLayout
+        DescriptorSetLayoutCache& layoutCache,
+        const DepthColorRenderPass& renderPass
     ) 
     {
-        _descLayout = descriptorSetLayout.Get();
+        auto descLayout = layoutCache.TryRetrieveLayout(0, PER_VIEW_SET_000);
+
+        if (!descLayout)
+        {
+            // TODO extract to a function that created the full set layout
+            vk::DescriptorSetLayoutBinding descriptorSetLayoutBinding
+            {
+                .binding = 0, // shader side index (why not named location??)
+                .descriptorType = vk::DescriptorType::eUniformBuffer,
+                .descriptorCount = 1, // a single constant buffer
+                .stageFlags = vk::ShaderStageFlagBits::eVertex
+            };
+
+            vk::DescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo
+            {
+                .bindingCount = 1,
+                .pBindings = &descriptorSetLayoutBinding
+            };
+
+            _descLayout = layoutCache.CreateLayout(descriptorSetLayoutCreateInfo, 0, PER_VIEW_SET_000);
+        }
+        else
+        {
+            _descLayout = *descLayout;
+        }
+       
         vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo
         {
             .setLayoutCount = 1,

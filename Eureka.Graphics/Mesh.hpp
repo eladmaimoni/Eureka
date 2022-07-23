@@ -4,6 +4,7 @@
 #include "Buffer.hpp"
 #include "Pipeline.hpp"
 #include "Image.hpp"
+#include "Descriptors.hpp"
 
 namespace eureka::mesh
 {

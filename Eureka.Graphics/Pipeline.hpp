@@ -3,7 +3,7 @@
 #include "VkHelpers.hpp"
 #include "vk_error_handling.hpp"
 #include "RenderPass.hpp"
-#include "Descriptors.hpp"
+#include "DescriptorSetsLayout.hpp"
 
 namespace eureka
 {  
@@ -73,8 +73,8 @@ namespace eureka
     public:
         ColoredVertexMeshPipeline(
             DeviceContext& deviceContext, 
-            const DepthColorRenderPass& renderPass,
-            const SingleVertexShaderUBODescriptorSetLayout& descriptorSetLayout
+            DescriptorSetLayoutCache& layoutCache,
+            const DepthColorRenderPass& renderPass
         );
         EUREKA_DEFAULT_MOVEABLE(ColoredVertexMeshPipeline);
     
@@ -184,8 +184,8 @@ namespace eureka
         {
             return GetCachedPipeline(
                 _coloredVertexMeshPipeline,
-                *_depthColorRenderPass,
-                _singleVertexShaderUBODSL
+                *_layoutCache,
+                *_depthColorRenderPass
             );
         }
         std::shared_ptr<ImGuiPipeline> GetImGuiPipeline()

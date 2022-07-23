@@ -9,6 +9,7 @@
 #include "CommandsUtils.hpp"
 #include "Mesh.hpp"
 #include "Pipeline.hpp"
+#include "Descriptors.hpp"
 
 
 namespace tinygltf
