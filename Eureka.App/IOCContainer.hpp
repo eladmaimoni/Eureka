@@ -16,6 +16,7 @@ namespace eureka
     class MTDescriptorAllocator;
     class PipelineCache;
     class RenderDocIntegration;
+    class DescriptorSetLayoutCache;
 
     class IOCContainer
     {
@@ -42,7 +43,8 @@ namespace eureka
         std::shared_ptr<ImGuiIntegration>                  _imguiIntegration;
         std::shared_ptr<RenderingSystem>                   _renderingSystem;
         std::shared_ptr<Window>                            _window;
-        std::shared_ptr<PipelineCache>                     _pipelineCache;
+        std::shared_ptr<PipelineCache>                     _pipelineCache; // TODO per TargetPass
+        std::shared_ptr<DescriptorSetLayoutCache>          _setLayoutCache;
 
         std::shared_ptr<MTDescriptorAllocator>             _descPool;
         future_t<void> InitializeGraphicsSubsystem();

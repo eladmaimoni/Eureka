@@ -121,6 +121,8 @@ namespace eureka
     {
     private:
         DeviceContext& _deviceContext;     
+        std::shared_ptr<DescriptorSetLayoutCache> _layoutCache;
+
         // NOTE: if we allow multiple render passes, we should use a different pipeline cache
         // but the same descriptor set layouts
         // we should probably have a pipeline cache per render pass instance
@@ -158,10 +160,12 @@ namespace eureka
     public:
         PipelineCache(
             DeviceContext& deviceContext,
+            std::shared_ptr<DescriptorSetLayoutCache> setLayoutCache,
             std::shared_ptr<DepthColorRenderPass> depthColorRenderPass
         )
             : 
-            _deviceContext(deviceContext),
+            _deviceContext(deviceContext), 
+            _layoutCache(std::move(setLayoutCache)),
             _depthColorRenderPass(std::move(depthColorRenderPass)),
             _singleVertexShaderUBODSL(deviceContext),
             _perNormalMappedModelDSL(deviceContext),

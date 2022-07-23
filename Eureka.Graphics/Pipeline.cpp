@@ -142,7 +142,7 @@ namespace eureka
         std::array<ShaderId, 2> ids{ ColoredVertexVS, ColoredVertexFS };
         auto shadersPipeline = MakeShaderPipeline(ids, *deviceContext.Shaders());
 
-        //auto _pipelineLayout2 = ReflectPipeline(dynamic_span<ShaderId>(ids.data(), ids.size()));
+        auto _pipelineLayout2 = ReflectPipeline(dynamic_span<ShaderId>(ids.data(), ids.size()));
 
         //
         // All Together

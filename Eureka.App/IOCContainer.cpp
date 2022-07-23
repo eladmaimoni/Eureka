@@ -98,7 +98,7 @@ namespace eureka
         auto submissionThreadExecutor = _concurrencyRuntime.make_executor<submission_thread_executor>();
 
 
-
+        _setLayoutCache = std::make_shared<DescriptorSetLayoutCache>(_deviceContext.LogicalDevice());
         _submissionThreadExecutionContext = std::make_shared<SubmissionThreadExecutionContext>(
             _deviceContext,
             _copyQueue,
@@ -118,7 +118,7 @@ namespace eureka
 
         _oneShotSubmissionHandler = std::make_shared<OneShotSubmissionHandler>(_deviceContext, _copyQueue, _graphicsQueue, primaryFrame, _submissionThreadExecutionContext);
 
-        _pipelineCache = std::make_shared<PipelineCache>(_deviceContext, primaryFrame->GetRenderPass());
+        _pipelineCache = std::make_shared<PipelineCache>(_deviceContext, _setLayoutCache, primaryFrame->GetRenderPass());
 
         _imguiIntegration = std::make_shared<ImGuiIntegration>();
 

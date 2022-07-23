@@ -2,12 +2,9 @@
 
 namespace eureka
 {
-    class Model
-    {
 
+    
 
-        
-    };
 
 }
 
