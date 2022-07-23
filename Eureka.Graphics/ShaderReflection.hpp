@@ -1,25 +1,12 @@
 #pragma once
 #include <ShadersCache.hpp>
+#include <DescriptorSetsLayout.hpp>
+
 namespace eureka
 {
-    struct DescriptorSetLayoutCreateInfoBundle
-    {
-        DescriptorSetLayoutCreateInfoBundle() = default;
-        DescriptorSetLayoutCreateInfoBundle(std::size_t bindingCount)
-            : bindings(bindingCount)
-        {
 
-        }
-        uint32_t                                    set_num;
-        vk::DescriptorSetLayoutCreateInfo           create_info;
-        std::vector<vk::DescriptorSetLayoutBinding> bindings;
-    };
 
-    //struct PipelineLayoutCreateInfoBundle
-    //{
-    //    fixed_capacity_vector<DescriptorSetLayoutCreateInfoBundle> sets;
-    //    fixed_capacity_vector<vk::PushConstantRange> push_constants;
-    //};
+
 
     struct PipelineLayoutCreateBundle
     {

@@ -81,5 +81,34 @@ namespace eureka
 
 
 
+
+    DescriptorSetLayoutCreateInfoBundle DescriptorSetLayoutCache::CreateLayoutBundle(uint64_t set, uint32_t uniqueId)
+    {
+        DescriptorSetLayoutCreateInfoBundle bundle;
+        switch (uniqueId)
+        {
+        case PER_VIEW_SET_000:
+            
+            bundle.bindings.emplace_back(
+                vk::DescriptorSetLayoutBinding 
+                {
+                    .binding = 0, // shader side index (why not named location??)
+                    .descriptorType = vk::DescriptorType::eUniformBuffer,
+                    .descriptorCount = 1, // a single constant buffer
+                    .stageFlags = vk::ShaderStageFlagBits::eVertex
+                }
+            );
+            break;
+        default:
+            throw std::invalid_argument("bad");
+
+        }
+
+        bundle.create_info.bindingCount = static_cast<uint32_t>(bundle.bindings.size());
+        bundle.create_info.pBindings = bundle.bindings.data();
+
+        return bundle;
+    }
+
 }
 

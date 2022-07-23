@@ -106,31 +106,7 @@ namespace eureka
         const DepthColorRenderPass& renderPass
     ) 
     {
-        auto descLayout = layoutCache.TryRetrieveLayout(0, PER_VIEW_SET_000);
-
-        if (!descLayout)
-        {
-            // TODO extract to a function that created the full set layout
-            vk::DescriptorSetLayoutBinding descriptorSetLayoutBinding
-            {
-                .binding = 0, // shader side index (why not named location??)
-                .descriptorType = vk::DescriptorType::eUniformBuffer,
-                .descriptorCount = 1, // a single constant buffer
-                .stageFlags = vk::ShaderStageFlagBits::eVertex
-            };
-
-            vk::DescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo
-            {
-                .bindingCount = 1,
-                .pBindings = &descriptorSetLayoutBinding
-            };
-
-            _descLayout = layoutCache.CreateLayout(descriptorSetLayoutCreateInfo, 0, PER_VIEW_SET_000);
-        }
-        else
-        {
-            _descLayout = *descLayout;
-        }
+        _descLayout = layoutCache.RetrieveLayout(0, PER_VIEW_SET_000);
        
         vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo
         {
