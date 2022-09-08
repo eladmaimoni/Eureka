@@ -197,17 +197,15 @@ namespace eureka
              .pImageIndices = &_lastAquiredImage
         };
       
-        try
+   
+        auto& d = vk::getDispatchLoaderStatic();
+        auto result = static_cast<vk::Result>(d.vkQueuePresentKHR(_presentationQueue.Get(), reinterpret_cast<const VkPresentInfoKHR*>(&presentInfo)));
+
+        if (result == vk::Result::eErrorOutOfDateKHR)
         {
-            return _presentationQueue->presentKHR(presentInfo);
-        }
-        catch (const vk::OutOfDateKHRError& err)
-        {
-            DEBUGGER_TRACE("{}", err.what());
+            DEBUGGER_TRACE("out of date");
             CreateSwapChain();
         }
-        
-        vk::Result result = vk::Result::eErrorOutOfDateKHR;
 
         return result;
     }

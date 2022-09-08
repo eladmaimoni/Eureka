@@ -1,7 +1,6 @@
 #include <catch2/catch.hpp>
 #include <random>
 #include <debugger_trace.hpp>
-#include <AssetLoading.hpp>
 #include <boost/container/small_vector.hpp>
 
 TEST_CASE("small vector", "[vulkan]")

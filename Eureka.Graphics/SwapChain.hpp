@@ -46,6 +46,10 @@ namespace eureka
         template <typename Callable>
         sigslot::connection ConnectResizeSlot(Callable&& slot)
         {
+            if (_desc.width > 0 && _desc.height > 0)
+            {
+                slot(_desc.width, _desc.height);
+            }
             return _resizeSignal.connect(std::forward<Callable>(slot));
         }
     private:
@@ -67,6 +71,7 @@ namespace eureka
 
         void CreateSwapChain();
     };
+
 
 
 }

@@ -38,6 +38,9 @@ namespace eureka
         _renderPass = std::make_shared<DepthColorRenderPass>(_deviceContext, depthColorConfig);
         _renderTargets = CreateDepthColorTargetForSwapChain(_deviceContext, *_swapChain, _renderPass);
 
+
+        _currentRenderTarget = &_renderTargets[0];
+
         _resizeConnection = _swapChain->ConnectResizeSlot(
             [this](uint32_t w, uint32_t h)
             {
@@ -45,7 +48,13 @@ namespace eureka
             }
         );
 
-        _currentRenderTarget = &_renderTargets[0];
+    }
+
+    void SwapChainDepthColorPass::AddViewPass(std::shared_ptr<IViewPass> viewPass)
+    {
+        auto& vp = _viewPasses.emplace_back(std::move(viewPass));
+
+        vp->HandleResize(_width, _height);
     }
 
     void SwapChainDepthColorPass::Prepare()
@@ -105,6 +114,8 @@ namespace eureka
 
     void SwapChainDepthColorPass::HandleSwapChainResize(uint32_t width, uint32_t height)
     {
+        _width = width;
+        _height = height;
         DEBUGGER_TRACE("handle swap chain resize");
 
         _graphicsQueue->waitIdle();

@@ -190,7 +190,7 @@ namespace eureka
         auto vp = ImGui::GetMainViewport();
         auto mainDockSpaceId = ImGui::DockSpaceOverViewport(vp, ImGuiDockNodeFlags_PassthruCentralNode);
 
-        ImGui::SetNextWindowSize(ImVec2(128, 64), ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowSize(ImVec2(512, 512), ImGuiCond_FirstUseEver);
         ImGui::Begin("Test Window", nullptr);
 
         if (_first)

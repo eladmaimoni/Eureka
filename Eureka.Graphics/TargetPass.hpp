@@ -13,10 +13,7 @@ namespace eureka
             std::shared_ptr<SwapChain> swapChain
         );
         
-        void AddViewPass(std::shared_ptr<IViewPass> viewPass)
-        {
-            _viewPasses.emplace_back(std::move(viewPass));
-        }
+        void AddViewPass(std::shared_ptr<IViewPass> viewPass);
 
         void Prepare() override;
         TargetPassBeginInfo PreRecord() override;
@@ -40,6 +37,8 @@ namespace eureka
         std::shared_ptr<DepthColorRenderPass>    _renderPass;
         uint32_t                                 _maxFramesInFlight{};
         DepthColorRenderTarget*                  _currentRenderTarget{ nullptr };
+        uint32_t                                 _width{ 0 };
+        uint32_t                                 _height{ 0 };
         std::vector<std::shared_ptr<IViewPass>>  _viewPasses;
     private:
         void HandleSwapChainResize(uint32_t width, uint32_t height);
