@@ -73,18 +73,25 @@ namespace eureka
             .pDepthStencilAttachment = &depthAttachmentRefrence
         };
 
+        
+        // the first stage in the render pass is attachment layout transition for depth and color images
+        // followed by a clear
+        // we can't read / write to those images before image transition is done
+        // 
+        // for the depth buffer, we need to wait until all previously commands are done using its content
+        // since we use a single depth buffer
+        // therefore, we need to wait until all previously issued command finish writing to the depth /
+
         vk::SubpassDependency subpassDependency
         {
             .srcSubpass = VK_SUBPASS_EXTERNAL,
             .dstSubpass = 0,
-            .srcStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput,
-            .dstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput,
-            .srcAccessMask = {},
-            .dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite,
+            .srcStageMask = vk::PipelineStageFlagBits::eLateFragmentTests, // wait for previously issued depth tests to finish, note we don't wait for color
+            .dstStageMask = vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eColorAttachmentOutput, // don't start depth test / color clear before previously depth writes are done and subpass image transition is done
+            .srcAccessMask = vk::AccessFlagBits::eDepthStencilAttachmentWrite, // previous render pass writes to the same depth buffer
+            .dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eDepthStencilAttachmentWrite,
             .dependencyFlags = {},
         };
-
-
         //
         // SubpassDescription & SubpassDependency
         //

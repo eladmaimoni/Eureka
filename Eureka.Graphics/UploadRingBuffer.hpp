@@ -67,9 +67,6 @@ namespace eureka
 
             //assert(_buffer.Ptr<uint8_t>());
         }
-        
-    
-        //EUREKA_DEFAULT_MOVEONLY(PoolSequentialStageZone);
 
 
         uint64_t Position() const
@@ -97,25 +94,6 @@ namespace eureka
         vk::Buffer Buffer() const
         {
             return _buffer.Buffer();
-        }
-
-
-    };
-
-
-
-
-
-
-    class UploadAllocationQueue
-    {
-        HostWriteCombinedRingPool _pool;
-        std::mutex _mtx;
-
-        UploadAllocationQueue(DeviceContext& deviceContext, uint64_t byteSize)
-            : _pool(deviceContext, byteSize)
-        {
-
         }
 
 

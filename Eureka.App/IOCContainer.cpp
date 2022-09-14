@@ -11,7 +11,7 @@
 #include "../Eureka.Graphics/ImGuiViewPass.hpp"
 #include "../Eureka.Graphics/TargetPass.hpp"
 #include "../Eureka.Graphics/CameraPass.hpp"
-
+#include <profiling.hpp>
 
 namespace eureka
 {
@@ -22,11 +22,12 @@ namespace eureka
 
         runtime_desc.required_instance_extentions = glfw.QueryRequiredVulkanExtentions();
         runtime_desc.required_instance_extentions.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-        runtime_desc.required_layers.emplace_back(eureka::VK_LAYER_VALIDATION);
-        runtime_desc.required_layers.emplace_back("VK_LAYER_KHRONOS_synchronization2");
+        //runtime_desc.required_instance_extentions.emplace_back("VK_LAYER_KHRONOS_synchronization2");
+        //runtime_desc.required_layers.emplace_back("VK_LAYER_KHRONOS_synchronization2");
 
-        DEBUGGER_TRACE("Requested instance extentions = {}", runtime_desc.required_instance_extentions);
-        DEBUGGER_TRACE("Requested instance layers = {}", runtime_desc.required_layers);
+#ifndef NDEBUG
+        runtime_desc.required_layers.emplace_back(eureka::VK_LAYER_VALIDATION);
+#endif
 
         return runtime_desc;
     }
@@ -35,14 +36,12 @@ namespace eureka
     {
         DeviceContextConfig device_context_desc{};
         device_context_desc.presentation_surface = presentationSurface;
-        device_context_desc.required_layers.emplace_back(VK_LAYER_VALIDATION);
-        device_context_desc.required_layers.emplace_back("VK_LAYER_KHRONOS_synchronization2");
-        
-
+        //device_context_desc.required_layers.emplace_back("VK_LAYER_KHRONOS_synchronization2");
         device_context_desc.required_extentions.emplace_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
-        device_context_desc.required_extentions.emplace_back(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
-        DEBUGGER_TRACE("Requested device extentions = {}", device_context_desc.required_extentions);
-        DEBUGGER_TRACE("Requested device layers = {}", device_context_desc.required_layers);
+        //device_context_desc.required_extentions.emplace_back(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
+#ifndef NDEBUG
+        device_context_desc.required_layers.emplace_back(VK_LAYER_VALIDATION);
+#endif
         return device_context_desc;
 
 
@@ -54,7 +53,7 @@ namespace eureka
 
     {
         RenderDockIntegrationInstance = &_renderDocIntegration;
-        Profiling::InitProfilingCategories();
+        eureka::profiling::InitProfilingCategories();
 
         InitializeGraphicsSubsystem();
    
@@ -81,8 +80,7 @@ namespace eureka
         return std::make_unique<AssetLoader>(
             _deviceContext,
             _copyQueue,
-            _oneShotSubmissionHandler,
-            _uploadPool,
+            _asyncDataLoader,
             _pipelineCache,
             _descPool,
             _concurrencyRuntime.background_executor(),
@@ -90,9 +88,10 @@ namespace eureka
             );
     }
 
-    future_t<void> IOCContainer::InitializeGraphicsSubsystem()
+    void IOCContainer::InitializeGraphicsSubsystem()
     {
-        _deviceContext.Init(_instance, CreateDeviceContextConfig());
+        auto deviceContextConfig = CreateDeviceContextConfig();
+        _deviceContext.Init(_instance, deviceContextConfig);
 
         _graphicsQueue = _deviceContext.CreateGraphicsQueue();
         _copyQueue = _deviceContext.CreateCopyQueue();
@@ -132,15 +131,17 @@ namespace eureka
         _pipelineCache = std::make_shared<PipelineCache>(_deviceContext, _setLayoutCache, colorPass->GetRenderPass());
 
 
-
+        _asyncDataLoader = std::make_shared<AsyncDataLoader>(
+            _oneShotSubmissionHandler,
+            _uploadPool
+            );
 
         auto imguiPass = std::make_shared<ImGuiViewPass>(
             _deviceContext,
             _window,
             _pipelineCache,
             _descPool,
-            _oneShotSubmissionHandler,
-            _uploadPool,
+            _asyncDataLoader,
             _concurrencyRuntime.thread_pool_executor()
             );
 
@@ -170,11 +171,6 @@ namespace eureka
 
 
         _renderingSystem->Initialize();
-
-
-
-
-        co_return;
 
     }
 

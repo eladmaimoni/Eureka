@@ -1,4 +1,5 @@
 #include "Image.hpp"
+#include "vk_error_handling.hpp"
 
 namespace eureka
 {

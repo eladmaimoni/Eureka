@@ -1,5 +1,5 @@
 #include "TargetPass.hpp"
-
+#include <profiling.hpp>
 namespace eureka
 {
 
@@ -96,7 +96,8 @@ namespace eureka
 
     void SwapChainDepthColorPass::PostSubmit(vk::Semaphore waitSemaphore)
     {
-        PROFILE_CATEGORIZED_SCOPE("Present", Profiling::Color::Gray, Profiling::PROFILING_CATEGORY_RENDERING);
+        PROFILE_CATEGORIZED_SCOPE("Present", eureka::profiling::Color::Gray, eureka::profiling::PROFILING_CATEGORY_RENDERING);
+
         auto result = _swapChain->PresentLastAcquiredImageAsync(waitSemaphore);
 
         if (result == vk::Result::eErrorOutOfDateKHR)
@@ -116,7 +117,7 @@ namespace eureka
     {
         _width = width;
         _height = height;
-        DEBUGGER_TRACE("handle swap chain resize");
+        //DEBUGGER_TRACE("handle swap chain resize");
 
         _graphicsQueue->waitIdle();
         _renderTargets = CreateDepthColorTargetForSwapChain(

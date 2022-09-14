@@ -6,8 +6,7 @@
 #include "Pool.hpp"
 #include "Image.hpp"
 #include "Commands.hpp"
-#include "SubmissionThreadExecutionContext.hpp"
-#include "OneShotCopySubmission.hpp"
+
 #include "UploadRingBuffer.hpp"
 #include "GraphicsDefaults.hpp"
 #include "CommandsUtils.hpp"
@@ -16,19 +15,20 @@
 #include "Window.hpp"
 #include "Descriptors.hpp"
 #include "IPass.hpp"
+#include "AsyncDataLoader.hpp"
 
 namespace eureka
 {
 
+
     class ImGuiViewPass : public IViewPass
     {
         DeviceContext& _deviceContext;
-        std::shared_ptr<HostWriteCombinedRingPool> _uploadPool;
-        PoolExecutor _poolExecutor;
+        std::shared_ptr<AsyncDataLoader>       _asyncDataLoader;
+        PoolExecutor                           _poolExecutor;
         std::shared_ptr<MTDescriptorAllocator> _descPool;
-        std::shared_ptr<OneShotSubmissionHandler> _oneShotSubmissionHandler;
-        SampledImage2D _fontImage;
-        VertexAndIndexHostVisibleDeviceBuffer _vertexIndexBuffer;
+        SampledImage2D                         _fontImage;
+        VertexAndIndexHostVisibleDeviceBuffer  _vertexIndexBuffer;
 
 
         std::shared_ptr<ImGuiPipeline>       _pipeline;
@@ -43,8 +43,7 @@ namespace eureka
             std::shared_ptr<Window> window,
             std::shared_ptr<PipelineCache> pipelineCache,
             std::shared_ptr<MTDescriptorAllocator> descPool,
-            std::shared_ptr<OneShotSubmissionHandler> oneShotSubmissionHandler,
-            std::shared_ptr<HostWriteCombinedRingPool> uploadPool,
+            std::shared_ptr<AsyncDataLoader> asyncDataLoader,
             PoolExecutor poolExecutor
         );
         ~ImGuiViewPass();

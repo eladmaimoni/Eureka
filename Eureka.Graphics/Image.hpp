@@ -1,6 +1,6 @@
 #pragma once
 #include "DeviceContext.hpp"
-#include "vk_error_handling.hpp"
+
 
 namespace eureka
 {
@@ -73,7 +73,7 @@ namespace eureka
     public:
         Image2D() = default;
         Image2D(const DeviceContext& deviceContext, const Image2DProperties& props);
-        Image2D(Image2D&& that) : AllocatedImage(std::move(that)) {}
+        Image2D(Image2D&& that) noexcept : AllocatedImage(std::move(that)) {}
         Image2D& operator=(Image2D&& rhs);
         ~Image2D();
     };

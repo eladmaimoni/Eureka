@@ -36,6 +36,7 @@
                     "type": "FILEPATH"
                 },
                 "VCPKG_INSTALLED_DIR": "${sourceDir}/build/packages",
+				"VCPKG_OVERLAY_TRIPLETS" : "${sourceDir}/vcpkg_scripts",
                 "VCPKG_TARGET_TRIPLET": "x64-windows-static-md"
             },
             "vendor": { "microsoft.com/VisualStudioSettings/CMake/1.0": { "hostOS": [ "Windows" ] } }

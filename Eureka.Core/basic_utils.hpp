@@ -82,4 +82,25 @@ namespace eureka
             _callable();
         }
     };
+
+
+    bool append_until_delimiter(std::istream& is, std::string& lineSoFar, char delim = '\n')
+    {   
+        std::streamsize charsRead = 0;
+        do 
+        {
+            char inChar;
+            charsRead = is.readsome(&inChar, 1);
+            if (charsRead == 1) 
+            {
+                lineSoFar.append(1, inChar);        
+                if (inChar == delim) 
+                {
+                    return true; // delimiter is reached 
+                }
+            }
+        } while (charsRead != 0);
+
+        return false;
+    }
 }

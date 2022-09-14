@@ -89,8 +89,9 @@ namespace eureka
             }
 
             DEBUGGER_TRACE("\n{}\n", separated);
+            //DEBUGGER_TRACE("{}", pCallbackData->pMessage);
 
-            trigger_debugger_breakpoint();
+            //trigger_debugger_breakpoint();
 
 
         }

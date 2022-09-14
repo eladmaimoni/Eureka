@@ -1,8 +1,10 @@
 {
     "name": "eureka",
     "version-string": "1.0.0",
-    "builtin-baseline": "2ac61f87f69f0484b8044f95ab274038fbaf7bdd",
+    "builtin-baseline": "34f072dfcb8b9356e6ed2c74947f87390ddb2706",
     "dependencies": [
+		"asio",
+		"asio-grpc",
         "boost-container",
 		"boost-hana",
         "catch2",
@@ -15,6 +17,12 @@
             "name": "imgui",
             "default-features": true,
             "features": [ "docking-experimental" ]
+        },
+		"grpc",
+        {
+            "name": "grpc",
+            "default-features": true,
+            "features": [ "codegen" ]
         },
         "nlohmann-json",
         "palsigslot",

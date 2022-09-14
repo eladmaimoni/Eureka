@@ -40,10 +40,7 @@ namespace eureka
             std::shared_ptr<FrameContext> frameContext,
             std::shared_ptr<ITargetPass> mainPass,
             std::shared_ptr<SubmissionThreadExecutionContext> submissionThreadExecutionContext,
-            std::shared_ptr<OneShotSubmissionHandler> oneShotSubmissionHandler/*,*/
-            //std::shared_ptr<ImGuiViewPass> imguiRenderer, // TODO remove
-            //std::shared_ptr<PipelineCache> pipelineCache, // TODO remove
-            //std::shared_ptr<MTDescriptorAllocator>    descPool // TODO remove        
+            std::shared_ptr<OneShotSubmissionHandler> oneShotSubmissionHandler   
         );
 
         ~RenderingSystem();
@@ -65,16 +62,7 @@ namespace eureka
         std::chrono::high_resolution_clock::time_point             _lastFrameTime;
         std::shared_ptr<ITargetPass>                               _mainPass;
 
-        //std::shared_ptr<MTDescriptorAllocator>                     _descPool; // TODO remove
-        //std::shared_ptr<ImGuiViewPass>                             _imguiRenderer; 
-        //std::shared_ptr<PipelineCache>                             _pipelineCache; // TODO remove
-        //PerspectiveCamera                                          _camera; // TODO remove
-        //HostWriteCombinedBuffer                                    _stageZone;  // TODO remove                                                                
-        //DescriptorSet                                              _constantBufferSet; // TODO remove
-        //VertexAndIndexTransferableDeviceBuffer                     _triangle; // TODO remove
-        //std::shared_ptr<ColoredVertexMeshPipeline>                 _coloredVertexPipeline; // TODO remove
-
-        void RecordMainRenderPass(vk::CommandBuffer renderingCommandBuffer);
+       
   
     };
 }

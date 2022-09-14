@@ -2,31 +2,36 @@
 #include "DeviceContext.hpp"
 #include "SubmissionThreadExecutionContext.hpp"
 #include "FrameContext.hpp"
+#include <boost/container/stable_vector.hpp>
+
 
 namespace eureka
 {
+    template<typename T>
+    using stable_vec = boost::container::stable_vector<T>;
+
+    struct OneShotSubmissionWait
+    {
+        CounterSemaphoreHandle semaphore;
+        vk::PipelineStageFlags stages;
+    };
 
     struct OneShotSubmissionPacket
     {
-        vk::CommandBuffer                  command_buffer{ nullptr };
-        vkr::Semaphore                     done_timeline_semaphore{ nullptr };
-        concurrencpp::result_promise<void> done_promise;
+        vk::CommandBuffer                      command_buffer{ nullptr };
+        CounterSemaphoreHandle                 signal;
+        svec5<OneShotSubmissionWait>           wait_list;
+        concurrencpp::result_promise<void>     done_promise;
     };
 
-    struct ExecutingneShotSubmissions
+    struct ExecutingnOneShotSubmissionBatch
     {
-        ExecutingneShotSubmissions()
-        {
-            // TODO fixed capacity vector or array
-            done_signal_values.reserve(100);
-            done_signal_values.reserve(100);
-            command_buffers.reserve(100);
-        }
-        std::vector<OneShotSubmissionPacket>  pkts;
-        std::vector<uint64_t>                 done_signal_values;
-        std::vector<vk::Semaphore>            done_semaphores;
-        std::vector<vk::CommandBuffer>        command_buffers;
-
+        svec5<vk::CommandBuffer>       command_buffers;
+        svec5<CounterSemaphoreHandle>  wait_semaphores;
+        svec5<vk::PipelineStageFlags>  wait_stages;
+        uint64_t                       done_signal_value;
+        svec5<CounterSemaphoreHandle>  signal_list;
+        svec5<promise_t<void>>         done_promises;
     };
 
     class OneShotSubmissionHandler
@@ -36,24 +41,21 @@ namespace eureka
         DeviceContext&                            _deviceContext;
         Queue                                     _copyQueue;
         Queue                                     _graphicsQueue;
-        std::deque<OneShotSubmissionPacket>       _pendingOneShotCopies;
-        std::deque<OneShotSubmissionPacket>       _pendingOneShotGraphics;
+        std::vector<OneShotSubmissionPacket>      _pendingOneShotCopies;
+        std::vector<OneShotSubmissionPacket>      _pendingOneShotGraphics;
 
-        ExecutingneShotSubmissions                _executingCopies{};
-        ExecutingneShotSubmissions                _executingGraphics{};
+        stable_vec<ExecutingnOneShotSubmissionBatch>    _executingCopies{};
+        stable_vec<ExecutingnOneShotSubmissionBatch>    _executingGraphics{};
         // TODO linear ranges with fixed capacity and holes fixing
         std::shared_ptr<SubmissionThreadExecutionContext> _submissionThreadExecutionContext;
-        std::shared_ptr<FrameContext>            _frameContext;
-        //future_t<void> DoAppendSubmission(vk::CommandBuffer buffer, std::deque<OneShotSubmissionPacket>& vec);
-        //void DoSubmitPending(vk::Fence submitFence, Queue& queue, ExecutingneShotSubmissions& executing, std::deque<OneShotSubmissionPacket>& pending);
-        //void DoPollCompletions(ExecutingneShotSubmissions& executing);
+        std::shared_ptr<FrameContext>                     _frameContext;
     public:
         OneShotSubmissionHandler(DeviceContext& deviceContext, Queue copyQueue, Queue graphicsQueue, std::shared_ptr<FrameContext> frameContext, std::shared_ptr<SubmissionThreadExecutionContext> submissionThreadExecutionContext);
-        future_t<void> AppendCopyCommandSubmission(vk::CommandBuffer buffer);
+        future_t<void> AppendCopyCommandSubmission(vk::CommandBuffer buffer, CounterSemaphoreHandle signal, dynamic_span<OneShotSubmissionWait> waitList = {});
         void SubmitPendingCopies();
         void PollCopyCompletions();
 
-        future_t<void> AppendGraphicsSubmission(vk::CommandBuffer buffer);
+        future_t<void> AppendGraphicsSubmission(vk::CommandBuffer buffer, CounterSemaphoreHandle signal, dynamic_span<OneShotSubmissionWait> waitList = {});
         void SubmitPendingGraphics();
         void PollGraphicsCompletions();
 

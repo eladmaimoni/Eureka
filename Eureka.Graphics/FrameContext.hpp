@@ -1,5 +1,6 @@
 #pragma once
 #include "Commands.hpp"
+#include "Synchronization.hpp"
 
 namespace eureka
 {
@@ -11,8 +12,14 @@ namespace eureka
 
     struct SubmitCommandBuffer
     {
-        vk::CommandBuffer command_buffer;
-        vk::Semaphore     done_semaphore;
+        vk::CommandBuffer       command_buffer;
+        CounterSemaphoreHandle  done_semaphore;
+    };
+
+    struct PresentCommandBuffer
+    {
+        vk::CommandBuffer     command_buffer;
+        BinarySemaphoreHandle done_semaphore;
     };
 
     class FrameCommands
@@ -31,15 +38,17 @@ namespace eureka
     private:
         FrameCommandsConfig _config;
         std::shared_ptr<vkr::Device> _device;
-        CommandPool _pool;
-        uint64_t _totalCommandBuffers{ 0 };
-        std::vector<vkr::CommandBuffer> _availableCommandBuffers;
-        std::vector<vkr::CommandBuffer> _usedCommandBuffers;
-        std::vector<vkr::Fence> _availableDoneFences;
-        std::vector<vkr::Fence> _usedDoneFences;
-        std::vector<vk::Fence> _usedDoneFencesHandles;
-        std::vector<vkr::Semaphore> _availableDoneSemaphore;
-        std::vector<vkr::Semaphore> _usedDoneSemaphore;
+        CommandPool                      _pool;
+        uint64_t                         _totalCommandBuffers{ 0 };
+        std::vector<vkr::CommandBuffer>  _availableCommandBuffers;
+        std::vector<vkr::CommandBuffer>  _usedCommandBuffers;
+        std::vector<vkr::Fence>          _availableDoneFences;
+        std::vector<vkr::Fence>          _usedDoneFences;
+        std::vector<vk::Fence>           _usedDoneFencesHandles;
+        std::vector<BinarySemaphore>     _availableDoneBinarySemaphore;
+        std::vector<BinarySemaphore>     _usedDoneBinarySemaphore;
+        std::vector<CounterSemaphore>    _availableDoneTimelineSemaphore;
+        std::vector<CounterSemaphore>    _usedDoneTimelineSemaphore;
     public:
         FrameCommands(FrameCommands&& that) = default;
         FrameCommands& operator=(FrameCommands&& rhs) = default;
@@ -51,7 +60,8 @@ namespace eureka
         );
 
         vk::Fence NewSubmitFence();
-        SubmitCommandBuffer NewCommandBuffer();
+        SubmitCommandBuffer NewSubmitCommandBuffer();
+        PresentCommandBuffer NewPresentCommandBuffer();
 
         void Reset();
     };
@@ -78,33 +88,14 @@ namespace eureka
             Queue copyQueue,
             Queue graphicsQueue
         );
-
+        ~FrameContext();
         void BeginFrame();
-
-        void EndFrame()
-        {
-
-        }
-
-        SubmitCommandBuffer NewGraphicsCommandBuffer()
-        {
-            return _currentFrameGraphicsCommands->NewCommandBuffer();
-        }
-
-        SubmitCommandBuffer NewCopyCommandBuffer()
-        {
-            return _currentFrameCopyCommands->NewCommandBuffer();
-        }
-
-        vk::Fence NewGraphicsSubmitFence()
-        {
-            return _currentFrameGraphicsCommands->NewSubmitFence();
-        }
-
-        vk::Fence NewCopySubmitFence()
-        {
-            return _currentFrameCopyCommands->NewSubmitFence();
-        }
+        void EndFrame();
+        PresentCommandBuffer NewGraphicsPresentCommandBuffer();
+        SubmitCommandBuffer NewGraphicsCommandBuffer();
+        SubmitCommandBuffer NewCopyCommandBuffer();
+        vk::Fence NewGraphicsSubmitFence();
+        vk::Fence NewCopySubmitFence();
     };
 
 }

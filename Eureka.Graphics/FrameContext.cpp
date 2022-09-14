@@ -15,8 +15,10 @@ namespace eureka
         _usedCommandBuffers.reserve(config.max_command_buffers);
         _availableDoneFences.reserve(config.max_command_buffers);
         _usedDoneFences.reserve(config.max_command_buffers);
-        _availableDoneSemaphore.reserve(config.max_command_buffers);
-        _usedDoneSemaphore.reserve(config.max_command_buffers);
+        _availableDoneTimelineSemaphore.reserve(config.max_command_buffers);
+        _usedDoneTimelineSemaphore.reserve(config.max_command_buffers);
+        _availableDoneBinarySemaphore.reserve(config.max_command_buffers);
+        _usedDoneBinarySemaphore.reserve(config.max_command_buffers);
         _usedDoneFencesHandles.reserve(config.max_command_buffers);
         //_frameCommandsDoneFence = _device->createFence(vk::FenceCreateInfo{ .flags = vk::FenceCreateFlagBits::eSignaled });
         //_frameDoneSemaphore = _device->createSemaphore(vk::SemaphoreCreateInfo{});
@@ -25,7 +27,8 @@ namespace eureka
         for (auto i = 0u; i < _config.preallocated_command_buffers; ++i)
         {
             _availableCommandBuffers.emplace_back(_pool.AllocatePrimaryCommandBuffer());
-            _availableDoneSemaphore.emplace_back(_device->createSemaphore(vk::SemaphoreCreateInfo{}));
+            _availableDoneTimelineSemaphore.emplace_back(**_device);
+            _availableDoneBinarySemaphore.emplace_back(**_device);
             auto& fence = _availableDoneFences.emplace_back(_device->createFence(vk::FenceCreateInfo{ .flags = vk::FenceCreateFlagBits::eSignaled }));
             _device->resetFences(*fence);
         }
@@ -54,26 +57,56 @@ namespace eureka
     //    return *_frameDoneSemaphore;
     //}
 
-    SubmitCommandBuffer FrameCommands::NewCommandBuffer()
+    SubmitCommandBuffer FrameCommands::NewSubmitCommandBuffer()
     {
         if (_availableCommandBuffers.empty())
         {
             if (_totalCommandBuffers >= _config.max_command_buffers) throw std::logic_error("too many command buffers per frame");
 
             _availableCommandBuffers.emplace_back(_pool.AllocatePrimaryCommandBuffer());
-            _availableDoneSemaphore.emplace_back(_device->createSemaphore(vk::SemaphoreCreateInfo{}));
-
             ++_totalCommandBuffers;
         }
 
+        if (_availableDoneTimelineSemaphore.empty())
+        {
+            _availableDoneTimelineSemaphore.emplace_back(**_device);
+        }
+
         _usedCommandBuffers.emplace_back(std::move(_availableCommandBuffers.back()));
-        _usedDoneSemaphore.emplace_back(std::move(_availableDoneSemaphore.back()));
+        _usedDoneTimelineSemaphore.emplace_back(std::move(_availableDoneTimelineSemaphore.back()));
 
 
         _availableCommandBuffers.pop_back();
-        _availableDoneSemaphore.pop_back();
+        _availableDoneTimelineSemaphore.pop_back();
 
-        return SubmitCommandBuffer{ *_usedCommandBuffers.back() , *_usedDoneSemaphore.back() };
+        auto& timelineSemaphore = _usedDoneTimelineSemaphore.back();
+
+        return SubmitCommandBuffer{ *_usedCommandBuffers.back(), timelineSemaphore };
+    }
+
+    PresentCommandBuffer FrameCommands::NewPresentCommandBuffer()
+    {
+        if (_availableCommandBuffers.empty())
+        {
+            if (_totalCommandBuffers >= _config.max_command_buffers) throw std::logic_error("too many command buffers per frame");
+
+            _availableCommandBuffers.emplace_back(_pool.AllocatePrimaryCommandBuffer());
+            ++_totalCommandBuffers;
+        }
+
+        if (_availableDoneBinarySemaphore.empty())
+        {
+            _availableDoneBinarySemaphore.emplace_back(**_device);
+        }
+
+        _usedCommandBuffers.emplace_back(std::move(_availableCommandBuffers.back()));
+        _usedDoneBinarySemaphore.emplace_back(std::move(_availableDoneBinarySemaphore.back()));
+
+
+        _availableCommandBuffers.pop_back();
+        _availableDoneBinarySemaphore.pop_back();
+
+        return PresentCommandBuffer{ *_usedCommandBuffers.back() , _usedDoneBinarySemaphore.back() };
     }
 
     void FrameCommands::Reset()
@@ -86,10 +119,12 @@ namespace eureka
 
             std::ranges::move(_usedCommandBuffers, std::back_inserter(_availableCommandBuffers));
             std::ranges::move(_usedDoneFences, std::back_inserter(_availableDoneFences));
-            std::ranges::move(_usedDoneSemaphore, std::back_inserter(_availableDoneSemaphore));
+            std::ranges::move(_usedDoneBinarySemaphore, std::back_inserter(_availableDoneBinarySemaphore));
+            std::ranges::move(_usedDoneTimelineSemaphore, std::back_inserter(_availableDoneTimelineSemaphore));
             _usedCommandBuffers.clear();
             _usedDoneFences.clear();
-            _usedDoneSemaphore.clear();
+            _usedDoneBinarySemaphore.clear();
+            _usedDoneTimelineSemaphore.clear();
             _usedDoneFencesHandles.clear();
         }
 
@@ -147,6 +182,11 @@ namespace eureka
     }
 
 
+    FrameContext::~FrameContext()
+    {
+
+    }
+
     void FrameContext::BeginFrame()
     {
         _currentFrame = (_currentFrame + 1) % _maxFramesInFlight;
@@ -154,6 +194,36 @@ namespace eureka
         _currentFrameCopyCommands = &_frameCopyCommands[_currentFrame];
         _currentFrameGraphicsCommands->Reset();
         _currentFrameCopyCommands->Reset();
+    }
+
+    void FrameContext::EndFrame()
+    {
+
+    }
+
+    PresentCommandBuffer FrameContext::NewGraphicsPresentCommandBuffer()
+    {
+        return _currentFrameGraphicsCommands->NewPresentCommandBuffer();
+    }
+
+    SubmitCommandBuffer FrameContext::NewGraphicsCommandBuffer()
+    {
+        return _currentFrameGraphicsCommands->NewSubmitCommandBuffer();
+    }
+
+    SubmitCommandBuffer FrameContext::NewCopyCommandBuffer()
+    {
+        return _currentFrameCopyCommands->NewSubmitCommandBuffer();
+    }
+
+    vk::Fence FrameContext::NewGraphicsSubmitFence()
+    {
+        return _currentFrameGraphicsCommands->NewSubmitFence();
+    }
+
+    vk::Fence FrameContext::NewCopySubmitFence()
+    {
+        return _currentFrameCopyCommands->NewSubmitFence();
     }
 
 }

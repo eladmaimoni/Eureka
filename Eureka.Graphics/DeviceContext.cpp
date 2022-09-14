@@ -13,7 +13,7 @@ namespace eureka
 
         auto availableExtentions = device.enumerateDeviceExtensionProperties();
 
-        //DEBUGGER_TRACE("device extentions: \n{}", availableExtentions | std::views::transform([](const auto& v) {return std::string_view(v.extensionName); }) );
+        //DEBUGGER_TRACE("Available device extentions: \n{}", availableExtentions | std::views::transform([](const auto& v) {return std::string_view(v.extensionName); }) );
 
         for (const auto& requestedExtension : desc.required_extentions)
         {
@@ -35,13 +35,13 @@ namespace eureka
         }
         auto availableLayers = device.enumerateDeviceLayerProperties();
 
-        DEBUGGER_TRACE("device layers: \n{}", availableLayers | std::views::transform([](const auto& v) {return std::string_view(v.layerName); }));
+        //DEBUGGER_TRACE("Available device layers: \n{}", availableLayers | std::views::transform([](const auto& v) {return std::string_view(v.layerName); }));
 
 
         for (const auto& requestedLayer : desc.required_layers)
         {
             bool found = false;
-            for (auto availableLayer : availableLayers)
+            for (const auto& availableLayer : availableLayers)
             {
                 std::string_view availableLayerName(availableLayer.layerName);
                 if (availableLayerName == requestedLayer)
@@ -93,7 +93,7 @@ namespace eureka
         DeviceCreationDesc deviceCreationDesc;
         std::vector<vk::QueueFamilyProperties> queueFamilies = device.getQueueFamilyProperties();
      
-        DEBUGGER_TRACE("starting going through queues");
+        //DEBUGGER_TRACE("starting going through queues");
         
         std::unordered_map<QueueType, std::vector<IndexFlagsPair>> indicesOrderedBySpecificity;
         
@@ -221,12 +221,12 @@ namespace eureka
     //
     //////////////////////////////////////////////////////////////////////////
 
-    DeviceContext::DeviceContext(const Instance& instance, const DeviceContextConfig& desc)
+    DeviceContext::DeviceContext(const Instance& instance, DeviceContextConfig& desc)
     {
         Init(instance, desc);
     }
 
-    void DeviceContext::Init(const Instance& instance, const DeviceContextConfig& desc)
+    void DeviceContext::Init(const Instance& instance, DeviceContextConfig& desc)
     {
         assert(_device == nullptr);
         InitDeviceAndQueues(instance.Get(), desc);
@@ -255,21 +255,33 @@ namespace eureka
 
     Queue DeviceContext::CreateGraphicsQueue()
     {
-        return *TryCreateQueue(_preferredGraphicsIdx);
+        auto graphicsQueue = TryCreateQueue(_preferredGraphicsIdx);
+        if (!_defaultQueue)
+        {
+            _defaultQueue = graphicsQueue;
+        }
+        return *graphicsQueue;
     }
 
     Queue DeviceContext::CreateComputeQueue()
     {
-        return *TryCreateQueue(_preferredComputeIdx);
+        //return *_defaultQueue;
+        auto computeQueue = TryCreateQueue(_preferredComputeIdx);
+        
+        return computeQueue ? *computeQueue : *_defaultQueue;
     }
 
     Queue DeviceContext::CreateCopyQueue()
     {
-        return *TryCreateQueue(_preferredCopyIdx);
+        //return *_defaultQueue;
+        auto copyQueue = TryCreateQueue(_preferredCopyIdx);
+
+        return copyQueue ? *copyQueue : *_defaultQueue;
     }
 
     Queue DeviceContext::CreatePresentQueue(vk::SurfaceKHR presentationSurface)
     {
+        //return *_defaultQueue;
         std::optional<Queue> queue{ std::nullopt };
         if (_physicalDevice->getSurfaceSupportKHR(_preferredCopyIdx, presentationSurface))
         {
@@ -283,7 +295,7 @@ namespace eureka
         {
             queue = TryCreateQueue(_preferredGraphicsIdx);
         }
-        return *queue;
+        return queue ? *queue : *_defaultQueue;
     }
 
     const std::shared_ptr<eureka::ShaderCache>& DeviceContext::Shaders()
@@ -304,7 +316,7 @@ namespace eureka
 
 
 
-    void DeviceContext::InitDeviceAndQueues(const vkr::Instance& instance, const DeviceContextConfig& desc)
+    void DeviceContext::InitDeviceAndQueues(const vkr::Instance& instance,  DeviceContextConfig& desc)
     {
         vkr::PhysicalDevices availableDevices(instance);
         vkr::PhysicalDevice* chosenPhysicalDevice = nullptr;
@@ -335,13 +347,20 @@ namespace eureka
 
         vk::PhysicalDeviceFeatures deviceFeatures = vk::PhysicalDeviceFeatures();
 
-        vk::PhysicalDeviceVulkan12Features features;
-        features.timelineSemaphore = true;
+        vk::PhysicalDeviceVulkan12Features features12;
+        features12.timelineSemaphore = true;
+        vk::PhysicalDeviceVulkan13Features features13;
+        features13.synchronization2 = true;
+        features13.pNext = &features12;
 
+        DEBUGGER_TRACE("Requested device layers = {}", desc.required_layers);
+        DEBUGGER_TRACE("Requested device extentions = {}", desc.required_extentions);
+
+   
         vk::DeviceCreateInfo deviceInfo{
-            .pNext = &features,
+            .pNext = &features13,
             .flags = vk::DeviceCreateFlags(),
-            .queueCreateInfoCount = 3,
+            .queueCreateInfoCount = static_cast<uint32_t>(deviceCreationDesc.create_info.size()),
             .pQueueCreateInfos = deviceCreationDesc.create_info.data(),
             .enabledLayerCount = static_cast<uint32_t>(desc.required_layers.size()),
             .ppEnabledLayerNames = desc.required_layers.data(),
@@ -352,7 +371,6 @@ namespace eureka
 
         _device = std::make_shared<vkr::Device>(*chosenPhysicalDevice, deviceInfo);
 
-        
 
         _physicalDevice = std::make_shared<vkr::PhysicalDevice>(std::move(*chosenPhysicalDevice));
     

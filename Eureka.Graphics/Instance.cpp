@@ -13,7 +13,7 @@ namespace eureka
     {
         auto supported_extentions = context.enumerateInstanceExtensionProperties();
 
-        DEBUGGER_TRACE("instance extentions: \n{}", supported_extentions | std::views::transform([](const auto& v) {return std::string_view(v.extensionName); }) );
+        //DEBUGGER_TRACE("Available instance extentions: \n{}", supported_extentions | std::views::transform([](const auto& v) {return std::string_view(v.extensionName); }) );
 
 
         for (auto required_extention : desc.required_instance_extentions)
@@ -41,7 +41,7 @@ namespace eureka
         auto supported_layers = context.enumerateInstanceLayerProperties();
 
 
-        //DEBUGGER_TRACE("instance layers: \n{}", supported_layers | std::views::transform([](const auto& v) {return std::string_view(v.layerName.data()); }));
+        //DEBUGGER_TRACE("Available instance layers: \n{}", supported_layers | std::views::transform([](const auto& v) {return std::string_view(v.layerName.data()); }));
 
 
         for (const auto& required_layer : desc.required_layers)
@@ -84,6 +84,10 @@ namespace eureka
 
         ValidateRequiredExtentionsExists(context, desc);
         ValidateRequiredLayersExists(context, desc);
+
+
+        DEBUGGER_TRACE("Requested instance layers = {}", desc.required_layers);
+        DEBUGGER_TRACE("Requested instance extensions  = {}", desc.required_instance_extentions);
 
         vk::InstanceCreateInfo createInfo{
             .flags = vk::InstanceCreateFlags(),

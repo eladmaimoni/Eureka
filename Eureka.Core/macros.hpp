@@ -5,9 +5,17 @@
 #endif
 
 
+#ifndef EUREKA_DEFAULT_MOVEABLE_COPYABLE
+#define EUREKA_DEFAULT_MOVEABLE_COPYABLE(ObjType) \
+    ObjType() = default; \
+    ObjType(ObjType&& that) noexcept = default; \
+    ObjType& operator=(ObjType&& rhs) noexcept = default; \
+    ObjType(const ObjType& that) noexcept = default; \
+    ObjType& operator=(const ObjType& rhs) noexcept = default;
+#endif
+
 #ifndef EUREKA_DEFAULT_MOVEABLE
 #define EUREKA_DEFAULT_MOVEABLE(ObjType) \
-    ~ObjType() noexcept = default; \
     ObjType() = default; \
     ObjType(ObjType&& that) noexcept = default; \
     ObjType& operator=(ObjType&& rhs) noexcept = default;

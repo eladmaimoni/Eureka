@@ -32,11 +32,17 @@ namespace eureka
         {
             return _family;
         }
+        bool operator==(const Queue& rhs)
+        {
+            return _family == rhs._family && _queue == rhs._queue;
+        }
+        bool operator!=(const Queue& rhs)
+        {
+            return !(this->operator==(rhs));
+        }
     private:
         uint32_t  _family;
         vk::Queue _queue;
-
-
     };
 
     struct QueueManagement
@@ -60,13 +66,13 @@ namespace eureka
     {
     public:
         DeviceContext() = default;
-        DeviceContext(const Instance& instance, const DeviceContextConfig& desc);
+        DeviceContext(const Instance& instance, DeviceContextConfig& desc);
         ~DeviceContext();
         
         //
         // Initialization
         //
-        void Init(const Instance& instance, const DeviceContextConfig& desc);
+        void Init(const Instance& instance, DeviceContextConfig& desc);
 
         //
         // Accessors
@@ -83,7 +89,7 @@ namespace eureka
         const std::shared_ptr<ShaderCache>& Shaders();
 
     private:
-        void InitDeviceAndQueues(const vkr::Instance& instance, const DeviceContextConfig& desc);
+        void InitDeviceAndQueues(const vkr::Instance& instance, DeviceContextConfig& desc);
         std::optional<Queue> TryCreateQueue(uint32_t family);
     private:
         std::shared_ptr<vkr::PhysicalDevice>           _physicalDevice{ nullptr };
@@ -92,6 +98,7 @@ namespace eureka
         std::vector<vk::Queue>                         _computeQueue;
         std::vector<vk::Queue>                         _copyQueue;
         vk::Queue                                      _presentQueue;
+        std::optional<Queue>                           _defaultQueue;
 
 
         uint32_t                               _preferredGraphicsIdx;

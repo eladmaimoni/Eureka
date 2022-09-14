@@ -1,6 +1,6 @@
 #include "ImGuiViewPass.hpp"
 #include "imgui_impl_glfw.h"
-
+#include <profiling.hpp>
 
 namespace eureka
 {
@@ -12,20 +12,20 @@ namespace eureka
 
     inline constexpr uint64_t EUREKA_MAX_IMGUI_VERTEX_INDEX_BYTES = 4 * 1024 * 1024;
 
+
+
     ImGuiViewPass::ImGuiViewPass(
         DeviceContext& deviceContext, 
         std::shared_ptr<Window> window,
         std::shared_ptr<PipelineCache>  pipelineCache,
         std::shared_ptr<MTDescriptorAllocator> descPool, // TODO move to device
-        std::shared_ptr<OneShotSubmissionHandler> oneShotSubmissionHandler, // TODO move to imageLoader / data loader
-        std::shared_ptr<HostWriteCombinedRingPool> uploadPool, // TODO move to imageLoader / data loader
+        std::shared_ptr<AsyncDataLoader> asyncDataLoader,
         PoolExecutor poolExecutor // TODO global?
     ) :
         _deviceContext(deviceContext),
-        _uploadPool(std::move(uploadPool)),
         _descPool(std::move(descPool)),
         _poolExecutor(std::move(poolExecutor)),
-        _oneShotSubmissionHandler(std::move(oneShotSubmissionHandler))
+        _asyncDataLoader(std::move(asyncDataLoader))
     {
         Setup(std::move(window), std::move(pipelineCache));
     }
@@ -35,9 +35,11 @@ namespace eureka
         ImGui_ImplGlfw_Shutdown();
     }
 
+
+
     future_t<void> ImGuiViewPass::Setup(std::shared_ptr<Window> window, std::shared_ptr<PipelineCache> pipelineCache)
     {
-        PROFILE_CATEGORIZED_UNTHREADED_SCOPE("imgui setup", Profiling::Color::Red, Profiling::PROFILING_CATEGORY_INIT);
+        PROFILE_CATEGORIZED_UNTHREADED_SCOPE("imgui setup", eureka::profiling::Color::Red, eureka::profiling::PROFILING_CATEGORY_INIT);
         co_await concurrencpp::resume_on(*_poolExecutor);
 
         //
@@ -93,17 +95,6 @@ namespace eureka
             .destination_image_extent = vk::Extent3D{.width = static_cast<uint32_t>(texWidth), .height = static_cast<uint32_t>(texHeight), .depth = 1}
         };
 
-        auto stageBuffer = co_await _uploadPool->EnqueueAllocation(uploadSize);
-
-        stageBuffer.Assign(transferDesc.unpinned_src_span, transferDesc.stage_zone_offset);
-
-        auto uploadCommands =
-            MakeCopyQueueSampledImageUpload(
-                _oneShotSubmissionHandler->CopyQueue(),
-                _oneShotSubmissionHandler->GraphicsQueue(),
-                transferDesc
-            );
-
         _descriptorSet = _descPool->AllocateSet(_pipeline->GetFragmentShaderDescriptorSetLayout());
 
         std::array<vk::DescriptorImageInfo, 1> imageInfo
@@ -116,66 +107,12 @@ namespace eureka
             }
         };
 
-
         _descriptorSet.SetBindings(0, vk::DescriptorType::eCombinedImageSampler, imageInfo);
 
-        co_await _oneShotSubmissionHandler->ResumeOnRecordingContext();
 
-        auto [uploadCommandBuffer, semaphore] = _oneShotSubmissionHandler->NewOneShotCopyCommandBuffer();
-        {
-            PROFILE_CATEGORIZED_SCOPE("imgui commands", Profiling::Color::Green, Profiling::PROFILING_CATEGORY_RENDERING);
-            ScopedCommands commands(uploadCommandBuffer);
+        co_await _asyncDataLoader->UploadImageAsync(transferDesc);
 
-            uploadCommandBuffer.pipelineBarrier(
-                vk::PipelineStageFlagBits::eTopOfPipe,
-                vk::PipelineStageFlagBits::eTransfer,
-                {},
-                nullptr,
-                nullptr,
-                { uploadCommands.copy_queue_pre_transfer_barrier }
-            );
-
-            uploadCommandBuffer.copyBufferToImage(
-                stageBuffer.Buffer(),
-                transferDesc.destination_image,
-                vk::ImageLayout::eTransferDstOptimal,
-                { uploadCommands.copy_queue_transfer }
-            );
-
-            uploadCommandBuffer.pipelineBarrier(
-                vk::PipelineStageFlagBits::eTransfer,
-                vk::PipelineStageFlagBits::eBottomOfPipe,
-                {},
-                nullptr,
-                nullptr,
-                { uploadCommands.copy_queue_release }
-            );
-        }
-
-        co_await _oneShotSubmissionHandler->AppendCopyCommandSubmission(uploadCommandBuffer);
-
-        auto graphicsQueue = _oneShotSubmissionHandler->GraphicsQueue();
-
-        auto [graphicsCommandBuffer, _] = _oneShotSubmissionHandler->NewOneShotGraphicsCommandBuffer();
-
-        {
-            ScopedCommands sc(graphicsCommandBuffer);
-
-            graphicsCommandBuffer.pipelineBarrier(
-                vk::PipelineStageFlagBits::eBottomOfPipe,
-                vk::PipelineStageFlagBits::eFragmentShader,
-                {},
-                nullptr,
-                nullptr,
-                { uploadCommands.graphics_queue_acquire }
-            );
-        }
-        // record graphics queue acquire
-
-        co_await _oneShotSubmissionHandler->AppendGraphicsSubmission(graphicsCommandBuffer);
-
-
-
+  
         _active = true;
 
         co_return;
@@ -188,7 +125,7 @@ namespace eureka
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
         auto vp = ImGui::GetMainViewport();
-        auto mainDockSpaceId = ImGui::DockSpaceOverViewport(vp, ImGuiDockNodeFlags_PassthruCentralNode);
+        /*auto mainDockSpaceId = */ImGui::DockSpaceOverViewport(vp, ImGuiDockNodeFlags_PassthruCentralNode);
 
         ImGui::SetNextWindowSize(ImVec2(512, 512), ImGuiCond_FirstUseEver);
         ImGui::Begin("Test Window", nullptr);
@@ -210,40 +147,40 @@ namespace eureka
         //////////////////////////////////////////////////////////////////////////
 
         ImGui::Separator();
-
-        if (ImGui::TreeNode("0001: Renderer: Large Mesh Support"))
-        {
-            ImDrawList* draw_list = ImGui::GetWindowDrawList();
-            {
-                static int vtx_count = 60000;
-                ImGui::SliderInt("VtxCount##1", &vtx_count, 0, 100000);
-                ImVec2 p = ImGui::GetCursorScreenPos();
-                for (int n = 0; n < vtx_count / 4; n++)
-                {
-                    float off_x = (float)(n % 100) * 3.0f;
-                    float off_y = (float)(n % 100) * 1.0f;
-                    ImU32 col = IM_COL32(((n * 17) & 255), ((n * 59) & 255), ((n * 83) & 255), 255);
-                    draw_list->AddRectFilled(ImVec2(p.x + off_x, p.y + off_y), ImVec2(p.x + off_x + 50, p.y + off_y + 50), col);
-                }
-                ImGui::Dummy(ImVec2(300 + 50, 100 + 50));
-                ImGui::Text("VtxBuffer.Size = %d", draw_list->VtxBuffer.Size);
-            }
-            {
-                static int vtx_count = 60000;
-                ImGui::SliderInt("VtxCount##2", &vtx_count, 0, 100000);
-                ImVec2 p = ImGui::GetCursorScreenPos();
-                for (int n = 0; n < vtx_count / (10 * 4); n++)
-                {
-                    float off_x = (float)(n % 100) * 3.0f;
-                    float off_y = (float)(n % 100) * 1.0f;
-                    ImU32 col = IM_COL32(((n * 17) & 255), ((n * 59) & 255), ((n * 83) & 255), 255);
-                    draw_list->AddText(ImVec2(p.x + off_x, p.y + off_y), col, "ABCDEFGHIJ");
-                }
-                ImGui::Dummy(ImVec2(300 + 50, 100 + 20));
-                ImGui::Text("VtxBuffer.Size = %d", draw_list->VtxBuffer.Size);
-            }
-            ImGui::TreePop();
-        }
+        ImGui::ShowDemoWindow();
+        //if (ImGui::TreeNode("0001: Renderer: Large Mesh Support"))
+        //{
+        //    ImDrawList* draw_list = ImGui::GetWindowDrawList();
+        //    {
+        //        static int vtx_count = 60000;
+        //        ImGui::SliderInt("VtxCount##1", &vtx_count, 0, 100000);
+        //        ImVec2 p = ImGui::GetCursorScreenPos();
+        //        for (int n = 0; n < vtx_count / 4; n++)
+        //        {
+        //            float off_x = (float)(n % 100) * 3.0f;
+        //            float off_y = (float)(n % 100) * 1.0f;
+        //            ImU32 col = IM_COL32(((n * 17) & 255), ((n * 59) & 255), ((n * 83) & 255), 255);
+        //            draw_list->AddRectFilled(ImVec2(p.x + off_x, p.y + off_y), ImVec2(p.x + off_x + 50, p.y + off_y + 50), col);
+        //        }
+        //        ImGui::Dummy(ImVec2(300 + 50, 100 + 50));
+        //        ImGui::Text("VtxBuffer.Size = %d", draw_list->VtxBuffer.Size);
+        //    }
+        //    {
+        //        static int vtx_count = 60000;
+        //        ImGui::SliderInt("VtxCount##2", &vtx_count, 0, 100000);
+        //        ImVec2 p = ImGui::GetCursorScreenPos();
+        //        for (int n = 0; n < vtx_count / (10 * 4); n++)
+        //        {
+        //            float off_x = (float)(n % 100) * 3.0f;
+        //            float off_y = (float)(n % 100) * 1.0f;
+        //            ImU32 col = IM_COL32(((n * 17) & 255), ((n * 59) & 255), ((n * 83) & 255), 255);
+        //            draw_list->AddText(ImVec2(p.x + off_x, p.y + off_y), col, "ABCDEFGHIJ");
+        //        }
+        //        ImGui::Dummy(ImVec2(300 + 50, 100 + 20));
+        //        ImGui::Text("VtxBuffer.Size = %d", draw_list->VtxBuffer.Size);
+        //    }
+        //    ImGui::TreePop();
+        //}
         //////////////////////////////////////////////////////////////////////////
         ImGui::End();
         ImGui::Render();
@@ -251,7 +188,7 @@ namespace eureka
 
     void ImGuiViewPass::SyncBuffers()
     {
-        PROFILE_CATEGORIZED_SCOPE("imgui vertex update", Profiling::Color::Brown, Profiling::PROFILING_CATEGORY_RENDERING);
+        PROFILE_CATEGORIZED_SCOPE("imgui vertex update", eureka::profiling::Color::Brown, eureka::profiling::PROFILING_CATEGORY_RENDERING);
 
         ImDrawData* imDrawData = ImGui::GetDrawData();
 
@@ -299,6 +236,8 @@ namespace eureka
             std::memcpy(deviceMappedPtr, cmd_list->VtxBuffer.Data, bytes);
             deviceMappedPtr += bytes;
         }
+
+        _vertexIndexBuffer.FlushCachesBeforeDeviceRead();
     }
 
     void ImGuiViewPass::RecordDrawCommands(vk::CommandBuffer commandBuffer)
@@ -378,6 +317,7 @@ namespace eureka
         io.DisplaySize = ImVec2(static_cast<float>(w), static_cast<float>(h));
         io.DisplayFramebufferScale = ImVec2(1.0f, 1.0f);
     }
+
 
 }
 

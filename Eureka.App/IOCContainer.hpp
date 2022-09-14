@@ -17,6 +17,7 @@ namespace eureka
     class PipelineCache;
     class RenderDocIntegration;
     class DescriptorSetLayoutCache;
+    class AsyncDataLoader;
 
     class IOCContainer
     {
@@ -38,6 +39,7 @@ namespace eureka
 
         concurrencpp::runtime                              _concurrencyRuntime;
         std::shared_ptr<SubmissionThreadExecutionContext>  _submissionThreadExecutionContext;
+        std::shared_ptr<AsyncDataLoader>                   _asyncDataLoader;
         std::shared_ptr<OneShotSubmissionHandler>          _oneShotSubmissionHandler;
         std::shared_ptr<HostWriteCombinedRingPool>         _uploadPool;
         std::shared_ptr<ImGuiIntegration>                  _imguiIntegration;
@@ -47,7 +49,7 @@ namespace eureka
         std::shared_ptr<DescriptorSetLayoutCache>          _setLayoutCache;
 
         std::shared_ptr<MTDescriptorAllocator>             _descPool;
-        future_t<void> InitializeGraphicsSubsystem();
+        void InitializeGraphicsSubsystem();
 
     };
 }

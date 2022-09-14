@@ -2,7 +2,6 @@
 #include <concurrencpp/concurrencpp.h>
 #include <compiler.hpp>
 #include <macros.hpp>
-#include <Profiling.hpp>
 #include <function2/function2.hpp>
 #include <sigslot/signal.hpp>
 EUREKA_MSVC_WARNING_PUSH_DISABLE(5054 4127)

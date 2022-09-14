@@ -51,11 +51,18 @@ namespace eureka
 
         if (!_pendingLoad)
         {
-            _cancellationSource = std::stop_source();
-            _pendingLoad = _assetLoader->LoadModel(
-                "C:/Projects/Samples/Vulkan/data/models/FlightHelmet/glTF/scene.gltf",
-                ModelLoadingConfig{ .cancel = _cancellationSource.get_token() }
-            );
+
+            //auto path = std::filesystem::path("C:/Projects/Samples/Vulkan/data/models/FlightHelmet/glTF/scene.gltf");
+
+            //if (std::filesystem::exists(path))
+            //{
+            //    _cancellationSource = std::stop_source();
+            //    _pendingLoad = _assetLoader->LoadModel(
+            //        path,
+            //        ModelLoadingConfig{ .cancel = _cancellationSource.get_token() }
+            //    );
+            //}
+
 
             
         }

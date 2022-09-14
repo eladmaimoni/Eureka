@@ -5,7 +5,7 @@
 #include "Image.hpp"
 #include "Buffer.hpp"
 #include <basic_utils.hpp>
-
+#include <profiling.hpp>
 
 namespace eureka
 {
@@ -84,20 +84,18 @@ namespace eureka
     AssetLoader::AssetLoader(
         DeviceContext& deviceContext,
         Queue queue,
-        std::shared_ptr<OneShotSubmissionHandler>     oneShotSubmissionHandler,
-        std::shared_ptr<HostWriteCombinedRingPool>        uploadPool,
-        std::shared_ptr<PipelineCache >                   pipelineCache,
-        std::shared_ptr<MTDescriptorAllocator>                   descPool,
-        IOExecutor ioExecutor, PoolExecutor poolExecutor
+        std::shared_ptr<AsyncDataLoader>          asyncDataLoader,
+        std::shared_ptr<PipelineCache >           pipelineCache,
+        std::shared_ptr<MTDescriptorAllocator>    descPool,
+        IOExecutor ioExecutor, PoolExecutor        poolExecutor
     ) :
         _deviceContext(deviceContext),
         _copyQueue(queue),
         _descPool(std::move(descPool)), 
         _pipelineCache(std::move(pipelineCache)),
-        _oneShotSubmissionHandler(std::move(oneShotSubmissionHandler)),
+        _asyncDataLoader(std::move(asyncDataLoader)),
         _ioExecutor(std::move(ioExecutor)),
         _poolExecutor(std::move(poolExecutor)),
-        _uploadPool(std::move(uploadPool)),
         _uploadCommandPool(deviceContext.LogicalDevice(), CommandPoolDesc{ .type = CommandPoolType::eTransientResettableBuffers, .queue_family = _copyQueue.Family() })
     {
 
@@ -111,84 +109,7 @@ namespace eureka
         }
     }
 
-    vk::CommandBuffer AssetLoader::RecordUploadCommands(
-        dynamic_span<ImageStageUploadDesc> imageUploads,
-        const BufferDataUploadTransferDesc& bufferUpload,
-        const PoolSequentialStageZone& stageZone    
-    )
-    {
-        PROFILE_CATEGORIZED_SCOPE("Asset Loading Command Recording", Profiling::Color::Green, Profiling::PROFILING_CATEGORY_RENDERING);
-        DEBUGGER_TRACE("rendering thread fun - recording one shot copy");
 
-        auto [uploadCommandBuffer, uploadDoneSemaphore] = _oneShotSubmissionHandler->NewOneShotCopyCommandBuffer();
-
-        auto& copyQueue = _oneShotSubmissionHandler->CopyQueue();
-        auto& graphicsQueue = _oneShotSubmissionHandler->GraphicsQueue();
-
-        {
-            ScopedCommands commands(uploadCommandBuffer);
-
-            svec10<vk::ImageMemoryBarrier> preTransferImageMemoryBarriers;
-            svec10<vk::ImageMemoryBarrier> postTransferImageMemoryBarriers;
-            svec10<vk::BufferImageCopy> bufferImageCopies;
-
-            for (const auto& imageUploadDesc : imageUploads)
-            {
-                auto [preTransferBarrier, bufferImageCopy, copyRelease, graphicsAcquire]
-                    = MakeCopyQueueSampledImageUpload(_copyQueue, graphicsQueue, imageUploadDesc);
-
-                preTransferImageMemoryBarriers.emplace_back(preTransferBarrier);
-                bufferImageCopies.emplace_back(bufferImageCopy);
-                postTransferImageMemoryBarriers.emplace_back(copyRelease);
-            }
-      
-            uploadCommandBuffer.pipelineBarrier(
-                vk::PipelineStageFlagBits::eTopOfPipe,
-                vk::PipelineStageFlagBits::eTransfer,
-                {},
-                nullptr,
-                nullptr,
-                preTransferImageMemoryBarriers
-            );
-
-            for (auto i = 0u; i < imageUploads.size(); ++i)
-            {
-                uploadCommandBuffer.copyBufferToImage(
-                    stageZone.Buffer(),
-                    imageUploads[i].destination_image,
-                    vk::ImageLayout::eTransferDstOptimal,
-                    { bufferImageCopies[i] }
-                );
-            }
-
-            uploadCommandBuffer.copyBuffer(
-                bufferUpload.src_buffer,
-                bufferUpload.dst_buffer,
-                { vk::BufferCopy{.srcOffset = bufferUpload.src_offset, .dstOffset = bufferUpload.dst_offset, .size = bufferUpload.bytes} }
-            );
-
-            vk::BufferMemoryBarrier bufferMemoryBarrier
-            {
-                 .srcAccessMask = vk::AccessFlagBits::eTransferWrite,
-                 .dstAccessMask = vk::AccessFlagBits::eShaderRead,
-                 .srcQueueFamilyIndex = copyQueue.Family(),
-                 .dstQueueFamilyIndex = graphicsQueue.Family(),
-                 .buffer = bufferUpload.dst_buffer,
-                 .offset = 0,
-                 .size = bufferUpload.bytes
-            };
-
-            uploadCommandBuffer.pipelineBarrier(
-                vk::PipelineStageFlagBits::eTransfer,
-                vk::PipelineStageFlagBits::eBottomOfPipe,
-                {},
-                nullptr,
-                { bufferMemoryBarrier },
-                postTransferImageMemoryBarriers
-            );
-        }
-        return uploadCommandBuffer;
-    }
 
     
 
@@ -227,12 +148,14 @@ namespace eureka
         return preparedImages;
     }
 
+   
+
     future_t<LoadedModel> AssetLoader::LoadModel(
         const std::filesystem::path& path,
         const ModelLoadingConfig& config
     )
     {
-        PROFILE_CATEGORIZED_UNTHREADED_SCOPE("Asset Loading Background", Profiling::Color::Red, Profiling::PROFILING_CATEGORY_LOAD);
+        PROFILE_CATEGORIZED_UNTHREADED_SCOPE("Asset Loading Background", eureka::profiling::Color::Red, eureka::profiling::PROFILING_CATEGORY_LOAD);
         auto cancellationToken = config.cancel;
         bool expected = false;
         if (!_busy.compare_exchange_strong(expected, true))
@@ -252,7 +175,7 @@ namespace eureka
         tinygltf::Model gltfModel;
         tinygltf::TinyGLTF gltfContext;
 
-        DEBUGGER_TRACE("io thread fun");
+        //DEBUGGER_TRACE("io thread fun");
 
         auto ok = gltfContext.LoadASCIIFromFile(&gltfModel, &error, &warning, pathstring);
 
@@ -341,47 +264,61 @@ namespace eureka
 
         primitiveGroup.buffer = VertexAndIndexTransferableDeviceBuffer(_deviceContext.Allocator(), BufferConfig{ .byte_size = totalIndexBufferMemory + totalVertexBufferMemory });
      
-        auto stageBuffer = co_await _uploadPool->EnqueueAllocation(totalIndexBufferMemory + totalVertexBufferMemory + totalImageMemory);
-
-        DEBUGGER_TRACE("stage buffer allocated");
-
-        PoolSequentialStageZone stageZone(std::move(stageBuffer));
-
-    
-        //_stageZone.Reset(); 
-        // TODO check stage zone leftover
-        for (const auto& imageUploadDesc : imageUploadDescs)
-        {      
-            stageZone.Assign(imageUploadDesc.unpinned_src_span);
-        }
 
         BufferDataUploadTransferDesc bufferUploadDesc
         {
-            .src_buffer = stageZone.Buffer(),
-            .src_offset = stageZone.Position(),
+            
+            .stage_zone_offset = totalImageMemory,
             .bytes = primitiveGroup.buffer.ByteSize(),
             .dst_buffer = primitiveGroup.buffer.Buffer(),
             .dst_offset = 0
         };
+
+        co_await _asyncDataLoader->UploadImagesAndBufferAsync(
+            std::move(imageUploadDescs),
+            totalImageMemory,
+            std::move(bufferUploadDesc)
+            );
+
+        //auto stageBuffer = co_await _uploadPool->EnqueueAllocation(totalIndexBufferMemory + totalVertexBufferMemory + totalImageMemory);
+
+        //DEBUGGER_TRACE("stage buffer allocated");
+
+
+
+        //PoolSequentialStageZone stageZone(std::move(stageBuffer));
+
+    
+        //_stageZone.Reset(); 
+        // TODO check stage zone leftover
+        //for (const auto& imageUploadDesc : imageUploadDescs)
+        //{      
+        //    stageZone.Assign(imageUploadDesc.unpinned_src_span);
+        //}
+
+
      
-        for (const auto& idxSpan : indicesUploadDesc)
-        {
-            stageZone.Assign(idxSpan);
-        }
-        for (const auto& vertexSpan : vertexDataUploadDesc)
-        {
-            stageZone.Assign(vertexSpan);
-        }
+        //bufferUploadDesc.unpinned_src_spans = std::move(indicesUploadDesc);
 
-        ThrowOnCancelled(cancellationToken);
+        ////for (const auto& idxSpan : indicesUploadDesc)
+        ////{
+        ////    stageZone.Assign(idxSpan);
+        ////}
+        //for (const auto& vertexSpan : vertexDataUploadDesc)
+        //{
+        //    bufferUploadDesc.unpinned_src_spans.emplace_back(vertexSpan);
+        //    //stageZone.Assign(vertexSpan);
+        //}
+
+        //ThrowOnCancelled(cancellationToken);
   
-        co_await _oneShotSubmissionHandler->ResumeOnRecordingContext();
+        //co_await _oneShotSubmissionHandler->ResumeOnRecordingContext();
 
-        auto uploadCommandBuffer = RecordUploadCommands(imageUploadDescs, bufferUploadDesc, stageZone);
-        DEBUGGER_TRACE("rendering thread fun - recording on rendering thread");
-        co_await _oneShotSubmissionHandler->AppendCopyCommandSubmission(uploadCommandBuffer);
+        //auto uploadCommandBuffer = RecordUploadCommands(imageUploadDescs, bufferUploadDesc, stageZone);
+        //DEBUGGER_TRACE("rendering thread fun - recording on rendering thread");
+        //co_await _oneShotSubmissionHandler->AppendCopyCommandSubmission(uploadCommandBuffer);
         
-
+         
         DEBUGGER_TRACE("rendering thread fun - copy submitted and signaled as done");
 
         co_await concurrencpp::resume_on(*_poolExecutor); // temporary, release resources on pool thread

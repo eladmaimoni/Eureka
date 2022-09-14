@@ -22,6 +22,8 @@ set_source_group(
     "GraphicsDefaults.hpp"
     "UploadRingBuffer.hpp"
     "UploadRingBuffer.cpp"
+    "AsyncDataLoader.hpp"
+    "AsyncDataLoader.cpp"
     "SecondaryCommandRecorder.hpp"
     "SecondaryCommandRecorder.cpp"
     "SubmissionThreadExecutor.hpp"
@@ -77,6 +79,8 @@ set_source_group(
     "Buffer.cpp"
     "Pool.hpp"
     "Pool.cpp"
+    "Synchronization.hpp"
+    "Synchronization.cpp"
 )
 
 set_source_group(

@@ -4,7 +4,7 @@
 #include <nvtx3/nvToolsExt.h>
 
 
-namespace Profiling
+namespace eureka::profiling
 {
     void InitProfilingCategories()
     {
@@ -97,6 +97,27 @@ namespace Profiling
     {
         EndUnthreadedRange(_id);
     }
+}
+
+#else
+
+namespace eureka::profiling
+{
+    void InitProfilingCategories() {}
+    void PushRange(const char*, Color, uint32_t) {}
+    uint64_t StartUnthreadedRange(const char*, Color, uint32_t) { return 0; }
+    void EndUnthreadedRange(uint64_t) {}
+    void PushRange(const char*) {}
+    void PopRange() {}
+    void SetProfilingMark(const char*) {}
+    void SetProfilingMark(const char*, Color, uint32_t) {}
+    void NameCurrentThreadW(uint32_t, const wchar_t*) {}
+    ProfileScope::ProfileScope(const char*, Color, uint32_t) {}
+    ProfileScope::ProfileScope(const char*) {}
+    ProfileScope::~ProfileScope() {}
+    ProfileUnthreadedScope::ProfileUnthreadedScope(const char*, Color, uint32_t) {}
+    ProfileUnthreadedScope::~ProfileUnthreadedScope() {}
+
 }
 
 #endif

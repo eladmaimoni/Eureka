@@ -28,20 +28,20 @@ namespace eureka
         );
 
         //glfwSetCursorEnterCallback(_window.get(), ImGui_ImplGlfw_CursorEnterCallback);
-        glfwSetCursorPosCallback(_window.get(), [](GLFWwindow* window, double x, double y)
+        glfwSetCursorPosCallback(_window.get(), [](GLFWwindow* /*window*/, double /*x*/, double /*y*/)
             {
-                DEBUGGER_TRACE("cursor position = ({},{})", x, y);
+                //DEBUGGER_TRACE("cursor position = ({},{})", x, y);
             });
-        glfwSetMouseButtonCallback(_window.get(), [](GLFWwindow* window, int button, int action, int mods)
+        glfwSetMouseButtonCallback(_window.get(), [](GLFWwindow* /*window*/, int /*button*/, int /*action*/, int /*mods*/)
         {
-                DEBUGGER_TRACE("mouse button = {} action = {} mods = {})", button, action, mods);
+                //DEBUGGER_TRACE("mouse button = {} action = {} mods = {})", button, action, mods);
         }       
         );
         // ImGui_ImplGlfw_MouseButtonCallback
 
-        glfwSetScrollCallback(_window.get(), [](GLFWwindow* window, double xoffset, double yoffset)
+        glfwSetScrollCallback(_window.get(), [](GLFWwindow* /*window*/, double /*xoffset*/, double /*yoffset*/)
             {
-                DEBUGGER_TRACE("scroll offset position = ({},{})", xoffset, yoffset);
+                //DEBUGGER_TRACE("scroll offset position = ({},{})", xoffset, yoffset);
             });
         //glfwSetKeyCallback(_window.get(), ImGui_ImplGlfw_KeyCallback);
         //glfwSetCharCallback(_window.get(), ImGui_ImplGlfw_CharCallback);

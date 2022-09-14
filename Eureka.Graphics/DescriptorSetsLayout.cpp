@@ -62,7 +62,7 @@ namespace eureka
 
 
 
-    DescriptorSetLayoutCreateInfoBundle DescriptorSetLayoutCache::CreateLayoutBundle(uint64_t set, uint32_t uniqueId)
+    DescriptorSetLayoutCreateInfoBundle DescriptorSetLayoutCache::CreateLayoutBundle(uint64_t /*set*/, uint32_t uniqueId)
     {
         DescriptorSetLayoutCreateInfoBundle bundle;
         switch (uniqueId)

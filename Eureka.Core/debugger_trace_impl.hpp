@@ -15,19 +15,8 @@ namespace eureka
         return std::true_type();
     }
 
-    std::size_t consteval CountDigits(std::integral auto n)
-    {
-        // counts the decimal digits in a number
-        int count = 0;
-        while (n != 0)
-        {
-            n = n / 10;
-            ++count;
-        }
-        return count;
-    }
 
-    static_assert(CountDigits(1234) == 4);
+    static_assert(constevel_count_digits(1234) == 4);
 
     template <
         std::size_t LINE_NUM, // __LINE__
@@ -41,7 +30,7 @@ namespace eureka
         )
     {
         // compile time formatting of log message
-        constexpr std::size_t LINE_DIGITS_N = CountDigits(LINE_NUM);
+        constexpr std::size_t LINE_DIGITS_N = constevel_count_digits(LINE_NUM);
 
         constexpr std::size_t TOTAL = (LINE_STR_N - 1) + 1 + (LINE_DIGITS_N)+3 + (USER_STR_N - 1) + 2;
         std::array<char, TOTAL> formatted_str{};
@@ -152,11 +141,5 @@ namespace eureka
         VSOutputDebugString(std::vformat(str, std::make_format_args(std::forward<Args>(args) ...)).c_str());
     }
 
-    template <std::size_t N, typename ... Args>
-    inline std::string fmt_arr(const std::array<char, N>& arr, Args&& ... args)
-    {
-        std::string_view str{ arr.data(), arr.size() };
 
-        return std::vformat(str, std::make_format_args(std::forward<Args>(args) ...));
-    }
 }

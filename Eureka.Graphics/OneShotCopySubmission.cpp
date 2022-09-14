@@ -1,124 +1,123 @@
 #include "OneShotCopySubmission.hpp"
 #include "SubmissionThreadExecutionContext.hpp"
-
 namespace eureka
 {
-    static constexpr uint64_t DONE_VAL = 1;
+    //static constexpr uint64_t DONE_VAL = 1;
 
-    void DoPollCompletions(const vkr::Device& device, ExecutingneShotSubmissions& executing)
+    void DoPollCompletions(stable_vec<ExecutingnOneShotSubmissionBatch>& executing_vec)
     {
-        if (!executing.pkts.empty())
+        if (!executing_vec.empty())
         {
-            svec5<vk::Semaphore> waitSemaphores;
-            auto totalExecuting = 0;
-            auto totalDone = 0;
-            for (auto i = 0; i < executing.pkts.size(); ++i)
-            {
-                if (executing.done_signal_values[i] == DONE_VAL)
+            auto removeRange = std::ranges::remove_if(
+                executing_vec,
+                [&](ExecutingnOneShotSubmissionBatch& batch)
                 {
-                    ++totalExecuting;
-                    vk::SemaphoreWaitInfo waitInfo
+                    if (std::ranges::all_of(batch.signal_list, [](CounterSemaphoreHandle& sem)
+                        {
+                            return sem.Query();
+                        }))
                     {
-                        .semaphoreCount = 1,
-                        .pSemaphores = &executing.done_semaphores[i],
-                        .pValues = &executing.done_signal_values[i]
-                    };
+                        for (auto& pr : batch.done_promises)
+                        {
+                            pr.set_result();
+                        }
 
-                    auto result = device.waitSemaphores(waitInfo, 0);
-
-                    if (result == vk::Result::eTimeout)
-                    {
-                        DEBUGGER_TRACE("pending semaphore {} not yet finished", i);
+                        return true;
                     }
-                    else if (result == vk::Result::eSuccess)
+                    else
                     {
-                        ++totalDone;
-                        DEBUGGER_TRACE("pending semaphore {} done", i);
-
-                        executing.pkts[i].done_promise.set_result();
-                        executing.done_signal_values[i] = 0;
-                        executing.pkts[i] = {}; // destroy
+                        return false;
                     }
-
                 }
-            }
-
-            if (totalExecuting == totalDone)
-            {
-                executing.pkts.clear();
-                executing.command_buffers.clear();
-                executing.done_semaphores.clear();
-                executing.done_signal_values.clear();
-            }
+            );
+            executing_vec.erase(removeRange.begin(), removeRange.end());
         }
     }
 
-
-    void DoSubmitPending(vk::Fence submitFence, Queue& queue, ExecutingneShotSubmissions& executing, std::deque<OneShotSubmissionPacket>& pending)
+    void DoSubmitPending(
+        vk::Fence submitFence, 
+        Queue& queue, 
+        stable_vec<ExecutingnOneShotSubmissionBatch>& executing_vec, 
+        std::vector<OneShotSubmissionPacket>& pending_vec
+    )
     {
-        auto currentExecutingCount = executing.pkts.size();
-        auto addedExecutingCount = static_cast<uint32_t>(std::min(pending.size(), executing.command_buffers.capacity() - currentExecutingCount));
+        auto& new_batch = executing_vec.emplace_back();
 
-        for (auto i = 0u; i < addedExecutingCount; ++i)
+        for (auto& pending : pending_vec)
         {
-            auto pkt = std::move(pending.front());
-            pending.pop_front();
+            new_batch.command_buffers.emplace_back(pending.command_buffer);
+            new_batch.signal_list.emplace_back(pending.signal);
+            new_batch.done_promises.emplace_back(std::move(pending.done_promise));
+            for (auto wait : pending.wait_list)
+            {
+                new_batch.wait_semaphores.emplace_back(wait.semaphore);
+                new_batch.wait_stages.emplace_back(wait.stages);
+            }
+        }
+        pending_vec.clear();
 
-            executing.done_signal_values.emplace_back(DONE_VAL);
-            executing.done_semaphores.emplace_back(*pkt.done_timeline_semaphore);
-            executing.command_buffers.emplace_back(pkt.command_buffer);
-            executing.pkts.emplace_back(std::move(pkt));
+        svec5<vk::Semaphore> signalSemapores(new_batch.signal_list.size());
+        svec5<uint64_t> signalValues(new_batch.signal_list.size());
+        svec5<vk::Semaphore> waitSemapores(new_batch.wait_semaphores.size());
+        svec5<uint64_t> waitValues(new_batch.wait_semaphores.size());
+
+        for (auto i = 0u; i < new_batch.wait_semaphores.size(); ++i)
+        {
+            auto& wait = new_batch.wait_semaphores[i];
+            
+            waitSemapores[i] = wait.Get();
+            waitValues[i] = wait.Value();
+        }
+
+        for (auto i = 0u; i < new_batch.signal_list.size(); ++i)
+        {
+            auto& signal = new_batch.signal_list[i];
+            auto prev = signal.Increment();
+            signalSemapores[i] = signal.Get();
+            signalValues[i] = prev + 1;
         }
 
         vk::TimelineSemaphoreSubmitInfo timelineInfo
-        {
-            .signalSemaphoreValueCount = addedExecutingCount,
-            .pSignalSemaphoreValues = executing.done_signal_values.data() + currentExecutingCount,
+        { 
+            .waitSemaphoreValueCount = static_cast<uint32_t>(waitSemapores.size()),
+            .pWaitSemaphoreValues = waitValues.data(),
+            .signalSemaphoreValueCount = static_cast<uint32_t>(signalSemapores.size()),
+            .pSignalSemaphoreValues = signalValues.data()
         };
 
+
+        // by default we unify multiple command buffers to a single submission
         vk::SubmitInfo uploadsSubmitInfo
         {
             .pNext = &timelineInfo,
-            .waitSemaphoreCount = 0,
-            .pWaitSemaphores = nullptr,
-            .pWaitDstStageMask = {},
-            .commandBufferCount = addedExecutingCount,
-            .pCommandBuffers = executing.command_buffers.data() + currentExecutingCount,
-            .signalSemaphoreCount = addedExecutingCount,
-            .pSignalSemaphores = executing.done_semaphores.data() + currentExecutingCount
+            .waitSemaphoreCount = static_cast<uint32_t>(waitSemapores.size()),
+            .pWaitSemaphores = waitSemapores.data(),
+            .pWaitDstStageMask = new_batch.wait_stages.data(),
+            .commandBufferCount = static_cast<uint32_t>(new_batch.command_buffers.size()),
+            .pCommandBuffers = new_batch.command_buffers.data(),
+            .signalSemaphoreCount = static_cast<uint32_t>(signalSemapores.size()),
+            .pSignalSemaphores = signalSemapores.data()
         };
-
 
         queue->submit(uploadsSubmitInfo, submitFence);
 
     }
 
-    future_t<void> DoAppendSubmission(const vkr::Device& device, vk::CommandBuffer buffer, std::deque<OneShotSubmissionPacket>& vec)
+    future_t<void> DoAppendSubmission(vk::CommandBuffer buffer, CounterSemaphoreHandle signal, dynamic_span<OneShotSubmissionWait> waitList, std::vector<OneShotSubmissionPacket>& vec)
     {
         assert(tls_is_rendering_thread);
 
-        vk::SemaphoreTypeCreateInfo semaphoreTypeCreateInfo
+        auto& sumbissionPacket = vec.emplace_back();
+
+        sumbissionPacket.command_buffer = buffer;
+        sumbissionPacket.signal = std::move(signal);
+
+        for (auto wait : waitList)
         {
-            .semaphoreType = vk::SemaphoreType::eTimeline,
-            .initialValue = 0
-        };
+            sumbissionPacket.wait_list.emplace_back(wait);
+        }
 
-        vk::SemaphoreCreateInfo semaphoreCreateInfo
-        {
-            .pNext = &semaphoreTypeCreateInfo
-        };
-
-        OneShotSubmissionPacket sumbissionPacket
-        {
-            .command_buffer = buffer,
-            .done_timeline_semaphore = device.createSemaphore(semaphoreCreateInfo)
-        };
-
-        auto result = sumbissionPacket.done_promise.get_result();
-
-        vec.emplace_back(std::move(sumbissionPacket));
-
-        return result;
+        return sumbissionPacket.done_promise.get_result();
     }
 
     OneShotSubmissionHandler::OneShotSubmissionHandler(
@@ -135,18 +134,13 @@ namespace eureka
         _copyQueue(copyQueue),
         _graphicsQueue(graphicsQueue)
     {
-
+        _executingCopies.reserve(20);
+        _executingGraphics.reserve(20);
     }
-
-    //////////////////////////////////////////////////////////////////////////
-    //
-    //
-    //
-    //////////////////////////////////////////////////////////////////////////
     
     void OneShotSubmissionHandler::PollCopyCompletions()
     {
-        DoPollCompletions(*_device, _executingCopies);
+        DoPollCompletions(_executingCopies);
     }
 
     void OneShotSubmissionHandler::SubmitPendingCopies()
@@ -158,9 +152,9 @@ namespace eureka
     }
 
 
-    future_t<void> OneShotSubmissionHandler::AppendCopyCommandSubmission(vk::CommandBuffer buffer)
+    future_t<void> OneShotSubmissionHandler::AppendCopyCommandSubmission(vk::CommandBuffer buffer, CounterSemaphoreHandle signal, dynamic_span<OneShotSubmissionWait> waitList)
     {
-        return DoAppendSubmission(*_device, buffer, _pendingOneShotCopies);
+        return DoAppendSubmission(buffer, std::move(signal), waitList, _pendingOneShotCopies);
     }
 
 
@@ -173,7 +167,7 @@ namespace eureka
 
     void OneShotSubmissionHandler::PollGraphicsCompletions()
     {
-        DoPollCompletions(*_device, _executingGraphics);
+        DoPollCompletions(_executingGraphics);
     }
 
     void OneShotSubmissionHandler::SubmitPendingGraphics()
@@ -184,9 +178,9 @@ namespace eureka
         }
     }
 
-    future_t<void> OneShotSubmissionHandler::AppendGraphicsSubmission(vk::CommandBuffer buffer)
+    future_t<void> OneShotSubmissionHandler::AppendGraphicsSubmission(vk::CommandBuffer buffer, CounterSemaphoreHandle signal, dynamic_span<OneShotSubmissionWait> waitList)
     {
-        return DoAppendSubmission(*_device, buffer, _pendingOneShotGraphics);
+        return DoAppendSubmission(buffer, std::move(signal), waitList, _pendingOneShotGraphics);
     }
 
 

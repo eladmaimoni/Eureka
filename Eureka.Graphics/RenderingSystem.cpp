@@ -44,41 +44,6 @@ namespace eureka
     {
         _submissionThreadExecutionContext->SetCurrentThreadAsRenderingThread();
 
-
-        //_stageZone = HostWriteCombinedBuffer(
-        //    _deviceContext.Allocator(),
-        //    BufferConfig{ .byte_size = sizeof(mesh::COLORED_TRIANGLE_INDEX_DATA) + sizeof(mesh::COLORED_TRIANGLE_VERTEX_DATA) }
-        //);
-
-
-
-        //_triangle = VertexAndIndexTransferableDeviceBuffer(
-        //    _deviceContext.Allocator(),
-        //    BufferConfig{ .byte_size = sizeof(mesh::COLORED_TRIANGLE_INDEX_DATA) + sizeof(mesh::COLORED_TRIANGLE_VERTEX_DATA) }
-        //);
-
-
-        //_lastFrameTime = std::chrono::high_resolution_clock::now();
-
-        //_coloredVertexPipeline = _pipelineCache->GetColoredVertexMeshPipeline();
-
-
-        //_camera.SetPosition(Eigen::Vector3f(0.0f, 0.0f, 2.5f));
-        //_camera.SetLookDirection(Eigen::Vector3f(0.0f, 0.0f, -1.0f));
-        //_camera.SetVerticalFov(3.14f / 4.0f);
-
-        //_constantBufferSet = _descPool->AllocateSet(_coloredVertexPipeline->GetPerViewLayout());
-
-        //auto [descType, descInfo] = _camera.GetNode()->DescriptorInfo();
-
-        //_constantBufferSet.SetBinding(0, descType, descInfo);
-
-
-
-        //// TODO REMOVE
-        //_stageZone.Assign(std::span(mesh::COLORED_TRIANGLE_INDEX_DATA), 0);
-        //_stageZone.Assign(std::span(mesh::COLORED_TRIANGLE_VERTEX_DATA), sizeof(mesh::COLORED_TRIANGLE_INDEX_DATA));
-
         _resizeConnection = _mainPass->ConnectResizeSlot(
             [this](uint32_t w, uint32_t h)
         {
@@ -87,25 +52,11 @@ namespace eureka
         auto [width, height] = _mainPass->GetSize();
         HandleResize(width, height);
 
-
-        //co_await _oneShotSubmissionHandler->ResumeOnRecordingContext();
-     
-        //auto [uploadCommandBuffer, uploadDoneSemaphore] = _oneShotSubmissionHandler->NewOneShotCopyCommandBuffer();
-        //{
-        //    ScopedCommands commands(uploadCommandBuffer);
-
-        //    uploadCommandBuffer.copyBuffer(
-        //        _stageZone.Buffer(),
-        //        _triangle.Buffer(),
-        //        { vk::BufferCopy{.srcOffset = 0, .dstOffset = 0, .size = _triangle.ByteSize()} }
-        //    );
-        //}
-        //_oneShotSubmissionHandler->AppendCopyCommandSubmission(uploadCommandBuffer);
     }
 
     void RenderingSystem::HandleResize(uint32_t /*w*/, uint32_t /*h*/)
     {
-        DEBUGGER_TRACE("handle swap chain resize");
+        //DEBUGGER_TRACE("handle swap chain resize");
 
         RunOne(); // refresh before next resize
     }
@@ -128,15 +79,9 @@ namespace eureka
     {
         try
         {
-            //if (HACK > 0 && HACK < 3)
-            //{
-            //    RenderDockIntegrationInstance->StartCapture();
-            //}
-        
-            PROFILE_CATEGORIZED_SCOPE("RunOne", Profiling::Color::Blue, Profiling::PROFILING_CATEGORY_RENDERING);
+            PROFILE_CATEGORIZED_SCOPE("RunOne", eureka::profiling::Color::Blue, eureka::profiling::PROFILING_CATEGORY_RENDERING);
 
-            //DEBUGGER_TRACE("RUN ONE START");
-
+            //_graphicsQueue->waitIdle();
             _frameContext->BeginFrame();
 
             _submissionThreadExecutionContext->Executor().loop_all(MAX_COPY_SUBMITS_PER_FRAME);
@@ -148,10 +93,9 @@ namespace eureka
 
             _mainPass->Prepare();
 
-
             _submissionThreadExecutionContext->PreRenderExecutor().loop(100);
 
-            auto [mainCommandBuffer,doneSemaphore] = _frameContext->NewGraphicsCommandBuffer();
+            auto [mainCommandBuffer,doneSemaphore] = _frameContext->NewGraphicsPresentCommandBuffer();
 
             auto [valid, targetReady] = _mainPass->PreRecord();
             if (!valid)
@@ -175,6 +119,7 @@ namespace eureka
                 vk::PipelineStageFlagBits::eColorAttachmentOutput
             };
 
+            auto doneSemaphoreHandle = doneSemaphore.Get();
             vk::SubmitInfo submitInfo
             {
                 .waitSemaphoreCount = static_cast<uint32_t>(waitSemaphores.size()),
@@ -183,12 +128,20 @@ namespace eureka
                 .commandBufferCount = 1,
                 .pCommandBuffers = &mainCommandBuffer,
                 .signalSemaphoreCount = 1,
-                .pSignalSemaphores = &doneSemaphore
+                .pSignalSemaphores = &doneSemaphoreHandle
             };
-            
+     
             _graphicsQueue->submit({ submitInfo }, _frameContext->NewGraphicsSubmitFence());
-            _mainPass->PostSubmit(doneSemaphore);
+           
+            // On Intel (single queue), we have a race with the presentation engine
+            // https://stackoverflow.com/questions/63320119/vksubpassdependency-specification-clarification
+            // https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/vkQueuePresentKHR.html
+            // https://stackoverflow.com/questions/68050676/can-vkqueuepresentkhr-be-synced-using-a-pipeline-barrier
+            _mainPass->PostSubmit(doneSemaphoreHandle);
+            //_graphicsQueue->waitIdle();
             _frameContext->EndFrame();    
+
+
         }
         catch (const std::exception& err)
         {

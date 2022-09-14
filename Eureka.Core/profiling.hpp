@@ -1,15 +1,12 @@
 #pragma once
 
 #include <cstdint>
+#include "profiling_categories.hpp"
 
 
-
-namespace Profiling
+namespace eureka::profiling
 {
-    inline constexpr uint32_t PROFILING_CATEGORY_LOAD = 993;
 
-    inline constexpr uint32_t PROFILING_CATEGORY_INIT = 992;
-    inline constexpr uint32_t PROFILING_CATEGORY_RENDERING = 991;
 
     void InitProfilingCategories();
 
@@ -80,22 +77,35 @@ namespace Profiling
 
 
 #ifdef PROFILING_ENABLED
-#define PROFILE_START_CATEGORIZED_UNTHREADED_RANGE(name, color, category) Profiling::StartUnthreadedRange(name,color,category)
-#define PROFILE_END_UNTHREADED_RANGE() Profiling::EndUnthreadedRange()
-#define PROFILE_PUSH_RANGE(name, color) Profiling::PushRange(name,color)
-#define PROFILE_PUSH_CATEGORIZED_RANGE(name, color, category) Profiling::PushRange(name,color, category)
-#define PROFILE_POP_RANGE() Profiling::PopRange()
-#define PROFILE_SCOPE(name, color) Profiling::ProfileScope CONCAT(__profilescope__,__COUNTER__)(name,color)
-#define PROFILE_CATEGORIZED_SCOPE(name, color, category) Profiling::ProfileScope CONCAT(__profilescope__,__COUNTER__)(name, color, category)
-#define PROFILE_SET_MARK(name, color) Profiling::SetProfilingMark(name,color)
-#define PROFILE_SET_CATEGORIZED_MARK(name, color, category) Profiling::SetProfilingMark(name,color, category)
-#define PROFILE_CATEGORIZED_UNTHREADED_SCOPE(name, color, category) Profiling::ProfileUnthreadedScope CONCAT(__profilescope__,__COUNTER__)(name, color, category)
+#ifdef PERFETTO_TRACING
+#define PROFILE_START_CATEGORIZED_UNTHREADED_RANGE(name, color, category) 
+#define PROFILE_END_UNTHREADED_RANGE() 
+#define PROFILE_PUSH_RANGE(name, color, ...) TRACE_EVENT_BEGIN(eureka::PROFILING_CATEGORY_DEFAULT, annoation, ##__VA_ARGS__)
+#define PROFILE_PUSH_CATEGORIZED_RANGE(name, color, category_name, ...) TRACE_EVENT_BEGIN(category_name, annoation, ##__VA_ARGS__)
+#define PROFILE_POP_RANGE(category_name, ...) TRACE_EVENT_END(category_name, ##__VA_ARGS__)
+#define PROFILE_SCOPE(name, color, ...) TRACE_EVENT(eureka::PROFILING_CATEGORY_DEFAULT, annoation, ##__VA_ARGS__)
+#define PROFILE_CATEGORIZED_SCOPE(annoation, color, category_name, ...) TRACE_EVENT(category_name, annoation, ##__VA_ARGS__)
+#define PROFILE_SET_MARK(name, color)
+#define PROFILE_SET_CATEGORIZED_MARK(name, color, category)
+#define PROFILE_CATEGORIZED_UNTHREADED_SCOPE(name, color, category)
+#else
+#define PROFILE_START_CATEGORIZED_UNTHREADED_RANGE(name, color, category) eureka::profiling::StartUnthreadedRange(name,color,category)
+#define PROFILE_END_UNTHREADED_RANGE() eureka::profiling::EndUnthreadedRange()
+#define PROFILE_PUSH_RANGE(name, color) eureka::profiling::PushRange(name,color)
+#define PROFILE_PUSH_CATEGORIZED_RANGE(name, color, category) eureka::profiling::PushRange(name,color, category)
+#define PROFILE_POP_RANGE() eureka::profiling::PopRange()
+#define PROFILE_SCOPE(name, color) eureka::profiling::ProfileScope CONCAT(__profilescope__,__COUNTER__)(name,color)
+#define PROFILE_CATEGORIZED_SCOPE(name, color, category) eureka::profiling::ProfileScope CONCAT(__profilescope__,__COUNTER__)(name, color, category)
+#define PROFILE_SET_MARK(name, color) eureka::profiling::SetProfilingMark(name,color)
+#define PROFILE_SET_CATEGORIZED_MARK(name, color, category) eureka::profiling::SetProfilingMark(name,color, category)
+#define PROFILE_CATEGORIZED_UNTHREADED_SCOPE(name, color, category) eureka::profiling::ProfileUnthreadedScope CONCAT(__profilescope__,__COUNTER__)(name, color, category)
+#endif
 #else
 #define PROFILE_START_CATEGORIZED_UNTHREADED_RANGE(name, color, category)
 #define PROFILE_END_UNTHREADED_RANGE()
 #define PROFILE_PUSH_RANGE(name, color)
 #define PROFILE_PUSH_CATEGORIZED_RANGE(name, color, category)
-#define PROFILE_POP_RANGE() Profiling::PopRange()
+#define PROFILE_POP_RANGE()
 #define PROFILE_SCOPE(name, color)
 #define PROFILE_CATEGORIZED_SCOPE(name, color, category)
 #define PROFILE_SET_MARK(name, color)

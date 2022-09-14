@@ -39,6 +39,7 @@ namespace eureka
         DepthColorRenderTarget*                  _currentRenderTarget{ nullptr };
         uint32_t                                 _width{ 0 };
         uint32_t                                 _height{ 0 };
+
         std::vector<std::shared_ptr<IViewPass>>  _viewPasses;
     private:
         void HandleSwapChainResize(uint32_t width, uint32_t height);

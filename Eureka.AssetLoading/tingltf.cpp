@@ -2,4 +2,8 @@
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 // #define TINYGLTF_NOEXCEPTION // optional. disable exception handling.
+#include <compiler.hpp>
+EUREKA_MSVC_WARNING_PUSH
+EUREKA_MSVC_WARNING_DISABLE(4099 4996)
 #include <tiny_gltf.h>
+EUREKA_MSVC_WARNING_POP

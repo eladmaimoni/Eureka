@@ -10,12 +10,12 @@
 #include "Mesh.hpp"
 #include "Pipeline.hpp"
 #include "Descriptors.hpp"
-
+#include "AsyncDataLoader.hpp"
 
 namespace tinygltf
 {
     class Model;
-    class Primitive;
+    struct Primitive;
 }
 
 namespace eureka
@@ -34,18 +34,6 @@ namespace eureka
             s.size_bytes()
             );
     }
-
-
-
-    struct BufferDataUploadTransferDesc
-    {
-        vk::Buffer src_buffer;
-        uint64_t   src_offset;
-        uint64_t   bytes;
-
-        vk::Buffer dst_buffer;
-        uint64_t   dst_offset;
-    };
 
     struct ModelLoadingConfig
     {
@@ -79,10 +67,9 @@ namespace eureka
         AssetLoader(
             DeviceContext& deviceContext,
             Queue queue,
-            std::shared_ptr<OneShotSubmissionHandler>     oneShotSubmissionHandler,
-            std::shared_ptr<HostWriteCombinedRingPool>        uploadPool,
-            std::shared_ptr<PipelineCache >                   pipelineCache,
-            std::shared_ptr<MTDescriptorAllocator>            descPool,
+            std::shared_ptr<AsyncDataLoader>          asyncDataLoader,
+            std::shared_ptr<PipelineCache >           xpipelineCache,
+            std::shared_ptr<MTDescriptorAllocator>    xdescPool,
 
             IOExecutor ioExecutor,
             PoolExecutor poolExecutor     
@@ -118,16 +105,17 @@ namespace eureka
         std::atomic_bool                                     _busy{ false };
         DeviceContext&                                       _deviceContext;
         Queue                                                _copyQueue;
+        std::shared_ptr<AsyncDataLoader>       _asyncDataLoader;
         std::shared_ptr<MTDescriptorAllocator>                      _descPool;
         std::shared_ptr<PipelineCache>                       _pipelineCache;
 
-        std::shared_ptr<OneShotSubmissionHandler>            _oneShotSubmissionHandler;
+
         IOExecutor                                           _ioExecutor;
         PoolExecutor                                         _poolExecutor;
-        std::shared_ptr<HostWriteCombinedRingPool>           _uploadPool;
+
         CommandPool                                          _uploadCommandPool;
 
-        vk::CommandBuffer RecordUploadCommands(dynamic_span<ImageStageUploadDesc> imageUploads, const BufferDataUploadTransferDesc& bufferUpload, const PoolSequentialStageZone& stageZone);
+
         PreparedModelImages PrepareImages(tinygltf::Model& gltfModel);
 
     };

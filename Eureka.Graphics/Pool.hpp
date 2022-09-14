@@ -6,7 +6,7 @@ namespace eureka
 
     struct PendingAllocation
     {
-        uint64_t                               byte_size;
+        uint64_t                               byte_size{ 0 };
         promise_t<HostWriteCombinedPoolBuffer> pr;
     };
 
