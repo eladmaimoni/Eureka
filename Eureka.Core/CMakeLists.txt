@@ -1,16 +1,6 @@
 ﻿
 add_library(Eureka.Core)
 
-set_source_group(utils "macros.hpp" "basic_utils.hpp")
-set_source_group(compiler "compiler.hpp")
-set_source_group(concepts "basic_concepts.hpp")
-set_source_group(debugging "debugger_trace.hpp" "debugger_trace_impl.hpp" "debugger_trace_impl.cpp" "trigger_debugger_breakpoint.hpp")
-set_source_group(error "basic_errors.hpp")
-set_source_group(formatting "formatter_specializations.hpp")
-set_source_group(logging "logging.hpp" "logging_impl.hpp" "logging_impl.cpp")
-set_source_group(containers "fixed_capacity_vector.hpp")
-set_source_group(threading "thread_name.hpp" "thread_name.cpp")
-
 if (NOT TARGET_NAME_IF_EXISTS:CUDA::nvToolsExt)
     set(perfetto_files "perfetto_tracing_session.hpp;perfetto_tracing_session.cpp;perfetto/perfetto.h;perfetto/perfetto.cc")
 
@@ -20,18 +10,25 @@ if (NOT TARGET_NAME_IF_EXISTS:CUDA::nvToolsExt)
           Eureka.Core 
           PUBLIC 
           PERFETTO_TRACING
-	      WIN32_LEAN_AND_MEAN
-	      NOMINMAX # WINDOWS: to avoid defining min/max macros
-	     # _WINSOCKAPI_ # WINDOWS: to avoid re-definition in WinSock2.h
 	    )
     endif()
 else()
     message("ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ NO PERFETTO")
 endif()
 
+set_source_group(utils "move.hpp" "macros.hpp" "basic_utils.hpp")
+set_source_group(compiler "compiler.hpp")
+set_source_group(concepts "basic_concepts.hpp")
+set_source_group(debugging "debugger_trace.hpp" "debugger_trace_impl.hpp" "debugger_trace_impl.cpp" "trigger_debugger_breakpoint.hpp")
+set_source_group(error "basic_errors.hpp" "assert.hpp")
+set_source_group(formatting "formatter_specializations.hpp")
+set_source_group(logging "logging.hpp" "logging_impl.hpp" "logging_impl.cpp")
+set_source_group(containers "containers_aliases.hpp" "fixed_capacity_vector.hpp")
+set_source_group(os "system.hpp" "system.cpp" "thread_name.hpp" "thread_name.cpp" "windows.hpp")
+
 set_source_group(profiling 
     "profiling.cpp" 
-    "profiling.hpp" 
+    "profiling.hpp"
     "profiling_macros.hpp"
     "profiling_categories.hpp"
     "profiling_categories.cpp"
@@ -50,7 +47,7 @@ target_sources(
     ${utils}
     ${containers}
     ${logging}
-    ${threading}
+    ${os}
 )
 
 set_compiler_flags(Eureka.Core) 

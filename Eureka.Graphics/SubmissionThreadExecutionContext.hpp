@@ -1,10 +1,12 @@
 #pragma once
-#include "DeviceContext.hpp"
+#include "../Eureka.Vulkan/Buffer.hpp"
+//#include "../Eureka.Vulkan/Queue.hpp"
+
 #include "SubmissionThreadExecutor.hpp"
-#include "Commands.hpp"
+//#include "Commands.hpp"
 
 
-namespace eureka
+namespace eureka::graphics
 {
     using SubmissionThreadExecutor = std::shared_ptr<submission_thread_executor>;
 
@@ -13,43 +15,48 @@ namespace eureka
     class SubmissionThreadExecutionContext
     {
     private:
-        DeviceContext&                             _deviceConetext;
-        Queue                                      _copyQueue;
-        Queue                                      _graphicsQueue;
+        std::shared_ptr<vulkan::Device>            _device;
+        vulkan::Queue                              _copyQueue;
+        vulkan::Queue                              _graphicsQueue;
         SubmissionThreadExecutor                   _executor;
-        CommandPool                                _oneShotCopyCommandPool;
+        //CommandPool                                _oneShotCopyCommandPool;
     public:
         SubmissionThreadExecutionContext(
-            DeviceContext& deviceContext,
-            Queue copyQueue,
-            Queue graphicsQueue,
+            std::shared_ptr<vulkan::Device> device,
+            vulkan::Queue copyQueue,
+            vulkan::Queue graphicsQueue,
             SubmissionThreadExecutor executor
         );
+
         ~SubmissionThreadExecutionContext();
-        Queue& CopyQueue()
+
+
+        vulkan::Queue& CopyQueue()
         {
             return _copyQueue;
         }
 
-        Queue& GraphicsQueue()
+        vulkan::Queue& GraphicsQueue()
         {
             return _graphicsQueue;
         }
 
-        CommandPool& OneShotCopySubmitCommandPool()
-        {
-            // TODO assert correct thread
-            return _oneShotCopyCommandPool;
-        }
+        //vulkan::LinearCommandPool& OneShotCopySubmitCommandPool()
+        //{
+        //    // TODO assert correct thread
+        //    return _oneShotCopyCommandPool;
+        //}
 
         submission_thread_sub_executor& OneShotCopySubmitExecutor()
         {
             return _executor->one_shot_copy_submit_executor();
         }
+        
         submission_thread_sub_executor& PreRenderExecutor()
         {
             return _executor->pre_render_executor();
         }
+
         submission_thread_executor& Executor()
         {
             return *_executor;

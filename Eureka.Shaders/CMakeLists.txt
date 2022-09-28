@@ -142,8 +142,6 @@ set_source_group(
 
 set_source_group(
     shader_cache 
-    "ShadersCache.cpp"
-    "ShadersCache.hpp"
     "ShadersDeclare.hpp"
     "ShadersImpl.cpp"
 )
@@ -171,16 +169,9 @@ target_include_directories(
 
 add_dependencies(Eureka.Shaders Eureka.ShadersTarget)
 
-
-target_precompile_headers(
-    Eureka.Shaders 
-    REUSE_FROM
-    Eureka.Precompiled
-)
-
 target_link_libraries(
     Eureka.Shaders
     PRIVATE
     Eureka.Core
-    Eureka.Precompiled
+    Eureka.Vulkan
 )

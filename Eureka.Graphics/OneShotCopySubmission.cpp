@@ -1,6 +1,7 @@
 #include "OneShotCopySubmission.hpp"
 #include "SubmissionThreadExecutionContext.hpp"
-namespace eureka
+
+namespace eureka::graphics
 {
     //static constexpr uint64_t DONE_VAL = 1;
 
@@ -12,7 +13,7 @@ namespace eureka
                 executing_vec,
                 [&](ExecutingnOneShotSubmissionBatch& batch)
                 {
-                    if (std::ranges::all_of(batch.signal_list, [](CounterSemaphoreHandle& sem)
+                    if (std::ranges::all_of(batch.signal_list, [](vulkan::CounterSemaphoreHandle& sem)
                         {
                             return sem.Query();
                         }))
@@ -35,8 +36,8 @@ namespace eureka
     }
 
     void DoSubmitPending(
-        vk::Fence submitFence, 
-        Queue& queue, 
+        VkFence submitFence, 
+        vulkan::Queue& queue, 
         stable_vec<ExecutingnOneShotSubmissionBatch>& executing_vec, 
         std::vector<OneShotSubmissionPacket>& pending_vec
     )
@@ -56,9 +57,9 @@ namespace eureka
         }
         pending_vec.clear();
 
-        svec5<vk::Semaphore> signalSemapores(new_batch.signal_list.size());
+        svec5<VkSemaphore> signalSemapores(new_batch.signal_list.size());
         svec5<uint64_t> signalValues(new_batch.signal_list.size());
-        svec5<vk::Semaphore> waitSemapores(new_batch.wait_semaphores.size());
+        svec5<VkSemaphore> waitSemapores(new_batch.wait_semaphores.size());
         svec5<uint64_t> waitValues(new_batch.wait_semaphores.size());
 
         for (auto i = 0u; i < new_batch.wait_semaphores.size(); ++i)
@@ -77,8 +78,9 @@ namespace eureka
             signalValues[i] = prev + 1;
         }
 
-        vk::TimelineSemaphoreSubmitInfo timelineInfo
+        VkTimelineSemaphoreSubmitInfo timelineInfo
         { 
+            .sType = VkStructureType::VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO,
             .waitSemaphoreValueCount = static_cast<uint32_t>(waitSemapores.size()),
             .pWaitSemaphoreValues = waitValues.data(),
             .signalSemaphoreValueCount = static_cast<uint32_t>(signalSemapores.size()),
@@ -87,8 +89,9 @@ namespace eureka
 
 
         // by default we unify multiple command buffers to a single submission
-        vk::SubmitInfo uploadsSubmitInfo
+        VkSubmitInfo uploadsSubmitInfo
         {
+            .sType = VkStructureType::VK_STRUCTURE_TYPE_SUBMIT_INFO,
             .pNext = &timelineInfo,
             .waitSemaphoreCount = static_cast<uint32_t>(waitSemapores.size()),
             .pWaitSemaphores = waitSemapores.data(),
@@ -99,17 +102,17 @@ namespace eureka
             .pSignalSemaphores = signalSemapores.data()
         };
 
-        queue->submit(uploadsSubmitInfo, submitFence);
+        queue.Submit(uploadsSubmitInfo, submitFence);
 
     }
 
-    future_t<void> DoAppendSubmission(vk::CommandBuffer buffer, CounterSemaphoreHandle signal, dynamic_span<OneShotSubmissionWait> waitList, std::vector<OneShotSubmissionPacket>& vec)
+    future_t<void> DoAppendSubmission(vulkan::LinearCommandBufferHandle buffer, vulkan::CounterSemaphoreHandle signal, dynamic_span<OneShotSubmissionWait> waitList, std::vector<OneShotSubmissionPacket>& vec)
     {
         assert(tls_is_rendering_thread);
 
         auto& sumbissionPacket = vec.emplace_back();
 
-        sumbissionPacket.command_buffer = buffer;
+        sumbissionPacket.command_buffer = buffer.Get();
         sumbissionPacket.signal = std::move(signal);
 
         for (auto wait : waitList)
@@ -121,14 +124,13 @@ namespace eureka
     }
 
     OneShotSubmissionHandler::OneShotSubmissionHandler(
-        DeviceContext& deviceContext,
-        Queue copyQueue,
-        Queue graphicsQueue,
-        std::shared_ptr<FrameContext> frameContext,
+        std::shared_ptr<vulkan::Device> device,
+        vulkan::Queue copyQueue,
+        vulkan::Queue graphicsQueue,
+        std::shared_ptr<vulkan::FrameContext> frameContext,
         std::shared_ptr<SubmissionThreadExecutionContext> submissionThreadExecutionContext
     ) :
-        _device(deviceContext.LogicalDevice()),
-        _deviceContext(deviceContext),
+        _device(std::move(device)),
         _frameContext(std::move(frameContext)),
         _submissionThreadExecutionContext(std::move(submissionThreadExecutionContext)),
         _copyQueue(copyQueue),
@@ -152,7 +154,7 @@ namespace eureka
     }
 
 
-    future_t<void> OneShotSubmissionHandler::AppendCopyCommandSubmission(vk::CommandBuffer buffer, CounterSemaphoreHandle signal, dynamic_span<OneShotSubmissionWait> waitList)
+    future_t<void> OneShotSubmissionHandler::AppendCopyCommandSubmission(vulkan::LinearCommandBufferHandle buffer, vulkan::CounterSemaphoreHandle signal, dynamic_span<OneShotSubmissionWait> waitList)
     {
         return DoAppendSubmission(buffer, std::move(signal), waitList, _pendingOneShotCopies);
     }
@@ -178,7 +180,7 @@ namespace eureka
         }
     }
 
-    future_t<void> OneShotSubmissionHandler::AppendGraphicsSubmission(vk::CommandBuffer buffer, CounterSemaphoreHandle signal, dynamic_span<OneShotSubmissionWait> waitList)
+    future_t<void> OneShotSubmissionHandler::AppendGraphicsSubmission(vulkan::LinearCommandBufferHandle buffer, vulkan::CounterSemaphoreHandle signal, dynamic_span<OneShotSubmissionWait> waitList)
     {
         return DoAppendSubmission(buffer, std::move(signal), waitList, _pendingOneShotGraphics);
     }

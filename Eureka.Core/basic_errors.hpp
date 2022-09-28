@@ -20,7 +20,6 @@ namespace eureka
         file_load_error(const std::filesystem::path& what_arg) : std::runtime_error(what_arg.string()) {}
     };
 
-
     class operation_cancelled : public std::runtime_error
     {
     public:
@@ -28,5 +27,10 @@ namespace eureka
         operation_cancelled(const std::string& what_arg) : std::runtime_error(what_arg) {}
     };
 
-
+    class connection_failed : public std::runtime_error
+    {
+    public:
+        connection_failed(const char* what_arg) : std::runtime_error(what_arg) {}
+        connection_failed(const std::string& what_arg) : std::runtime_error(what_arg) {}
+    };
 }

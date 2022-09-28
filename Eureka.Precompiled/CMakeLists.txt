@@ -8,7 +8,6 @@ target_link_libraries(
   Eureka.Precompiled
   PUBLIC
   Eureka.Core
-  Vulkan::Vulkan
   Eigen3::Eigen
   glm::glm
   function2::function2
@@ -19,13 +18,13 @@ target_link_libraries(
 
 target_include_directories(Eureka.Precompiled PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} "${PROJECT_BINARY_DIR}")
 
-target_compile_definitions(
-    Eureka.Precompiled
-    PUBLIC
-    VULKAN_HPP_NO_CONSTRUCTORS
-    VULKAN_HPP_NO_STRUCT_SETTERS
-    VULKAN_HPP_NO_SMART_HANDLE
-)
+#target_compile_definitions(
+#    Eureka.Precompiled
+#    PUBLIC
+#    VULKAN_HPP_NO_CONSTRUCTORS
+#    VULKAN_HPP_NO_STRUCT_SETTERS
+#    VULKAN_HPP_NO_SMART_HANDLE
+#)
 
 target_precompile_headers(
     Eureka.Precompiled 
@@ -35,7 +34,7 @@ target_precompile_headers(
 	<atomic>
     <bit>
     <bitset>
-	<cassert>
+	#<cassert>
     <chrono>
     <cmath>
     <concepts>
@@ -59,9 +58,6 @@ target_precompile_headers(
     <string_view>
     <variant>
     <vector> 
-    <vulkan/vulkan.hpp>
-    #<vulkan/vulkan_raii.hpp> # this messes up the pdb files !!!
-    
     <global_definitions.hpp>
  )
 

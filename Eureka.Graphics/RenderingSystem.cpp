@@ -1,24 +1,26 @@
 #include "RenderingSystem.hpp"
-#include "SwapChain.hpp"
-#include "RenderTarget.hpp"
+//#include "SwapChain.hpp"
+//#include "RenderTarget.hpp"
 #include "GraphicsDefaults.hpp"
 #include <profiling_macros.hpp>
 #include "RenderDocIntegration.hpp"
+#include <debugger_trace.hpp>
 
-namespace eureka
+namespace eureka::graphics
 {
 
+
     RenderingSystem::RenderingSystem(
-        DeviceContext& deviceContext,
-        Queue graphicsQueue,
-        Queue copyQueue,
-        std::shared_ptr<FrameContext> frameContext,
+        std::shared_ptr<vulkan::Device> device,
+        vulkan::Queue graphicsQueue,
+        vulkan::Queue copyQueue,
+        std::shared_ptr<vulkan::FrameContext> frameContext,
         std::shared_ptr<ITargetPass> mainPass,
         std::shared_ptr<SubmissionThreadExecutionContext> submissionThreadExecutionContext,
         std::shared_ptr<OneShotSubmissionHandler> oneShotSubmissionHandler
     )
         :
-        _deviceContext(deviceContext),
+        _device(std::move(device)),
         _frameContext(std::move(frameContext)),
         _mainPass(std::move(mainPass)),
         _submissionThreadExecutionContext(/*std::move(*/submissionThreadExecutionContext/*)*/), // TODO
@@ -63,7 +65,8 @@ namespace eureka
 
     void RenderingSystem::Deinitialize()
     {
-        _deviceContext.LogicalDevice()->waitIdle();
+        _graphicsQueue.WaitIdle();
+        _copyQueue.WaitIdle();
     }
 
     //////////////////////////////////////////////////////////////////////////
@@ -84,18 +87,9 @@ namespace eureka
             //_graphicsQueue->waitIdle();
             _frameContext->BeginFrame();
 
-            _submissionThreadExecutionContext->Executor().loop_all(MAX_COPY_SUBMITS_PER_FRAME);
-
-            _oneShotSubmissionHandler->SubmitPendingCopies();
-            _oneShotSubmissionHandler->PollCopyCompletions();
-            _oneShotSubmissionHandler->SubmitPendingGraphics();
-            _oneShotSubmissionHandler->PollGraphicsCompletions();
-
             _mainPass->Prepare();
 
             _submissionThreadExecutionContext->PreRenderExecutor().loop(100);
-
-            auto [mainCommandBuffer,doneSemaphore] = _frameContext->NewGraphicsPresentCommandBuffer();
 
             auto [valid, targetReady] = _mainPass->PreRecord();
             if (!valid)
@@ -103,41 +97,46 @@ namespace eureka
                 return;
             }
 
-            mainCommandBuffer.begin(vk::CommandBufferBeginInfo());
+            auto [mainCommandBuffer, doneSemaphore] = _frameContext->NewGraphicsPresentCommandBuffer();
+            mainCommandBuffer.Begin();
+
             _mainPass->RecordDraw({ mainCommandBuffer });
             _mainPass->PostRecord();
 
-            mainCommandBuffer.end();
+            mainCommandBuffer.End();
 
-            std::array<vk::Semaphore, 1> waitSemaphores
+            std::array<VkSemaphore, 1> waitSemaphores
             {
                 targetReady
             };
          
-            std::array<vk::PipelineStageFlags, 1> waitStageMasks
+            std::array<VkPipelineStageFlags, 1> waitStageMasks
             {
-                vk::PipelineStageFlagBits::eColorAttachmentOutput
+                VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
             };
 
             auto doneSemaphoreHandle = doneSemaphore.Get();
-            vk::SubmitInfo submitInfo
+            
+            auto mainCommandBufferHandle = mainCommandBuffer.Get();
+            VkSubmitInfo submitInfo
             {
+                .sType = VkStructureType::VK_STRUCTURE_TYPE_SUBMIT_INFO,
                 .waitSemaphoreCount = static_cast<uint32_t>(waitSemaphores.size()),
                 .pWaitSemaphores = waitSemaphores.data(),
                 .pWaitDstStageMask = waitStageMasks.data(),
                 .commandBufferCount = 1,
-                .pCommandBuffers = &mainCommandBuffer,
+                .pCommandBuffers = &mainCommandBufferHandle,
                 .signalSemaphoreCount = 1,
                 .pSignalSemaphores = &doneSemaphoreHandle
             };
      
-            _graphicsQueue->submit({ submitInfo }, _frameContext->NewGraphicsSubmitFence());
+            _graphicsQueue.Submit(submitInfo, _frameContext->NewGraphicsSubmitFence());
            
             // On Intel (single queue), we have a race with the presentation engine
             // https://stackoverflow.com/questions/63320119/vksubpassdependency-specification-clarification
             // https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/vkQueuePresentKHR.html
             // https://stackoverflow.com/questions/68050676/can-vkqueuepresentkhr-be-synced-using-a-pipeline-barrier
-            _mainPass->PostSubmit(doneSemaphoreHandle);
+            _mainPass->PostSubmit(doneSemaphore);
             //_graphicsQueue->waitIdle();
             _frameContext->EndFrame();    
 
@@ -151,6 +150,15 @@ namespace eureka
     }
 
 
+
+    void RenderingSystem::PollTasks()
+    {
+        _submissionThreadExecutionContext->Executor().loop_all(MAX_COPY_SUBMITS_PER_FRAME);
+        _oneShotSubmissionHandler->SubmitPendingCopies();
+        _oneShotSubmissionHandler->PollCopyCompletions();
+        _oneShotSubmissionHandler->SubmitPendingGraphics();
+        _oneShotSubmissionHandler->PollGraphicsCompletions();
+    }
 
     //void RenderingSystem::RecordMainRenderPass(vk::CommandBuffer renderingCommandBuffer)
     //{

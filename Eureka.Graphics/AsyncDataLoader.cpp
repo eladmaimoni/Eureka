@@ -1,15 +1,16 @@
 #include "AsyncDataLoader.hpp"
 #include "OneShotCopySubmission.hpp"
-#include "Pool.hpp"
-#include "UploadRingBuffer.hpp"
+#include "../Eureka.Vulkan/StageZone.hpp"
+#include "../Eureka.Vulkan/Commands.hpp"
 #include <profiling.hpp>
+#include <debugger_trace.hpp>
 
-namespace eureka
+namespace eureka::graphics
 {
 
     AsyncDataLoader::AsyncDataLoader(
         std::shared_ptr<OneShotSubmissionHandler> oneShotSubmissionHandler, 
-        std::shared_ptr<HostWriteCombinedRingPool> uploadPool
+        std::shared_ptr<vulkan::BufferMemoryPool> uploadPool
     ) :
         _oneShotSubmissionHandler(std::move(oneShotSubmissionHandler)),
         _uploadPool(std::move(uploadPool))
@@ -22,7 +23,7 @@ namespace eureka
 
     }
 
-    future_t<void> AsyncDataLoader::UploadImageAsync(const ImageStageUploadDesc& transferDesc)
+    future_t<void> AsyncDataLoader::UploadImageAsync(const vulkan::ImageStageUploadDesc& transferDesc)
     {
         auto uploadCommandsSequence =
             CreateImageUploadCommandSequence(
@@ -37,40 +38,42 @@ namespace eureka
                 transferDesc
             );
 
-        auto stageBuffer = co_await _uploadPool->EnqueueAllocation(transferDesc.unpinned_src_span.size_bytes());
+        vulkan::PoolSequentialStageZone stageBuffer(_uploadPool, transferDesc.unpinned_src_span.size_bytes());
 
-        stageBuffer.Assign(transferDesc.unpinned_src_span, transferDesc.stage_zone_offset);
-
+        stageBuffer.Assign(transferDesc.unpinned_src_span);
+  
         co_await _oneShotSubmissionHandler->ResumeOnRecordingContext();
 
         auto [uploadCommandBuffer, uploadCommandsDoneSemaphore] = _oneShotSubmissionHandler->NewOneShotCopyCommandBuffer();
 
         {
             PROFILE_CATEGORIZED_SCOPE("UploadImageAsync commands", eureka::profiling::Color::Green, eureka::profiling::PROFILING_CATEGORY_RENDERING);
-            ScopedCommands commands(uploadCommandBuffer);
+            vulkan::ScopedCommands commands(uploadCommandBuffer);
 
-            vk::DependencyInfo dependencyInfo{};
+            VkDependencyInfo dependencyInfo{};
+            dependencyInfo.sType = VkStructureType::VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
             dependencyInfo.imageMemoryBarrierCount = 1;
             dependencyInfo.pImageMemoryBarriers = &uploadCommandsSequence2.copy_queue_pre_transfer_barrier;
 
-            uploadCommandBuffer.pipelineBarrier2(&dependencyInfo);
+            uploadCommandBuffer.PipelineBarrier(dependencyInfo);
             
-            vk::CopyBufferToImageInfo2 copyBufferToImageInfo
+            VkCopyBufferToImageInfo2 copyBufferToImageInfo
             {
+                .sType = VkStructureType::VK_STRUCTURE_TYPE_COPY_BUFFER_TO_IMAGE_INFO_2,
                 .srcBuffer = stageBuffer.Buffer(),
                 .dstImage = transferDesc.destination_image,
-                .dstImageLayout = vk::ImageLayout::eTransferDstOptimal,
+                .dstImageLayout = VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                 .regionCount = 1,
                 .pRegions = &uploadCommandsSequence2.copy_queue_transfer
 
             };
 
-            uploadCommandBuffer.copyBufferToImage2(copyBufferToImageInfo);
+            uploadCommandBuffer.CopyBufferToImage(copyBufferToImageInfo);
 
             dependencyInfo.imageMemoryBarrierCount = 1;
             dependencyInfo.pImageMemoryBarriers = &uploadCommandsSequence2.copy_queue_release;
 
-            uploadCommandBuffer.pipelineBarrier2(&dependencyInfo);
+            uploadCommandBuffer.PipelineBarrier(dependencyInfo);
         }
 
 
@@ -78,24 +81,24 @@ namespace eureka
 
         auto graphicsQueue = _oneShotSubmissionHandler->GraphicsQueue();
 
-        if (graphicsQueue != _oneShotSubmissionHandler->CopyQueue())
+        if (graphicsQueue.Family() != _oneShotSubmissionHandler->CopyQueue().Family())
         {
-            vk::DependencyInfo dependencyInfo{};
+            VkDependencyInfo dependencyInfo{};
+            dependencyInfo.sType = VkStructureType::VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
             dependencyInfo.imageMemoryBarrierCount = 1;
             dependencyInfo.pImageMemoryBarriers = &uploadCommandsSequence2.graphics_queue_acquire;
 
             auto [graphicsCommandBuffer, graphicsCommandsDoneSemaphore] = _oneShotSubmissionHandler->NewOneShotGraphicsCommandBuffer();
 
-            DEBUGGER_TRACE("ZZZ graphicsCommandBuffer = {:#x}", (uint64_t)((VkCommandBuffer)graphicsCommandBuffer));
+            //DEBUGGER_TRACE("ZZZ graphicsCommandBuffer = {:#x}", (uint64_t)((VkCommandBuffer)graphicsCommandBuffer));
             {
-                ScopedCommands sc(graphicsCommandBuffer);
+                vulkan::ScopedCommands sc(graphicsCommandBuffer);
 
-                graphicsCommandBuffer.pipelineBarrier2(&dependencyInfo);
+                graphicsCommandBuffer.PipelineBarrier(dependencyInfo);
 
             }
 
 
-            // TODO THERE IS A RACE HERE
             // we need to synchronize the previous queue submit with this one. 
             // 1. the first submit must also attach a signal semaphore (created with its command buffer)
             // 2. the second submit must attach it as a wait semaphore
@@ -108,7 +111,7 @@ namespace eureka
                 OneShotSubmissionWait
                 {
                     .semaphore = uploadCommandsDoneSemaphore,
-                    .stages = vk::PipelineStageFlagBits::eAllGraphics
+                    .stages = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT
                 }
             };
 
@@ -124,44 +127,49 @@ namespace eureka
     }
 
 
-    future_t<void> AsyncDataLoader::UploadImagesAndBufferAsync(std::vector<ImageStageUploadDesc> imageTransferDesc, uint64_t totalImageMemory, BufferDataUploadTransferDesc bufferTransferDesc)
-    {
-        //
-        // stage buffer allocation
-        //
+    //future_t<void> AsyncDataLoader::UploadImagesAndBufferAsync(std::vector<ImageStageUploadDesc> imageTransferDesc, uint64_t totalImageMemory, BufferDataUploadTransferDesc bufferTransferDesc)
+    //{
+    //    //
+    //    // stage buffer allocation
+    //    //
 
-        auto stageBuffer = co_await _uploadPool->EnqueueAllocation(bufferTransferDesc.bytes + totalImageMemory);
+    //    auto stageBuffer = co_await _uploadPool->EnqueueAllocation(bufferTransferDesc.bytes + totalImageMemory);
 
-        PoolSequentialStageZone stageZone(std::move(stageBuffer));
-
-
-        //
-        // write to stage buffer
-        //
-        for (const auto& imageUploadDesc : imageTransferDesc)
-        {
-            stageZone.Assign(imageUploadDesc.unpinned_src_span);
-        }
-
-        for (const auto& srcSpan : bufferTransferDesc.unpinned_src_spans)
-        {
-            stageZone.Assign(srcSpan);
-        }
+    //    PoolSequentialStageZone stageZone(std::move(stageBuffer));
 
 
-        co_await _oneShotSubmissionHandler->ResumeOnRecordingContext();
-        
-        auto [uploadCommandBuffer, uploadDoneSemaphore] = _oneShotSubmissionHandler->NewOneShotCopyCommandBuffer();
+    //    //
+    //    // write to stage buffer
+    //    //
+    //    for (const auto& imageUploadDesc : imageTransferDesc)
+    //    {
+    //        stageZone.Assign(imageUploadDesc.unpinned_src_span);
+    //    }
 
-        RecordUploadCommands(uploadCommandBuffer, imageTransferDesc, bufferTransferDesc, stageZone);
+    //    for (const auto& srcSpan : bufferTransferDesc.unpinned_src_spans)
+    //    {
+    //        stageZone.Assign(srcSpan);
+    //    }
 
-        co_await _oneShotSubmissionHandler->AppendCopyCommandSubmission(uploadCommandBuffer, uploadDoneSemaphore);
+
+    //    co_await _oneShotSubmissionHandler->ResumeOnRecordingContext();
+    //    
+    //    auto [uploadCommandBuffer, uploadDoneSemaphore] = _oneShotSubmissionHandler->NewOneShotCopyCommandBuffer();
+
+    //    RecordUploadCommands(uploadCommandBuffer, imageTransferDesc, bufferTransferDesc, stageZone);
+
+    //    co_await _oneShotSubmissionHandler->AppendCopyCommandSubmission(uploadCommandBuffer, uploadDoneSemaphore);
 
 
-        co_return;
-    }
+    //    co_return;
+    //}
 
-    void AsyncDataLoader::RecordUploadCommands(vk::CommandBuffer uploadCommandBuffer, dynamic_span<ImageStageUploadDesc> imageUploads, const BufferDataUploadTransferDesc& bufferUpload, const PoolSequentialStageZone& stageZone)
+    void AsyncDataLoader::RecordUploadCommands(
+        vulkan::LinearCommandBufferHandle uploadCommandBuffer,
+        dynamic_span<vulkan::ImageStageUploadDesc> imageUploads,
+        const vulkan::BufferDataUploadTransferDesc& bufferUpload,
+        const vulkan::PoolSequentialStageZone& stageZone
+    )
     {
         PROFILE_CATEGORIZED_SCOPE("Asset Loading Command Recording", eureka::profiling::Color::Green, eureka::profiling::PROFILING_CATEGORY_RENDERING);
         DEBUGGER_TRACE("rendering thread fun - recording one shot copy");
@@ -172,11 +180,11 @@ namespace eureka
         auto& graphicsQueue = _oneShotSubmissionHandler->GraphicsQueue();
 
         {
-            ScopedCommands commands(uploadCommandBuffer);
+            vulkan::ScopedCommands commands(uploadCommandBuffer);
 
-            svec10<vk::ImageMemoryBarrier> preTransferImageMemoryBarriers;
-            svec10<vk::ImageMemoryBarrier> postTransferImageMemoryBarriers;
-            svec10<vk::BufferImageCopy> bufferImageCopies;
+            svec10<VkImageMemoryBarrier> preTransferImageMemoryBarriers;
+            svec10<VkImageMemoryBarrier> postTransferImageMemoryBarriers;
+            svec10<VkBufferImageCopy> bufferImageCopies;
 
             for (const auto& imageUploadDesc : imageUploads)
             {
@@ -188,35 +196,38 @@ namespace eureka
                 postTransferImageMemoryBarriers.emplace_back(copyRelease);
             }
 
-            uploadCommandBuffer.pipelineBarrier(
-                vk::PipelineStageFlagBits::eTopOfPipe,
-                vk::PipelineStageFlagBits::eTransfer,
-                {},
-                nullptr,
-                nullptr,
-                preTransferImageMemoryBarriers
+            uploadCommandBuffer.PipelineBarrier(
+                VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT,
+                0,
+                0, nullptr, 0, nullptr,
+                static_cast<uint32_t>(preTransferImageMemoryBarriers.size()),
+                preTransferImageMemoryBarriers.data()
             );
 
             for (auto i = 0u; i < imageUploads.size(); ++i)
             {
-                uploadCommandBuffer.copyBufferToImage(
+                uploadCommandBuffer.CopyBufferToImage(
                     stageZone.Buffer(),
                     imageUploads[i].destination_image,
-                    vk::ImageLayout::eTransferDstOptimal,
-                    { bufferImageCopies[i] }
+                    VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                    1u,
+                    &bufferImageCopies[i]
                 );
             }
-
-            uploadCommandBuffer.copyBuffer(
+            VkBufferCopy bufferCopy{ .srcOffset = bufferUpload.stage_zone_offset, .dstOffset = bufferUpload.dst_offset, .size = bufferUpload.bytes };
+            
+            uploadCommandBuffer.CopyBuffer(
                 stageZone.Buffer(),
                 bufferUpload.dst_buffer,
-                { vk::BufferCopy{.srcOffset = bufferUpload.stage_zone_offset, .dstOffset = bufferUpload.dst_offset, .size = bufferUpload.bytes} }
+                1u,
+                &bufferCopy
             );
 
-            vk::BufferMemoryBarrier bufferMemoryBarrier
+            VkBufferMemoryBarrier bufferMemoryBarrier
             {
-                 .srcAccessMask = vk::AccessFlagBits::eTransferWrite,
-                 .dstAccessMask = vk::AccessFlagBits::eShaderRead,
+                 .srcAccessMask = VkAccessFlagBits::VK_ACCESS_TRANSFER_WRITE_BIT,
+                 .dstAccessMask = VkAccessFlagBits::VK_ACCESS_SHADER_READ_BIT,
                  .srcQueueFamilyIndex = copyQueue.Family(),
                  .dstQueueFamilyIndex = graphicsQueue.Family(),
                  .buffer = bufferUpload.dst_buffer,
@@ -224,14 +235,15 @@ namespace eureka
                  .size = bufferUpload.bytes
             };
 
-            uploadCommandBuffer.pipelineBarrier(
-                vk::PipelineStageFlagBits::eTransfer,
-                vk::PipelineStageFlagBits::eAllCommands,
-                {},
-                nullptr,
-                { bufferMemoryBarrier },
-                postTransferImageMemoryBarriers
+            uploadCommandBuffer.PipelineBarrier(
+                VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT,
+                VkPipelineStageFlagBits::VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+                0,
+                0, nullptr, 1u, &bufferMemoryBarrier,
+                static_cast<uint32_t>(postTransferImageMemoryBarriers.size()),
+                postTransferImageMemoryBarriers.data()
             );
+
         }
 
     }

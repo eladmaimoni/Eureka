@@ -1,11 +1,62 @@
-#include <catch2/catch.hpp>
+#include <catch.hpp>
 #include <debugger_trace.hpp>
-#include <VkHelpers.hpp>
 
 
 
 namespace eureka
 {
+
+
+
+    //template<typename Object>
+    //concept enumerable_that_has_vk_to_string = enumerable<Object> && has_vk_to_string<Object>;
+    //template<typename Object>
+    //concept enumerable_that_has_eureka_to_string = enumerable<Object> && has_eureka_to_string<Object>;
+}
+
+namespace std
+{
+    //template<eureka::enumerable_that_has_vk_to_string T, class CharT>
+    //struct formatter<T, CharT>
+    //{
+    //    template <typename FormatParseContext>
+    //    auto parse(FormatParseContext& pc)
+    //    {
+    //        // parse formatter args like padding, precision if you support it
+    //        return pc.end(); // returns the iterator to the last parsed character in the format string, in this case we just swallow everything
+    //    }
+
+    //    template<typename FormatContext>
+    //    auto format(const T& obj, FormatContext& fc)
+    //    {
+    //        return std::format_to(fc.out(), "{}", vk::to_string(obj));
+    //    }
+    //};
+
+    //template<eureka::has_eureka_to_string T, class CharT>
+    //struct formatter<T, CharT>
+    //{
+    //    template <typename FormatParseContext>
+    //    auto parse(FormatParseContext& pc)
+    //    {
+    //        // parse formatter args like padding, precision if you support it
+    //        return pc.end(); // returns the iterator to the last parsed character in the format string, in this case we just swallow everything
+    //    }
+
+    //    template<typename FormatContext>
+    //    auto format(const T& obj, FormatContext& fc)
+    //    {
+    //        return std::format_to(fc.out(), "{}", eureka::to_string(obj));
+    //    }
+    //};
+
+
+}
+
+namespace eureka
+{
+
+
     struct NeitherStreamableNorFormattable
     {
         int val;
@@ -33,8 +84,14 @@ namespace eureka
     static_assert(iterable<std::vector<int>>);
     static_assert(iterable<std::vector<int>&>);
     static_assert(iterable<std::string>);
-    static_assert(!has_vk_to_string<std::string>);
-    static_assert(has_vk_to_string<vk::FormatFeatureFlags2KHR>);
+    //static_assert(!has_vk_to_string<std::string>);
+    //static_assert(has_vk_to_string<vk::FormatFeatureFlags2KHR>);
+    //static_assert(!has_vk_to_string_not_streamable_or_enum<vk::Result>);
+    //static_assert(enumerable_that_has_vk_to_string<vk::Result>);
+    
+
+
+    
 }
 
 TEST_CASE("formating string", "[formatting]")
@@ -67,30 +124,6 @@ TEST_CASE("formatting iterable of streamable that is not formattable", "[formatt
     CHECK(result == "{StreamableNotFormattable{1},StreamableNotFormattable{2}}");
 }
 
-TEST_CASE("formatting vulkan object", "[formatting]")
-{
-    vk::FormatFeatureFlags2KHR format =
-        vk::FormatFeatureFlagBits2KHR::eSampledImage |
-        vk::FormatFeatureFlagBits2KHR::eStorageImage
-        ;
-
-    auto expected = vk::to_string(format);
-
-    auto result = std::format("{}", format);
-
-    CHECK(result == expected);
-}
-
-TEST_CASE("formatting vk::Result", "[formatting]")
-{
-    auto vkResult = vk::Result::eErrorDeviceLost;
-
-    auto expected = vk::to_string(vkResult);
-
-    auto result = std::format("{}", vkResult);
-
-    CHECK(result == expected);
-}
 
 TEST_CASE("formatting eigen matrix", "[formatting]")
 {

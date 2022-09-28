@@ -43,11 +43,9 @@ function(set_compiler_flags target_name)
             ${target_name} 
             PRIVATE 
             $<$<COMPILE_LANGUAGE:CXX>:
-            "$<$<CONFIG:RELEASE>:-O3>"
             "-Wall"
             "-Wextra"
              "$<$<CONFIG:RELEASE>:-Werror>"
-            "$<$<CONFIG:RELEASE>:-O3>"
             >
         )  
     endif()

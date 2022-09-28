@@ -2,6 +2,7 @@
 #include <logging.hpp>
 #include <asio/detached.hpp>
 #include <asio/experimental/awaitable_operators.hpp>
+#include <debugger_trace.hpp>
 
 using namespace asio::experimental::awaitable_operators;
 
@@ -9,21 +10,23 @@ namespace eureka
 {
 
 
-    asio::awaitable<void> RemoteUIServer::ListenToClientRequests()
+    asio::awaitable<void>  RemoteUIServer::ListenToClientRequests()
     {
         for (;;)
         {
             grpc::ServerContext serverContext;
-            Request clientRequest;
+            DoForceUpdateMsg clientRequest;
 
-            grpc::ServerAsyncResponseWriter<Response> responseWriter{ &serverContext };
+            grpc::ServerAsyncResponseWriter<GenericResultMsg> responseWriter{ &serverContext };
+
+            
 
             //auto use_awaitable_token = asio::bind_executor(_completionQueue.Get(), asio::use_awaitable);
 
-            CLOG("waiting for client request");
+            DEBUGGER_TRACE("waiting for client request");
 
             auto result = co_await agrpc::request(
-                &RemoteUI::AsyncService::RequestSendRequest,
+                &LiveSlamControlCenter::AsyncService::RequestDoForceUpdate,
                 _remoteUIService,
                 serverContext,
                 clientRequest,
@@ -33,18 +36,18 @@ namespace eureka
 
             if (!result)
             {
-                CLOG("waiting for client request - cancelled");
+                DEBUGGER_TRACE("waiting for client request - cancelled");
                 co_return;
             }
 
-            CLOG("received client request {}", clientRequest.integer());
-            Response serverResponse;
+            DEBUGGER_TRACE("received client request {}", clientRequest.integer());
+            GenericResultMsg serverResponse;
 
             serverResponse.set_integer(clientRequest.integer() + 1);
 
             co_await agrpc::finish(responseWriter, serverResponse, grpc::Status::OK, asio::use_awaitable);
 
-            CLOG("responded to client request");
+            DEBUGGER_TRACE("responded to client request");
         }
 
     }
@@ -52,16 +55,16 @@ namespace eureka
 
     asio::awaitable<void> RemoteUIServer::StreamPoseGraph()
     {
-        VisualizePoseGraph clientRequest;
-        PoseGraphVisualizationUpdate poseGraphUpdate;
+        StartPoseGraphUpdatesMsg clientRequest;
+        PoseGraphVisualizationUpdateMsg poseGraphUpdate;
 
         for (;;)
         {
             grpc::ServerContext serverContext;
-            grpc::ServerAsyncWriter<PoseGraphVisualizationUpdate> writer{ &serverContext };
+            grpc::ServerAsyncWriter<PoseGraphVisualizationUpdateMsg> writer{ &serverContext };
 
             auto initiateStreaming = co_await agrpc::request(
-                &RemoteUI::AsyncService::RequestServerPoseGraphStreaming,
+                &LiveSlamControlCenter::AsyncService::RequestStartPoseGraphStreaming,
                 _remoteUIService,
                 serverContext,
                 clientRequest,
@@ -71,13 +74,14 @@ namespace eureka
 
             if (!initiateStreaming)
             {
-                CLOG("waiting for client stream request - cancelled");
+                DEBUGGER_TRACE("waiting for client stream request - cancelled");
                 co_return;
             }
 
             float val = 1.0f;
 
             auto writeOk = true;
+            std::size_t count = 0;
 
             while (writeOk && _active)
             {
@@ -87,20 +91,27 @@ namespace eureka
                 poseGraphUpdate.mutable_poses()->Assign(dummy.begin(), dummy.end());
 
                 writeOk = co_await agrpc::write(writer, poseGraphUpdate, asio::use_awaitable);
+
+                ++count;
+
+                if (count % 1000 == 0)
+                {
+                    DEBUGGER_TRACE("server write {}", count);
+                }
             }
 
             auto finishOk = co_await agrpc::finish(writer, grpc::Status::OK, asio::use_awaitable);
 
             if (!finishOk)
             {
-                CLOG("could not finish server pose graph streaming, client connection might be interrupted");
+                DEBUGGER_TRACE("could not finish server pose graph streaming, client connection might be interrupted");
             }
             else
             {
-                CLOG("finished server pose graph streaming");
+                DEBUGGER_TRACE("finished server pose graph streaming");
             }
 
-            CLOG("finished server pose graph streaming");
+            DEBUGGER_TRACE("finished server pose graph streaming");
         }
 
     }
@@ -123,7 +134,7 @@ namespace eureka
             _serverBuilder.RegisterService(&_remoteUIService);
             _grpcServer = _serverBuilder.BuildAndStart();
             _active = true;
-            CLOG("started server");
+            DEBUGGER_TRACE("started server");
 
             asio::co_spawn(
                 _completionQueue.Get(),
@@ -144,7 +155,7 @@ namespace eureka
             _grpcServer->Shutdown();
             _active = false;
 
-            CLOG("stopped server");
+            DEBUGGER_TRACE("stopped server");
         }
     }
 

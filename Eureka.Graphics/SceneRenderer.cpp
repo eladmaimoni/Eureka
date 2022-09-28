@@ -1,6 +1,6 @@
 #include "SceneRenderer.hpp"
 
-namespace eureka
+namespace eureka::graphics
 {
 
 

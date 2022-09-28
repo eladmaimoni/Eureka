@@ -22,8 +22,7 @@ target_include_directories(
 target_link_libraries(
     Eureka.AssetLoading
     PRIVATE
-    Eureka.Core 
-    Eureka.Types 
+    Eureka.Core  
     Eureka.Graphics 
     concurrencpp::concurrencpp
     Eureka.Precompiled 

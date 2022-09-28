@@ -1,9 +1,8 @@
 #pragma once
 #include "IPass.hpp"
-#include "Camera.hpp"
 
 
-namespace eureka
+namespace eureka::graphics
 {
 
     class SceneRenderer

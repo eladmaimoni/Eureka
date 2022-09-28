@@ -1,48 +1,61 @@
 #include "ImGuiViewPass.hpp"
+#include <imgui.h>
 #include "imgui_impl_glfw.h"
 #include <profiling.hpp>
+#include <imgui_internal.h>
+#include "AsyncDataLoader.hpp"
+#include "../Eureka.Vulkan/Pipeline.hpp"
+#include "../Eureka.Vulkan/PipelinePresets.hpp"
 
-namespace eureka
+
+namespace eureka::graphics
 {
 
-    static_assert(sizeof(ImDrawVert) == sizeof(ImGuiVertex));
-    static_assert(offsetof(ImDrawVert, pos) == offsetof(ImGuiVertex, position));
-    static_assert(offsetof(ImDrawVert, uv) == offsetof(ImGuiVertex, uv));
-    static_assert(offsetof(ImDrawVert, col) == offsetof(ImGuiVertex, color));
+    //static_assert(sizeof(ImDrawVert) == sizeof(ImGuiVertex));
+    //static_assert(offsetof(ImDrawVert, pos) == offsetof(ImGuiVertex, position));
+    //static_assert(offsetof(ImDrawVert, uv) == offsetof(ImGuiVertex, uv));
+    //static_assert(offsetof(ImDrawVert, col) == offsetof(ImGuiVertex, color));
 
     inline constexpr uint64_t EUREKA_MAX_IMGUI_VERTEX_INDEX_BYTES = 4 * 1024 * 1024;
 
 
 
     ImGuiViewPass::ImGuiViewPass(
-        DeviceContext& deviceContext, 
-        std::shared_ptr<Window> window,
-        std::shared_ptr<PipelineCache>  pipelineCache,
-        std::shared_ptr<MTDescriptorAllocator> descPool, // TODO move to device
-        std::shared_ptr<AsyncDataLoader> asyncDataLoader,
-        PoolExecutor poolExecutor // TODO global?
+        GlobalInheritedData globalInheritedData,
+        std::shared_ptr<IImGuiLayout> layout
     ) :
-        _deviceContext(deviceContext),
-        _descPool(std::move(descPool)),
-        _poolExecutor(std::move(poolExecutor)),
-        _asyncDataLoader(std::move(asyncDataLoader))
+        IViewPass(std::move(globalInheritedData)),
+        _layout(std::move(layout)),
+        _descriptorSet(_globalInheritedData.device, _globalInheritedData.descriptor_allocator),
+        _fontImage(_globalInheritedData.device, _globalInheritedData.resource_allocator)
     {
-        Setup(std::move(window), std::move(pipelineCache));
+
     }
 
     ImGuiViewPass::~ImGuiViewPass()
     {
+        _layout->OnDeactivated();
         ImGui_ImplGlfw_Shutdown();
     }
 
 
 
-    future_t<void> ImGuiViewPass::Setup(std::shared_ptr<Window> window, std::shared_ptr<PipelineCache> pipelineCache)
+    future_t<void> ImGuiViewPass::Setup()
     {
         PROFILE_CATEGORIZED_UNTHREADED_SCOPE("imgui setup", eureka::profiling::Color::Red, eureka::profiling::PROFILING_CATEGORY_INIT);
-        co_await concurrencpp::resume_on(*_poolExecutor);
+        //co_await concurrencpp::resume_on(*_poolExecutor);
+
 
         //
+        // check if if we have an imgui.ini file
+        // 
+        ImguiLayoutProps props{};
+        if (std::filesystem::exists("imgui.ini"))
+        {
+            props.has_ini_file = true;
+        }
+        
+        
         // ImGui Stuff
         //
         ImGuiStyle& style = ImGui::GetStyle();
@@ -60,12 +73,17 @@ namespace eureka
         io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // Enable Multi-Viewport / Platform Windows
         io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;
 
-        ImGui_ImplGlfw_InitForVulkan(window->WindowHandle(), true);
         //
         // vulkan stuff
         //
-        _pipeline = pipelineCache->GetImGuiPipeline();
-        _vertexIndexBuffer = VertexAndIndexHostVisibleDeviceBuffer(_deviceContext.Allocator(), BufferConfig{ .byte_size = EUREKA_MAX_IMGUI_VERTEX_INDEX_BYTES });
+        vulkan::PipelineLayoutCreationPreset imguiPipelineLayoutPreset(vulkan::PipelinePresetType::eImGui, *_globalInheritedData.layout_cache);
+        _pipelineLayout = std::make_shared<vulkan::PipelineLayout>(_globalInheritedData.device, imguiPipelineLayoutPreset.GetCreateInfo());
+        vulkan::PipelineCreationPreset imguiPipelinePreset(
+            vulkan::PipelinePresetType::eImGui, *_globalInheritedData.shader_cache, _pipelineLayout->Get(), _targetInheritedData.render_pass->Get());
+        
+        _pipeline = vulkan::Pipeline(_globalInheritedData.device, _pipelineLayout, _targetInheritedData.render_pass, imguiPipelinePreset.GetCreateInfo());
+
+        _vertexIndexBuffer = vulkan::HostVisibleVertexAndIndexTransferableDeviceBuffer(_globalInheritedData.resource_allocator, EUREKA_MAX_IMGUI_VERTEX_INDEX_BYTES);
 
 
         // Create font texture
@@ -75,45 +93,56 @@ namespace eureka
 
         VkDeviceSize uploadSize = texWidth * texHeight * 4 * sizeof(char);
 
-        Image2DProperties fontImageProps
-        {
-             .width = static_cast<uint32_t>(texWidth),
-             .height = static_cast<uint32_t>(texHeight),
-             .format = vk::Format::eR8G8B8A8Unorm,
-             .usage_flags = vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
-             .aspect_flags = vk::ImageAspectFlagBits::eColor,
-             .use_dedicated_memory_allocation = false // unlikely to be resized
-        };
+        _fontImage = vulkan::Image2D(
+            _globalInheritedData.device,
+            _globalInheritedData.resource_allocator,
+            vulkan::Image2DProperties
+            {
+                VkExtent2D{.width = static_cast<uint32_t>(texWidth), .height = static_cast<uint32_t>(texHeight) },
+                vulkan::Image2DAllocationPreset::eR8G8B8A8UnormSampledShaderResource
+            }
+        );
 
-        _fontImage = SampledImage2D(_deviceContext, fontImageProps);
+        _fontSampler = vulkan::CreateSampler(_globalInheritedData.device, vulkan::SamplerCreationPreset::eLinearClampToEdge);
 
-        ImageStageUploadDesc transferDesc
+        vulkan::ImageStageUploadDesc transferDesc
         {
             .unpinned_src_span = std::span(fontData, uploadSize),
             .stage_zone_offset = 0,
             .destination_image = _fontImage.Get(),
-            .destination_image_extent = vk::Extent3D{.width = static_cast<uint32_t>(texWidth), .height = static_cast<uint32_t>(texHeight), .depth = 1}
+            .destination_image_extent = VkExtent3D{.width = static_cast<uint32_t>(texWidth), .height = static_cast<uint32_t>(texHeight), .depth = 1}
         };
+     
 
-        _descriptorSet = _descPool->AllocateSet(_pipeline->GetFragmentShaderDescriptorSetLayout());
+        _descriptorSet = vulkan::FreeableDescriptorSet(
+            _globalInheritedData.device,
+            _globalInheritedData.descriptor_allocator,
+            _globalInheritedData.layout_cache->GetLayoutHandle(vulkan::DescriptorSet0PresetType::ePerFont)
+        );
 
-        std::array<vk::DescriptorImageInfo, 1> imageInfo
+        std::array<VkDescriptorImageInfo, 1> imageInfo
         {
-            vk::DescriptorImageInfo
+            VkDescriptorImageInfo
             {
-                .sampler = _fontImage.GetSampler(),
+                .sampler = _fontSampler.Get(),
                 .imageView = _fontImage.GetView(),
-                .imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal
+                .imageLayout = VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
             }
         };
 
-        _descriptorSet.SetBindings(0, vk::DescriptorType::eCombinedImageSampler, imageInfo);
+        _descriptorSet.SetBindings(
+            0, 
+            VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            imageInfo
+        );
 
 
-        co_await _asyncDataLoader->UploadImageAsync(transferDesc);
+        co_await _globalInheritedData.async_data_loader->UploadImageAsync(transferDesc);
 
   
-        _active = true;
+        _initialized = true;
+        _active = _initialized && _validSize;
+        _layout->OnActivated(props);
 
         co_return;
     }
@@ -124,66 +153,13 @@ namespace eureka
 
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
-        auto vp = ImGui::GetMainViewport();
-        /*auto mainDockSpaceId = */ImGui::DockSpaceOverViewport(vp, ImGuiDockNodeFlags_PassthruCentralNode);
-
-        ImGui::SetNextWindowSize(ImVec2(512, 512), ImGuiCond_FirstUseEver);
-        ImGui::Begin("Test Window", nullptr);
-
-        if (_first)
-        {
-            //auto node = ImGui::DockBuilderGetNode(mainDockSpaceId);
-            //node->ChildNodes
-            //auto leftDockSpaceId = ImGui::DockBuilderSplitNode(mainDockSpaceId, ImGuiDir_Left, 0.20f, NULL, &mainDockSpaceId);
-
-            //ImGui::DockBuilderDockWindow("Test Window", node->ChildNodes[0]->ID);
-            _first = false;
-        }
-  
+        
+        
+        _layout->UpdateLayout();
 
 
-        ImGui::Text("Test Text");
-
-        //////////////////////////////////////////////////////////////////////////
-
-        ImGui::Separator();
-        ImGui::ShowDemoWindow();
-        //if (ImGui::TreeNode("0001: Renderer: Large Mesh Support"))
-        //{
-        //    ImDrawList* draw_list = ImGui::GetWindowDrawList();
-        //    {
-        //        static int vtx_count = 60000;
-        //        ImGui::SliderInt("VtxCount##1", &vtx_count, 0, 100000);
-        //        ImVec2 p = ImGui::GetCursorScreenPos();
-        //        for (int n = 0; n < vtx_count / 4; n++)
-        //        {
-        //            float off_x = (float)(n % 100) * 3.0f;
-        //            float off_y = (float)(n % 100) * 1.0f;
-        //            ImU32 col = IM_COL32(((n * 17) & 255), ((n * 59) & 255), ((n * 83) & 255), 255);
-        //            draw_list->AddRectFilled(ImVec2(p.x + off_x, p.y + off_y), ImVec2(p.x + off_x + 50, p.y + off_y + 50), col);
-        //        }
-        //        ImGui::Dummy(ImVec2(300 + 50, 100 + 50));
-        //        ImGui::Text("VtxBuffer.Size = %d", draw_list->VtxBuffer.Size);
-        //    }
-        //    {
-        //        static int vtx_count = 60000;
-        //        ImGui::SliderInt("VtxCount##2", &vtx_count, 0, 100000);
-        //        ImVec2 p = ImGui::GetCursorScreenPos();
-        //        for (int n = 0; n < vtx_count / (10 * 4); n++)
-        //        {
-        //            float off_x = (float)(n % 100) * 3.0f;
-        //            float off_y = (float)(n % 100) * 1.0f;
-        //            ImU32 col = IM_COL32(((n * 17) & 255), ((n * 59) & 255), ((n * 83) & 255), 255);
-        //            draw_list->AddText(ImVec2(p.x + off_x, p.y + off_y), col, "ABCDEFGHIJ");
-        //        }
-        //        ImGui::Dummy(ImVec2(300 + 50, 100 + 20));
-        //        ImGui::Text("VtxBuffer.Size = %d", draw_list->VtxBuffer.Size);
-        //    }
-        //    ImGui::TreePop();
-        //}
-        //////////////////////////////////////////////////////////////////////////
-        ImGui::End();
         ImGui::Render();
+
     }
 
     void ImGuiViewPass::SyncBuffers()
@@ -203,7 +179,7 @@ namespace eureka
 
         if (totalSize > _vertexIndexBuffer.ByteSize())
         {
-            DEBUGGER_TRACE("IMGUI rendering failed, vertex buffer not large enough. required size = {} available size = {}", totalSize, _vertexIndexBuffer.ByteSize());
+            //DEBUGGER_TRACE("IMGUI rendering failed, vertex buffer not large enough. required size = {} available size = {}", totalSize, _vertexIndexBuffer.ByteSize());
             return;
         }
 
@@ -240,7 +216,7 @@ namespace eureka
         _vertexIndexBuffer.FlushCachesBeforeDeviceRead();
     }
 
-    void ImGuiViewPass::RecordDrawCommands(vk::CommandBuffer commandBuffer)
+    void ImGuiViewPass::RecordDrawCommands(vulkan::LinearCommandBufferHandle commandBuffer)
     {
         if (!_active) return;
         ImDrawData* imDrawData = ImGui::GetDrawData();
@@ -249,26 +225,33 @@ namespace eureka
         ImGuiIO& io = ImGui::GetIO();
 
 
-        commandBuffer.bindDescriptorSets(
-            vk::PipelineBindPoint::eGraphics,
-            _pipeline->Layout(),
-            0,
-            { _descriptorSet.Get() },
-            nullptr
+        commandBuffer.Bind(
+            VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS,
+            _pipelineLayout->Get(),
+            _descriptorSet.Get(),
+            0u
         );
 
-        commandBuffer.bindPipeline(
-            vk::PipelineBindPoint::eGraphics,
-            _pipeline->Get()
-        );
+        auto ownerViewpot = imDrawData->OwnerViewport;
+        VkViewport viewport
+        {
+            .x = ownerViewpot->Pos.x,
+            .y = ownerViewpot->Pos.y,
+            .width = ownerViewpot->Size.x,
+            .height = ownerViewpot->Size.y,
+            .minDepth = 0.0f, 
+            .maxDepth = 1.0f
+        };
 
-        ImGuiPushConstantsBlock pushConstanst
+        commandBuffer.BindGraphicsPipeline(_pipeline.Get());
+        commandBuffer.SetViewport(viewport);
+        vulkan::ImGuiPushConstantsBlock pushConstanst
         {
             .scale = Eigen::Vector2f(2.0f / io.DisplaySize.x, 2.0f / io.DisplaySize.y),
             .translate = Eigen::Vector2f(-1.0f, -1.0f)
         };
 
-        commandBuffer.pushConstants<ImGuiPushConstantsBlock>(_pipeline->Layout(), vk::ShaderStageFlagBits::eVertex, 0, { pushConstanst });
+        commandBuffer.PushConstants(_pipelineLayout->Get(), VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT, pushConstanst);
 
 
         // Render commands
@@ -278,16 +261,14 @@ namespace eureka
 
         if (imDrawData->CmdListsCount > 0)
         {
-            commandBuffer.bindIndexBuffer(
+            commandBuffer.BindIndexBuffer(
                 _vertexIndexBuffer.Buffer(),
-                0,
-                vk::IndexType::eUint16
+                VkIndexType::VK_INDEX_TYPE_UINT16
             );
 
-            commandBuffer.bindVertexBuffers(
-                0,
-                { _vertexIndexBuffer.Buffer() },
-                { _vertexBufferOffset }
+            commandBuffer.BindVertexBuffer(
+                 _vertexIndexBuffer.Buffer(),
+                 _vertexBufferOffset
             );
 
             for (auto i = 0; i < imDrawData->CmdListsCount; ++i)
@@ -296,14 +277,21 @@ namespace eureka
                 for (auto j = 0; j < imDrawList->CmdBuffer.Size; ++j)
                 {
                     const ImDrawCmd* imDrawCommand = &imDrawList->CmdBuffer[j];
-                    vk::Rect2D scissorRect;
+                    VkRect2D scissorRect;
                     scissorRect.offset.x = std::max((int32_t)(imDrawCommand->ClipRect.x), 0);
                     scissorRect.offset.y = std::max((int32_t)(imDrawCommand->ClipRect.y), 0);
                     scissorRect.extent.width = (uint32_t)(imDrawCommand->ClipRect.z - imDrawCommand->ClipRect.x);
                     scissorRect.extent.height = (uint32_t)(imDrawCommand->ClipRect.w - imDrawCommand->ClipRect.y);
 
-                    commandBuffer.setScissor(0, { scissorRect });
-                    commandBuffer.drawIndexed(imDrawCommand->ElemCount, 1, globalIndexOffset + imDrawCommand->IdxOffset, globalVertexOffset + imDrawCommand->VtxOffset, 1);
+                    
+                    commandBuffer.SetScissor(scissorRect);
+                    commandBuffer.DrawIndexed(
+                        imDrawCommand->ElemCount, 
+                        1, 
+                        globalIndexOffset + imDrawCommand->IdxOffset, 
+                        globalVertexOffset + imDrawCommand->VtxOffset,
+                        1
+                    );
                 }
                 globalIndexOffset += imDrawList->IdxBuffer.Size;
                 globalVertexOffset += imDrawList->VtxBuffer.Size;
@@ -311,11 +299,23 @@ namespace eureka
         }
     }
 
+    void ImGuiViewPass::BindToTargetPass(TargetInheritedData inheritedData)
+    {
+        _targetInheritedData = std::move(inheritedData);
+
+        Setup();
+    }
+
     void ImGuiViewPass::HandleResize(uint32_t w, uint32_t h)
     {
+        _validSize = (w > 0 && h > 0);
+        _active = _initialized && _validSize;
+
         ImGuiIO& io = ImGui::GetIO();
         io.DisplaySize = ImVec2(static_cast<float>(w), static_cast<float>(h));
         io.DisplayFramebufferScale = ImVec2(1.0f, 1.0f);
+
+
     }
 
 

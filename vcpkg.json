@@ -18,6 +18,7 @@
             "default-features": true,
             "features": [ "docking-experimental" ]
         },
+		"implot",
 		"grpc",
         {
             "name": "grpc",
@@ -28,6 +29,7 @@
         "palsigslot",
 		"spirv-reflect",
         "tinygltf",
+		"volk",
         "vulkan",
         "vulkan-headers",
         "vulkan-memory-allocator"

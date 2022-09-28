@@ -1,4 +1,4 @@
-
+#pragma once
 //#include <source_location>
 #include <chrono>
 #include <iostream>

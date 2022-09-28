@@ -11,11 +11,13 @@ namespace eureka::profiling
     inline constexpr uint32_t PROFILING_CATEGORY_LOAD = 993;
     inline constexpr uint32_t PROFILING_CATEGORY_INIT = 992;
     inline constexpr uint32_t PROFILING_CATEGORY_RENDERING = 991;
-    inline constexpr uint32_t PROFILING_CATEGORY_DEFAULT = 990;
+    inline constexpr uint32_t PROFILING_CATEGORY_SYSTEM = 991;
+    inline constexpr uint32_t PROFILING_CATEGORY_DEFAULT = 992;
 #else
     inline constexpr char PROFILING_CATEGORY_LOAD[] = "load";
     inline constexpr char PROFILING_CATEGORY_INIT[] = "init";
     inline constexpr char PROFILING_CATEGORY_RENDERING[] = "rendering";
+    inline constexpr char PROFILING_CATEGORY_SYSTEM[] = "system";
     inline constexpr char PROFILING_CATEGORY_DEFAULT[] = "default";
 #endif
     void SetPerfettoThreadName(std::string_view thread_name);
@@ -25,6 +27,7 @@ namespace eureka::profiling
 PERFETTO_DEFINE_CATEGORIES(
     perfetto::Category(eureka::profiling::PROFILING_CATEGORY_DEFAULT).SetDescription("default"),
     perfetto::Category(eureka::profiling::PROFILING_CATEGORY_RENDERING).SetDescription("rendering"),
+    perfetto::Category(eureka::profiling::PROFILING_CATEGORY_SYSTEM).SetDescription("system"),
     perfetto::Category(eureka::profiling::PROFILING_CATEGORY_INIT).SetDescription("system initialization"),
     perfetto::Category(eureka::profiling::PROFILING_CATEGORY_LOAD).SetDescription("asset loading"),
 );

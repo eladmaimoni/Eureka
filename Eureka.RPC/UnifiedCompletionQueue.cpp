@@ -31,7 +31,7 @@ namespace eureka
             {
                 try
                 {
-                    eureka::set_current_thread_name("zzz pool thread");
+                    eureka::os::set_current_thread_name("zzz pool thread");
                     _ioContext.run();
                 }
                 catch (const std::exception& err)

@@ -4,18 +4,18 @@
 EUREKA_MSVC_WARNING_PUSH
 EUREKA_MSVC_WARNING_DISABLE(4127 4702)
 #include <grpcpp/server_builder.h>
-#include <eureka.grpc.pb.h>
+#include <proto/eureka.grpc.pb.h>
 EUREKA_MSVC_WARNING_POP
 
 namespace eureka
 {
     class RemoteUIServer
     {
-        grpc::ServerBuilder             _serverBuilder;
-        ServerCompletionQueueExecutor   _completionQueue;
-        std::unique_ptr<grpc::Server>   _grpcServer;
-        RemoteUI::AsyncService          _remoteUIService;
-        bool                            _active{ false };
+        grpc::ServerBuilder                  _serverBuilder;
+        ServerCompletionQueueExecutor        _completionQueue;
+        std::unique_ptr<grpc::Server>        _grpcServer;
+        LiveSlamControlCenter::AsyncService  _remoteUIService;
+        bool                                 _active{ false };
 
         asio::awaitable<void> ListenToClientRequests();
         asio::awaitable<void> StreamPoseGraph();

@@ -2,7 +2,7 @@
 #ifndef CATCH_CONFIG_RUNNER
 #define CATCH_CONFIG_RUNNER
 #endif
-#include <catch2/catch.hpp>
+#include <catch.hpp>
 
 /*
 useful docs & notes

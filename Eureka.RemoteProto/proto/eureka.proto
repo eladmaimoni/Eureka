@@ -21,22 +21,24 @@ syntax = "proto3";
 
 package eureka;
 
-service RemoteUI 
-{
-  rpc SendRequest(Request) returns (Response) {}
 
-  rpc ServerPoseGraphStreaming(VisualizePoseGraph) returns (stream PoseGraphVisualizationUpdate) {}
+service LiveSlamControlCenter
+{
+  rpc DoForceUpdate(DoForceUpdateMsg) returns (GenericResultMsg) {}
+
+  rpc StartPoseGraphStreaming(StartPoseGraphUpdatesMsg) returns (stream PoseGraphVisualizationUpdateMsg) {}
+}
+
+
+message GenericResultMsg
+{
+  int32 integer = 1;
 }
 
 //
 // Client (UI) Requests From Server (SLAM)
 //
-message Request 
-{
-  int32 integer = 1;
-}
-
-message VisualizePoseGraph
+message DoForceUpdateMsg
 {
   int32 integer = 1;
 }
@@ -44,16 +46,22 @@ message VisualizePoseGraph
 //
 // Streaming From Server To Client
 //
-message PoseGraphVisualizationUpdate  
-{
-  repeated float poses = 1;
-}
 
-//
-//
-//
-message Response 
+message StartPoseGraphUpdatesMsg
 {
   int32 integer = 1;
 }
-/* [example-proto] */
+
+message PoseGraphVisualizationUpdateMsg  
+{
+    // 7 elements per pose: (id, tx,ty,tz, rx,ry,rz)
+    // (id) is an integer id
+    // (tx ty tz) are locations in cm
+    // (rx ry rz) are unit vector elements, representing body orientation
+
+    repeated float poses = 1;
+    repeated uint32 edges_meta = 2; // ref_id, tgt_id, type, is_inlier - 4 fields
+    repeated float edges_data = 3; // ref_txtytz, tgt_txtytz (induced), tgt_rxryrz (induced), tgt_txtytz (optimized) - 12 fields
+}
+
+

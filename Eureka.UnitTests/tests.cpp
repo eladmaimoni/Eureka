@@ -1,4 +1,4 @@
-#include <catch2/catch.hpp>
+#include <catch.hpp>
 #include <random>
 #include <debugger_trace.hpp>
 #include <boost/container/small_vector.hpp>

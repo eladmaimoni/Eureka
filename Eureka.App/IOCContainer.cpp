@@ -1,62 +1,66 @@
 #include "IOCContainer.hpp"
-#include "VkHelpers.hpp"
+
 
 #include "../Eureka.Graphics/RenderingSystem.hpp"
 #include "../Eureka.Graphics/SubmissionThreadExecutionContext.hpp"
 #include "../Eureka.Graphics/OneShotCopySubmission.hpp"
 #include "../Eureka.Graphics/ImguiIntegration.hpp"
-#include "../Eureka.Graphics/Window.hpp"
-#include "../Eureka.Graphics/AssetLoading.hpp"
-#include "../Eureka.Graphics/Descriptors.hpp"
+#include "../Eureka.Windowing/Window.hpp"
+
+
 #include "../Eureka.Graphics/ImGuiViewPass.hpp"
 #include "../Eureka.Graphics/TargetPass.hpp"
-#include "../Eureka.Graphics/CameraPass.hpp"
+//#include "../Eureka.Graphics/CameraPass.hpp"
+
+// TODO BUG BUG
+#define MemoryBarrier __faststorefence 
+#include "../Eureka.RemoteClient/RemoteLiveSlamUI.hpp"
+
 #include <profiling.hpp>
 
 namespace eureka
 {
-    InstanceConfig CreateInstanceConfig(const GLFWRuntime& glfw)
-    {
-        InstanceConfig runtime_desc{};
+#ifdef NDEBUG
+    constexpr bool IS_DEBUG_BUILD = false;
+#else
+    constexpr bool IS_DEBUG_BUILD = true;
+#endif
 
+    vulkan::InstanceConfig CreateInstanceConfig(const GLFWRuntime& glfw)
+    {
+        vulkan::InstanceConfig runtime_desc{};
 
         runtime_desc.required_instance_extentions = glfw.QueryRequiredVulkanExtentions();
         runtime_desc.required_instance_extentions.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
         //runtime_desc.required_instance_extentions.emplace_back("VK_LAYER_KHRONOS_synchronization2");
         //runtime_desc.required_layers.emplace_back("VK_LAYER_KHRONOS_synchronization2");
 
-#ifndef NDEBUG
-        runtime_desc.required_layers.emplace_back(eureka::VK_LAYER_VALIDATION);
-#endif
+        if constexpr (IS_DEBUG_BUILD)
+        {
+            runtime_desc.required_layers.emplace_back(eureka::vulkan::INSTANCE_LAYER_VALIDATION);
+        }
 
         return runtime_desc;
     }
 
-    DeviceContextConfig CreateDeviceContextConfig(vk::SurfaceKHR presentationSurface = nullptr)
-    {
-        DeviceContextConfig device_context_desc{};
-        device_context_desc.presentation_surface = presentationSurface;
-        //device_context_desc.required_layers.emplace_back("VK_LAYER_KHRONOS_synchronization2");
-        device_context_desc.required_extentions.emplace_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
-        //device_context_desc.required_extentions.emplace_back(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
-#ifndef NDEBUG
-        device_context_desc.required_layers.emplace_back(VK_LAYER_VALIDATION);
-#endif
-        return device_context_desc;
+    //DeviceContextConfig CreateDeviceContextConfig(vk::SurfaceKHR presentationSurface = nullptr)
+    //{
+    //    DeviceContextConfig device_context_desc{};
+    //    device_context_desc.presentation_surface = presentationSurface;
+    //    //device_context_desc.required_layers.emplace_back("VK_LAYER_KHRONOS_synchronization2");
+    //    device_context_desc.required_extentions.emplace_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+    //    //device_context_desc.required_extentions.emplace_back(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
+
+    //    DEBUG_ONLY(device_context_desc.required_layers.emplace_back(VK_LAYER_VALIDATION));
+    //    return device_context_desc;
 
 
-    }
+    //}
 
     IOCContainer::IOCContainer()
         : 
-        _instance(CreateInstanceConfig(_glfw))
-
+        _instance(std::make_shared<vulkan::Instance>(CreateInstanceConfig(_glfw)))
     {
-        RenderDockIntegrationInstance = &_renderDocIntegration;
-        eureka::profiling::InitProfilingCategories();
-
-        InitializeGraphicsSubsystem();
-   
 
     }
 
@@ -65,7 +69,16 @@ namespace eureka
         RenderDockIntegrationInstance = nullptr;
     }
 
-    std::shared_ptr<RenderingSystem> IOCContainer::GetRenderingSystem() 
+    void IOCContainer::Wire(AppMemo appMemo)
+    {
+        RenderDockIntegrationInstance = &_renderDocIntegration;
+ 
+
+        InitializeRemoteServices();
+        InitializeGraphicsSubsystem(appMemo);
+    }
+
+    std::shared_ptr<graphics::RenderingSystem> IOCContainer::GetRenderingSystem()
     {
         return _renderingSystem;
     }
@@ -75,91 +88,99 @@ namespace eureka
         return _window;
     }
 
-    std::unique_ptr<AssetLoader> IOCContainer::CreateAssetLoader()
+    std::shared_ptr<RemoteLiveSlamClient> IOCContainer::GetRemoteHandler()
     {
-        return std::make_unique<AssetLoader>(
-            _deviceContext,
-            _copyQueue,
-            _asyncDataLoader,
-            _pipelineCache,
-            _descPool,
-            _concurrencyRuntime.background_executor(),
-            _concurrencyRuntime.thread_pool_executor()
-            );
+        return _remoteHandler;
     }
 
-    void IOCContainer::InitializeGraphicsSubsystem()
+    std::shared_ptr<eureka::RemoteLiveSlamUI> IOCContainer::GetRemoteUI()
     {
-        auto deviceContextConfig = CreateDeviceContextConfig();
-        _deviceContext.Init(_instance, deviceContextConfig);
+        return _remoteUI;
+    }
 
-        _graphicsQueue = _deviceContext.CreateGraphicsQueue();
-        _copyQueue = _deviceContext.CreateCopyQueue();
-        //_copyQueue = _graphicsQueue; // HACK
+    void IOCContainer::InitializeGraphicsSubsystem(AppMemo& appMemo)
+    {
+        _window = std::make_shared<Window>(_glfw, _instance->Get(), appMemo.window_config);
+
+        _device = vulkan::MakeDefaultDevice(_instance, _window->GetSurface());
+
+        _graphicsQueue = _device->GetGraphicsQueue();
+        _copyQueue = _device->GetCopyQueue();
+        _presentationQueue = _device->GetPresentQueue();
+        _resourceAllocator = std::make_shared<vulkan::ResourceAllocator>(_instance, _device);
+        _swapChain = std::make_shared<vulkan::SwapChain>(_window, _device, _presentationQueue, _graphicsQueue);
+
+
         auto submissionThreadExecutor = _concurrencyRuntime.make_executor<submission_thread_executor>();
 
 
-        _setLayoutCache = std::make_shared<DescriptorSetLayoutCache>(_deviceContext.LogicalDevice());
-        _submissionThreadExecutionContext = std::make_shared<SubmissionThreadExecutionContext>(
-            _deviceContext,
+        _setLayoutCache = std::make_shared<vulkan::DescriptorSetLayoutCache>(_device);
+        _submissionThreadExecutionContext = std::make_shared<graphics::SubmissionThreadExecutionContext>(
+            _device,
             _copyQueue,
             _graphicsQueue,
             std::move(submissionThreadExecutor)
             );
 
 
-        _uploadPool = std::make_shared<HostWriteCombinedRingPool>(_deviceContext, STAGE_ZONE_SIZE);
+        //_descPool = std::make_shared<MTDescriptorAllocator>(_deviceContext);
 
-
-        _window = std::make_shared<Window>(_glfw, _instance, _deviceContext, _graphicsQueue);
-
-        _descPool = std::make_shared<MTDescriptorAllocator>(_deviceContext);
-
-        _imguiIntegration = std::make_shared<ImGuiIntegration>();
-        auto frameContext = std::make_shared<FrameContext>(_deviceContext, _copyQueue, _graphicsQueue);
+        _imguiIntegration = std::make_shared<graphics::ImGuiIntegration>();
+        _imguiIntegration->BindToGLFWWindow(_window->GetWindowHandle());
+        auto frameContext = std::make_shared<vulkan::FrameContext>(_device, _copyQueue, _graphicsQueue);
 
      
-        _oneShotSubmissionHandler = std::make_shared<OneShotSubmissionHandler>(_deviceContext, _copyQueue, _graphicsQueue, frameContext, _submissionThreadExecutionContext);
+        _oneShotSubmissionHandler = std::make_shared<graphics::OneShotSubmissionHandler>(_device, _copyQueue, _graphicsQueue, frameContext, _submissionThreadExecutionContext);
 
-        auto colorPass = std::make_shared<SwapChainDepthColorPass>(
-            _deviceContext,
+
+        auto uploadPool = std::make_shared<vulkan::BufferMemoryPool>(
+            _resourceAllocator,
+            1024 * 1024 * 8,
+            VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+            VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
+            VMA_POOL_CREATE_LINEAR_ALGORITHM_BIT
+            );
+
+        _asyncDataLoader = std::make_shared<graphics::AsyncDataLoader>(
+            _oneShotSubmissionHandler,
+            uploadPool
+            );
+
+
+        auto shaderCache = std::make_shared<vulkan::ShaderCache>(_device);
+        auto layoutCache = std::make_shared<vulkan::DescriptorSetLayoutCache>(_device);
+        auto descriptorAllocator = std::make_shared<vulkan::FreeableDescriptorSetAllocator>(_device);
+        
+        graphics::GlobalInheritedData globalInheritedData{
+            .device = _device,
+            .resource_allocator = _resourceAllocator,
+            .shader_cache = shaderCache,
+            .layout_cache = layoutCache,
+            .descriptor_allocator = descriptorAllocator,
+            .async_data_loader = _asyncDataLoader,
+        };
+
+        auto colorPass = std::make_shared<graphics::SwapChainDepthColorPass>(
+            globalInheritedData,
             _graphicsQueue,
-            _window->GetSwapChain()
+            _swapChain
             );
 
        
-        _pipelineCache = std::make_shared<PipelineCache>(_deviceContext, _setLayoutCache, colorPass->GetRenderPass());
+        //_pipelineCache = std::make_shared<PipelineCache>(_device, _setLayoutCache, colorPass->GetRenderPass());
 
 
-        _asyncDataLoader = std::make_shared<AsyncDataLoader>(
-            _oneShotSubmissionHandler,
-            _uploadPool
+        _remoteUI = std::make_shared<RemoteLiveSlamUI>(std::move(appMemo.liveslam), _remoteHandler);
+
+        auto imguiPass = std::make_shared<graphics::ImGuiViewPass>(
+            globalInheritedData,
+            _remoteUI
             );
 
-        auto imguiPass = std::make_shared<ImGuiViewPass>(
-            _deviceContext,
-            _window,
-            _pipelineCache,
-            _descPool,
-            _asyncDataLoader,
-            _concurrencyRuntime.thread_pool_executor()
-            );
-
-        auto cameraNode = std::make_shared<CameraNode>(_deviceContext);
-        auto camera = std::make_shared<PerspectiveCamera>(cameraNode);
-        camera->SetPosition(Eigen::Vector3f(0.0f, 0.0f, 2.5f));
-        camera->SetLookDirection(Eigen::Vector3f(0.0f, 0.0f, -1.0f));
-        camera->SetVerticalFov(3.14f / 4.0f);
-
-        auto cameraPass = std::make_shared<CameraPass>(cameraNode, _setLayoutCache, _descPool);
-        
-
-
-        colorPass->AddViewPass(cameraPass);
         colorPass->AddViewPass(imguiPass);
 
-        _renderingSystem = std::make_shared<RenderingSystem>(
-            _deviceContext,
+        _renderingSystem = std::make_shared<graphics::RenderingSystem>(
+            _device,
             _graphicsQueue,
             _copyQueue,
             frameContext,
@@ -172,6 +193,11 @@ namespace eureka
 
         _renderingSystem->Initialize();
 
+    }
+
+    void IOCContainer::InitializeRemoteServices()
+    {
+        _remoteHandler = std::make_shared<RemoteLiveSlamClient>();
     }
 
 }

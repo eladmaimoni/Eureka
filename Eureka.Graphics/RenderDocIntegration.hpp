@@ -1,6 +1,7 @@
 #pragma once
 
 #include "renderdoc_app.h"
+#include <volk.h>
 
 namespace eureka
 {

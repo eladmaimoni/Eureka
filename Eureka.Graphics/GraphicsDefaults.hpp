@@ -3,10 +3,6 @@
 
 namespace eureka
 {
-
-
-
-
     using ManualExecutor = concurrencpp::manual_executor;
     using OneShotCopySubmitExecutor = std::shared_ptr<concurrencpp::manual_executor>;
     using IOExecutor = std::shared_ptr<concurrencpp::thread_pool_executor>;

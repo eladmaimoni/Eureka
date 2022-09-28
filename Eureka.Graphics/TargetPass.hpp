@@ -1,16 +1,19 @@
 #pragma once
 #include "IPass.hpp"
-#include "RenderTarget.hpp"
+#include "../Eureka.Vulkan/RenderTarget.hpp"
+#include "../Eureka.Vulkan/RenderPass.hpp"
 
-namespace eureka
+namespace eureka::graphics
 {
+
+
     class SwapChainDepthColorPass : public ITargetPass
     {
     public:
         SwapChainDepthColorPass(
-            DeviceContext& deviceContext,
-            Queue graphicsQueue,
-            std::shared_ptr<SwapChain> swapChain
+            GlobalInheritedData globalInheritedData,
+            vulkan::Queue graphicsQueue,
+            std::shared_ptr<vulkan::SwapChain> swapChain
         );
         
         void AddViewPass(std::shared_ptr<IViewPass> viewPass);
@@ -19,29 +22,33 @@ namespace eureka
         TargetPassBeginInfo PreRecord() override;
         void RecordDraw(const RecordParameters& params) override;
         void PostRecord() override;
-        void PostSubmit(vk::Semaphore waitSemaphore) override;
-        vk::RenderPass GetRenderPass()
+        void PostSubmit(vulkan::BinarySemaphoreHandle waitSemaphore) override;
+        
+        VkRenderPass GetRenderPass()
         {
             return _renderPass->Get();
         }
-        vk::Extent2D GetSize() override
+
+        VkExtent2D GetSize() override
         {
             return _swapChain->RenderArea().extent;
         }
 
     private:
-        DeviceContext& _deviceContext;
-        Queue                                    _graphicsQueue;
-        std::shared_ptr<SwapChain>               _swapChain;
-        std::vector<DepthColorRenderTarget>      _renderTargets;
-        std::shared_ptr<DepthColorRenderPass>    _renderPass;
-        uint32_t                                 _maxFramesInFlight{};
-        DepthColorRenderTarget*                  _currentRenderTarget{ nullptr };
-        uint32_t                                 _width{ 0 };
-        uint32_t                                 _height{ 0 };
+        //std::shared_ptr<vulkan::Device>                  _device;
+        //std::shared_ptr<vulkan::ResourceAllocator>       _allocator;
+        vulkan::Queue                                    _graphicsQueue;
+        std::shared_ptr<vulkan::SwapChain>               _swapChain;
+        std::vector<vulkan::DepthColorRenderTarget>      _renderTargets;
+        std::shared_ptr<vulkan::DepthColorRenderPass>    _renderPass;
+        uint32_t                                         _maxFramesInFlight{};
+        vulkan::DepthColorRenderTarget*                  _currentRenderTarget{ nullptr };
+        uint32_t                                         _width{ 0 };
+        uint32_t                                         _height{ 0 };
 
-        std::vector<std::shared_ptr<IViewPass>>  _viewPasses;
+        std::vector<std::shared_ptr<IViewPass>>          _viewPasses;
     private:
+        void RecreateTargets();
         void HandleSwapChainResize(uint32_t width, uint32_t height);
     };
 }

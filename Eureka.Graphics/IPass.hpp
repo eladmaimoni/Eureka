@@ -1,16 +1,39 @@
 #pragma once
+#include <Eureka.Vulkan/Commands.hpp>
+#include <Eureka.Vulkan/RenderPass.hpp>
+#include <Eureka.Vulkan/ResourceAllocator.hpp>
+#include <Eureka.Vulkan/Synchronization.hpp>
+#include <Eureka.Vulkan/DescriptorAllocators.hpp>
+#include <Eureka.Vulkan/ShadersCache.hpp>
+#include <Eureka.Vulkan/DescriptorLayoutCache.hpp>
 
-namespace eureka
+#include "AsyncDataLoader.hpp"
+
+namespace eureka::graphics
 {
+
+    struct GlobalInheritedData
+    {
+        std::shared_ptr<vulkan::Device>                         device;
+        std::shared_ptr<vulkan::ResourceAllocator>              resource_allocator;
+        std::shared_ptr<vulkan::ShaderCache>                    shader_cache;
+        std::shared_ptr<vulkan::DescriptorSetLayoutCache>       layout_cache;
+        std::shared_ptr<vulkan::FreeableDescriptorSetAllocator> descriptor_allocator;
+        std::shared_ptr<AsyncDataLoader>                        async_data_loader;
+    };
+
     class RenderTarget;
 
     struct RecordParameters
     {
-        vk::CommandBuffer command_buffer;
+        vulkan::LinearCommandBufferHandle command_buffer;
     };
 
     class IPass
     {
+    protected:
+        GlobalInheritedData                 _globalInheritedData;
+        IPass(GlobalInheritedData globalInheritedData) : _globalInheritedData(std::move(globalInheritedData)) {}
     public:
         virtual void Prepare() = 0;
         //virtual void Begin() = 0;
@@ -18,24 +41,34 @@ namespace eureka
         //virtual void End() = 0;
     };
 
-
     struct TargetPassBeginInfo
     {
-        bool           valid;
-        vk::Semaphore  target_available_wait_semaphore;
+        bool        valid;
+        VkSemaphore target_available_wait_semaphore;
+    };
+
+
+    // data that is passed by data to its descendants (view, meshes)
+    // TODO
+    struct TargetInheritedData
+    {
+        std::shared_ptr<vulkan::RenderPass> render_pass;
     };
 
     class ITargetPass : public IPass
     {
     protected:
-        sigslot::signal<uint32_t, uint32_t>      _resizeSignal;
-        sigslot::scoped_connection               _resizeConnection;
+        sigslot::signal<uint32_t, uint32_t> _resizeSignal;
+        sigslot::scoped_connection          _resizeConnection;
+        ITargetPass(GlobalInheritedData globalInheritedData) : IPass(std::move(globalInheritedData)) {}
     public:
-        virtual vk::Extent2D GetSize() = 0;
+
+        virtual VkExtent2D GetSize() = 0;
 
         virtual TargetPassBeginInfo PreRecord() = 0;
-        virtual void PostRecord() = 0;
-        virtual void PostSubmit(vk::Semaphore waitSemaphore) = 0;
+        virtual void                PostRecord() = 0;
+        virtual void                PostSubmit(vulkan::BinarySemaphoreHandle waitSemaphore) = 0;
+
         /*
         groups all rendering that is submitted to a specific render target
         maps to a vk::RenderPass instance or a subpass withing it
@@ -50,7 +83,6 @@ namespace eureka
         {
             return _resizeSignal.connect(std::forward<Callable>(slot));
         }
-
     };
 
     class IViewPass : public IPass
@@ -63,32 +95,32 @@ namespace eureka
            and render them
         */
     public:
+        IViewPass(GlobalInheritedData globalInheritedData) : IPass(std::move(globalInheritedData)) {}
+        virtual void BindToTargetPass(TargetInheritedData targetInheritedData) = 0;
         virtual void HandleResize(uint32_t w, uint32_t h) = 0;
     };
 
+    //class IMeshPass : public IPass
+    //{
+    //public:
+    //    virtual vk::PipelineLayout GetPipelineLayout() = 0;
+    //    /*
+    //    groups a set of objects to be rendered with the same shader / material, to the same target / view
+    //    */
+    //    //VkPipelineLayout layout;
+    //    //std::array<VkDescriptorSetLayout, 4> setLayouts;
+    //    //VkPipeline pipeline; // shared
 
-    class IMeshPass : public IPass
-    {
-    public:
-        virtual vk::PipelineLayout GetPipelineLayout() = 0;
-        /*
-        groups a set of objects to be rendered with the same shader / material, to the same target / view
-        */
-        //VkPipelineLayout layout;
-        //std::array<VkDescriptorSetLayout, 4> setLayouts;
-        //VkPipeline pipeline; // shared
+    //    //
+    //    // bind descriptor sets that are shared by all objects
+    //    // bind pipeline, optionally group objects by the same vertex buffer
+    //    //
 
-        // 
-        // bind descriptor sets that are shared by all objects
-        // bind pipeline, optionally group objects by the same vertex buffer
-        //
+    //    //
+    //    // draw each object with the same effect
+    //    // for (obj : object)
+    //    //     Bind(object) // material descriptor sets, push constants, vertex data & offsets
+    //    //     Draw(object)
+    //};
 
-        // 
-        // draw each object with the same effect
-        // for (obj : object)
-        //     Bind(object) // material descriptor sets, push constants, vertex data & offsets
-        //     Draw(object)
-    };
-
-}
-
+} // namespace eureka

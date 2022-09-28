@@ -1,6 +1,7 @@
 #include "ServerCompletionQueue.hpp"
 #include <thread_name.hpp>
 #include <logging.hpp>
+using namespace std::chrono_literals;
 
 namespace eureka
 {
@@ -17,8 +18,13 @@ namespace eureka
             {
                 try
                 {
-                    eureka::set_current_thread_name("eureka grpc server thread");
-                    _grpcContext.run();
+                    eureka::os::set_current_thread_name("eureka grpc server thread");
+
+                    while (true)
+                    {
+                        _grpcContext.run_until(std::chrono::system_clock::now() + 1s);
+                    }
+             
                 }
                 catch (const std::exception& err)
                 {

@@ -1,10 +1,10 @@
 //#include <compiler.hpp>
-#include "RemoteUIClient.hpp"
+#include "RemoteLiveSlamControlCenterHandler.hpp"
 #include <logging.hpp>
 //EUREKA_MSVC_WARNING_PUSH
 //EUREKA_MSVC_WARNING_DISABLE(4127)
 //EUREKA_MSVC_WARNING_POP
-#include <helloworld.grpc.pb.h>
+
 //#include "helper.hpp"
 
 #include <agrpc/asio_grpc.hpp>
@@ -14,14 +14,17 @@
 #include <grpcpp/create_channel.h>
 
 
-int main()
+int main2()
 {
     try
     {
         const auto server_grpc_port = "50051";
         const auto host = std::string("localhost:") + server_grpc_port;
-        eureka::RemoteUIClient client;
-        client.Start(host);
+
+        auto completionQueue = std::make_shared<eureka::ClientCompletionQueuePollingExecutor>();
+
+        eureka::RemoteLiveSlamControlCenterHandler client;
+        client.ConnectAsync(host);
 
         std::string line;
         while (true)
@@ -34,7 +37,7 @@ int main()
             }
             else if (line == "start")
             {
-                client.Start(host);
+                client.ConnectAsync(host);
             }
             else if (line == "stop")
             {
@@ -46,7 +49,7 @@ int main()
             }
             else if (line == "p")
             {
-                client.RequestPoseGraphUpdates();
+                client.StartReadingPoseGraphUpdates();
             }
         }
 

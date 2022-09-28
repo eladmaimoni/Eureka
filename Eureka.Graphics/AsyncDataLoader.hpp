@@ -1,37 +1,42 @@
 #pragma once
-#include "CommandsUtils.hpp"
+#include <Eureka.Vulkan/ResourceUpload.hpp>
+#include <Eureka.Vulkan/Commands.hpp>
 
+namespace eureka::vulkan
+{
+    class PoolSequentialStageZone;
+    class BufferMemoryPool;
+}
 
-namespace eureka
+namespace eureka::graphics
 {
     class OneShotSubmissionHandler;
-    class HostWriteCombinedRingPool;
-    class PoolSequentialStageZone;
+
 
     class AsyncDataLoader
     {
     private:
         std::shared_ptr<OneShotSubmissionHandler>  _oneShotSubmissionHandler;
-        std::shared_ptr<HostWriteCombinedRingPool> _uploadPool;
+        std::shared_ptr<vulkan::BufferMemoryPool>  _uploadPool;
     public:
         AsyncDataLoader(
             std::shared_ptr<OneShotSubmissionHandler> oneShotSubmissionHandler,
-            std::shared_ptr<HostWriteCombinedRingPool> uploadPool
+            std::shared_ptr<vulkan::BufferMemoryPool> uploadPool
         );
         ~AsyncDataLoader();
-        future_t<void> UploadImageAsync(const ImageStageUploadDesc& transferDesc);
-        future_t<void> UploadImagesAndBufferAsync(
-            std::vector<ImageStageUploadDesc> imageTransferDesc,
-            uint64_t totalImageMemory,
-            BufferDataUploadTransferDesc bufferTransferDesc
-        );
+        future_t<void> UploadImageAsync(const vulkan::ImageStageUploadDesc& transferDesc);
+        //future_t<void> UploadImagesAndBufferAsync(
+        //    std::vector<vulkan::ImageStageUploadDesc> imageTransferDesc,
+        //    uint64_t totalImageMemory,
+        //    vulkan::BufferDataUploadTransferDesc bufferTransferDesc
+        //);
 
     private:
         void RecordUploadCommands(
-            vk::CommandBuffer uploadCommandBuffer,
-            dynamic_span<ImageStageUploadDesc> imageUploads,
-            const BufferDataUploadTransferDesc& bufferUpload,
-            const PoolSequentialStageZone& stageZone
+            vulkan::LinearCommandBufferHandle uploadCommandBuffer,
+            dynamic_span<vulkan::ImageStageUploadDesc> imageUploads,
+            const vulkan::BufferDataUploadTransferDesc& bufferUpload,
+            const vulkan::PoolSequentialStageZone& stageZone
         );
     };
 

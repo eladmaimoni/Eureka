@@ -46,6 +46,7 @@ find_package(function2 CONFIG REQUIRED)
 find_package(glfw3 CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
 find_package(imgui CONFIG REQUIRED)
+find_package(implot CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(PalSigslot CONFIG REQUIRED)
 find_package(Vulkan REQUIRED COMPONENTS glslc)  
@@ -53,18 +54,16 @@ find_package(unofficial-vulkan-memory-allocator CONFIG REQUIRED)
 find_package(unofficial-spirv-reflect CONFIG REQUIRED)
 find_package(asio-grpc CONFIG REQUIRED)
 find_package(gRPC CONFIG REQUIRED)
+find_package(volk CONFIG REQUIRED)
 
 find_program(glslc_executable NAMES glslc HINTS Vulkan::glslc)
-message("start TINYGLTF_INCLUDE_DIRS")
-find_path(TINYGLTF_INCLUDE_DIRS "tiny_gltf.h")
-message("start CUDA")
-#find_package(CUDAToolkit)
-if (CUDAToolkit_FOUND)
-    message("found cuda toolkit version ${CUDAToolkit_VERSION_MAJOR}.${CUDAToolkit_VERSION_MINOR}.${CUDAToolkit_VERSION_PATCH}")
-
-
-
-endif()
+#message("start TINYGLTF_INCLUDE_DIRS")
+#find_path(TINYGLTF_INCLUDE_DIRS "tiny_gltf.h")
+#message("start CUDA")
+##find_package(CUDAToolkit)
+#if (CUDAToolkit_FOUND)
+#    message("found cuda toolkit version ${CUDAToolkit_VERSION_MAJOR}.${CUDAToolkit_VERSION_MINOR}.${CUDAToolkit_VERSION_PATCH}")
+#endif()
 
 #find_package(Boost REQUIRED COMPONENTS program_options)
 #find_package(glslang CONFIG REQUIRED)
@@ -103,23 +102,36 @@ if (MSVC)
     string(REGEX REPLACE "/W[3|4]" "/w" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}") 
 endif()
 
+if (WIN32)
+	add_compile_definitions(
+	  WIN32_LEAN_AND_MEAN
+	  NOMINMAX # WINDOWS: to avoid defining min/max macros
+	 # _WINSOCKAPI_ # WINDOWS: to avoid re-definition in WinSock2.h
+	)
+
+endif()
+
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+
 ############################################################################
 #                             SUBDIRECTORIES
 ############################################################################
 add_subdirectory (Eureka.Precompiled)
 add_subdirectory (Eureka.Core)
-add_subdirectory (Eureka.Types)
+add_subdirectory (Eureka.Serialization)
+add_subdirectory (Eureka.Interfaces)
 add_subdirectory (Eureka.Tools)
-add_subdirectory (Eureka.AssetLoading)
+#add_subdirectory (Eureka.AssetLoading)
+add_subdirectory (Eureka.Vulkan)
+add_subdirectory (Eureka.Windowing)
 add_subdirectory (Eureka.Graphics)
 add_subdirectory (Eureka.Shaders)
 add_subdirectory (Eureka.App)
-add_subdirectory (Eureka.UnitTests)
+add_subdirectory (Eureka.UnitTests)    
 add_subdirectory (Eureka.RPC)
 add_subdirectory (Eureka.RemoteProto)
 add_subdirectory (Eureka.RemoteServer)
 add_subdirectory (Eureka.RemoteClient)
-
 
 message("======================================================================================")
 message("======================================================================================")

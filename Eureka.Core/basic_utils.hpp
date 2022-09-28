@@ -84,7 +84,7 @@ namespace eureka
     };
 
 
-    bool append_until_delimiter(std::istream& is, std::string& lineSoFar, char delim = '\n')
+    inline bool append_until_delimiter(std::istream& is, std::string& lineSoFar, char delim = '\n')
     {   
         std::streamsize charsRead = 0;
         do 

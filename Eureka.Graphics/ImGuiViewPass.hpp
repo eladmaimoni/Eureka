@@ -1,50 +1,52 @@
 #pragma once
-#include <imgui.h>
-#include <Buffer.hpp>
-#include <imgui_internal.h>
-#include "Pipeline.hpp"
-#include "Pool.hpp"
-#include "Image.hpp"
-#include "Commands.hpp"
 
-#include "UploadRingBuffer.hpp"
-#include "GraphicsDefaults.hpp"
-#include "CommandsUtils.hpp"
-#include "Pipeline.hpp"
-#include "PipelineTypes.hpp"
+#include <Eureka.Vulkan/ResourceAllocator.hpp>
+#include <Eureka.Vulkan/Buffer.hpp>
+#include <Eureka.Vulkan/Image.hpp>
+#include <Eureka.Vulkan/Descriptor.hpp>
+#include <Eureka.Vulkan/Pipeline.hpp>
+
+
+//#include "UploadRingBuffer.hpp"
+//#include "GraphicsDefaults.hpp"
+//#include "PipelineTypes.hpp"
 #include "Window.hpp"
-#include "Descriptors.hpp"
+//#include "Descriptors.hpp"
 #include "IPass.hpp"
-#include "AsyncDataLoader.hpp"
 
-namespace eureka
+#include <IImGuiLayout.hpp>
+
+namespace eureka::graphics
 {
-
+    class AsyncDataLoader;
+    class ImGuiPipeline;
+    class PipelineCache;
 
     class ImGuiViewPass : public IViewPass
     {
-        DeviceContext& _deviceContext;
-        std::shared_ptr<AsyncDataLoader>       _asyncDataLoader;
-        PoolExecutor                           _poolExecutor;
-        std::shared_ptr<MTDescriptorAllocator> _descPool;
-        SampledImage2D                         _fontImage;
-        VertexAndIndexHostVisibleDeviceBuffer  _vertexIndexBuffer;
+        TargetInheritedData                                        _targetInheritedData;
+        // vulkan resources:
+        std::shared_ptr<vulkan::PipelineLayout>                    _pipelineLayout;
+        vulkan::Pipeline                                           _pipeline;
+        vulkan::FreeableDescriptorSet                              _descriptorSet;
+        vulkan::Image2D                                            _fontImage;
+        vulkan::Sampler                                            _fontSampler;
+        vulkan::HostVisibleVertexAndIndexTransferableDeviceBuffer  _vertexIndexBuffer;
 
 
-        std::shared_ptr<ImGuiPipeline>       _pipeline;
+        //std::shared_ptr<ImGuiPipeline>       _pipeline;
         bool _active{ false };
+        bool _validSize{ false };
+        bool _initialized{ false };
         uint64_t _vertexBufferOffset{ 0 };
-        FreeableDescriptorSet _descriptorSet;
-        bool _first{ true };
-        future_t<void> Setup(std::shared_ptr<Window> window, std::shared_ptr<PipelineCache> pipelineCache);
+
+        future_t<void> Setup();
+
+        std::shared_ptr<IImGuiLayout> _layout;
     public:
         ImGuiViewPass(
-            DeviceContext& deviceContext,
-            std::shared_ptr<Window> window,
-            std::shared_ptr<PipelineCache> pipelineCache,
-            std::shared_ptr<MTDescriptorAllocator> descPool,
-            std::shared_ptr<AsyncDataLoader> asyncDataLoader,
-            PoolExecutor poolExecutor
+            GlobalInheritedData globalInheritedData,
+            std::shared_ptr<IImGuiLayout> layout
         );
         ~ImGuiViewPass();
    
@@ -54,7 +56,8 @@ namespace eureka
         }
         void Layout();
         void SyncBuffers();
-        void RecordDrawCommands(vk::CommandBuffer commandBuffer);
+        void RecordDrawCommands(vulkan::LinearCommandBufferHandle commandBuffer);
+        void BindToTargetPass(TargetInheritedData inheritedData) override;
         void HandleResize(uint32_t w, uint32_t h) override;
 
         void Prepare() override

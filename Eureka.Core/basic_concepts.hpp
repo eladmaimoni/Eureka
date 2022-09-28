@@ -1,4 +1,4 @@
-
+#pragma once
 #include <concepts>
 #include <type_traits>
 #include <ostream>
@@ -6,6 +6,12 @@
 
 namespace eureka
 {
+    struct dummy_to_string {};
+    inline std::string to_string(const dummy_to_string&)
+    {
+        return "";
+    }
+
     template <class T, template <class...> class Template>
     struct is_specialization : std::false_type {};
 
@@ -29,14 +35,19 @@ namespace eureka
         std::formatter<std::remove_cvref_t<T>>().format(v, ctx);
     };
 
+    template<typename T>
+    concept enumerable = std::is_enum_v<T>;
+
+    template<typename T>
+    concept pointer = std::is_pointer_v<T>;
     //
     // has_eureka_to_string : a type that has eureka::to_string overloaded
     //
-    //template<typename Object>
-    //concept has_eureka_to_string = requires(const Object & obj)
-    //{
-    //    to_string(obj);
-    //};
+    template<typename Object>
+    concept has_eureka_to_string = requires(const Object & obj)
+    {
+        eureka::to_string(obj);
+    };
 
     //
     // streamable : a type that has operator << overloaded
@@ -46,6 +57,11 @@ namespace eureka
     {
         os << obj;
     };
+
+
+    template<typename Object>
+    concept streamable_not_enumerable = streamable<Object> && !enumerable<Object>;
+
 
     //
     // iterable : a type that can be used in a ranged-based for loop 

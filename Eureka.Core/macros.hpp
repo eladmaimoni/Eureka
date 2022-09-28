@@ -35,3 +35,19 @@
     ObjType(const ObjType& that) = delete; \
     ObjType& operator=(const ObjType& rhs) = delete; 
 #endif
+
+#ifdef WIN32 
+#define WIN32_ONLY(stmt) stmt
+#else
+#define WIN32_ONLY(stmt) 
+#endif
+
+#ifndef NDEBUG 
+#ifndef DEBUG_ONLY 
+#define DEBUG_ONLY(stmt) stmt
+#endif
+#else
+#ifndef DEBUG_ONLY 
+#define DEBUG_ONLY(stmt) 
+#endif
+#endif

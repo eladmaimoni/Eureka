@@ -1,10 +1,12 @@
 
-#include <catch2/catch.hpp>
+//#include <Camera.hpp>
+#include <catch.hpp>
 #include <debugger_trace.hpp>
 #include <eigen_graphics.hpp>
-#include <Camera.hpp>
+EUREKA_MSVC_WARNING_PUSH_DISABLE(4201)
 #include <glm/glm.hpp>
 #include <glm/ext.hpp>
+EUREKA_MSVC_WARNING_POP
 
 TEST_CASE("perspective", "[transofmations]")
 {

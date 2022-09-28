@@ -1,10 +1,11 @@
 #include "IOCContainer.hpp"
-#include <AssetLoading.hpp>
 
 namespace eureka
 {
 
     class Window;
+    class RemoteLiveSlamClient;
+    class RemoteLiveSlamUI;
 
 
     class App
@@ -13,19 +14,22 @@ namespace eureka
         App();
         ~App();
 
-        void CancelPendingOperations();
-
         void Run();
-
+        
     private:
+        AppMemo      _memo;
         IOCContainer _container;
-        std::shared_ptr<RenderingSystem> _renderingSystem;
-        std::unique_ptr<AssetLoader> _assetLoader;
+        std::shared_ptr<graphics::RenderingSystem> _renderingSystem;
+
+
     private:
         void Initialize();
+        void Shutdown();
+        void PollSystemEvents(std::chrono::high_resolution_clock::time_point deadline);
 
         std::stop_source      _cancellationSource;
-        result_t<LoadedModel> _pendingLoad;
         std::shared_ptr<Window> _window;
+        std::shared_ptr<RemoteLiveSlamClient> _remoteHandler;
+        std::shared_ptr<RemoteLiveSlamUI> _remoteUI;
     };
 }    
