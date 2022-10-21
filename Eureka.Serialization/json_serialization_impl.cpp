@@ -107,6 +107,7 @@ namespace eureka
         show_pnp_inliers,
         show_pnp_outliers,
         show_gpo_optimized,
+        show_realtime,
         show_height
     );
 

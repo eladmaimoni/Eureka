@@ -32,7 +32,7 @@
                 "CMAKE_CXX_COMPILER": "cl.exe",
                 "CMAKE_INSTALL_PREFIX": "${sourceDir}/out/install/${presetName}",
                 "CMAKE_TOOLCHAIN_FILE": {
-                    "value": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+                    "value": "$env{VCPKG_MASTER}/scripts/buildsystems/vcpkg.cmake",
                     "type": "FILEPATH"
                 },
                 "VCPKG_INSTALLED_DIR": "${sourceDir}/build/packages",

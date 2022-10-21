@@ -18,9 +18,17 @@ namespace eureka
 
         glfwSetWindowSizeCallback(_windowSurface.window.get(), [](GLFWwindow* window, int width, int height)
             {
-                auto userPtr = glfwGetWindowUserPointer(window);
-                auto self = static_cast<Window*>(userPtr);
-                self->HandleResize(static_cast<uint32_t>(width), static_cast<uint32_t>(height));
+                try
+                {
+                    auto userPtr = glfwGetWindowUserPointer(window);
+                    auto self = static_cast<Window*>(userPtr);
+                    self->HandleResize(static_cast<uint32_t>(width), static_cast<uint32_t>(height));
+                }
+                catch (const std::exception& err)
+                {
+                    DEBUGGER_TRACE("err = {}", err.what());
+                }
+
             }
         );
 
@@ -112,6 +120,12 @@ namespace eureka
     int Window::GetPostionY() const
     {
         return GetPostion().y;
+    }
+
+    void Window::Resize(uint32_t width, uint32_t height)
+    {
+        glfwSetWindowSize(_windowSurface.window.get(), static_cast<int>(width), static_cast<int>(height));
+        HandleResize(width, height);
     }
 
     void Window::HandleResize(uint32_t width, uint32_t height)

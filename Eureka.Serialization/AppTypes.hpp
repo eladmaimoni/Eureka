@@ -15,6 +15,7 @@ namespace eureka
         bool show_pnp_inliers = true;
         bool show_pnp_outliers = true;
         bool show_gpo_optimized = true;
+        bool show_realtime = true;
         bool show_height = true;
     };
 

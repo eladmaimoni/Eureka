@@ -1,0 +1,81 @@
+syntax = "proto3";
+
+package rgoproto;
+
+//
+// 
+//
+service LiveSlamUIService
+{
+  rpc PoseGraphStreaming(PoseGraphStreamingRequestMsg) returns (stream PoseGraphStreamingMsg) {}
+  rpc RealtimePoseStreaming(RealtimePoseStreamingRequestMsg) returns (stream RealtimePoseStreamingMsg) {}
+  rpc ForceFullGPO(ForceFullGPORequestMsg) returns (ForceFullGPOResponseMsg) {}
+}
+
+//////////////////////////////////////////////////////////////////////////
+//
+//                             Unary RPCs
+//
+//////////////////////////////////////////////////////////////////////////
+
+message ForceFullGPORequestMsg
+{
+  int32 integer = 1;
+}
+
+message ForceFullGPOResponseMsg
+{
+  int32 integer = 1;
+}
+
+//////////////////////////////////////////////////////////////////////////
+//
+//                         Pose Graph Streaming
+//
+//////////////////////////////////////////////////////////////////////////
+
+message PoseGraphStreamingRequestMsg
+{
+  int32 integer = 1;
+}
+
+message PoseGraphStreamingMsg  
+{
+    // 7 elements per pose: (id, tx,ty,tz, rx,ry,rz)
+    // (id) is an integer id
+    // (tx ty tz) are locations in cm
+    // (rx ry rz) are unit vector elements, representing body orientation
+
+    repeated float poses = 1;
+
+    repeated uint32 edges_meta = 2; // ref_id, tgt_id, type, is_inlier - 4 fields
+    repeated float edges_data = 3; // ref_txtytz, tgt_txtytz (induced), tgt_rxryrz (induced), tgt_txtytz (optimized) - 12 fields
+
+    uint64 timestamp_ns = 4; // use google.protobuf.timestamp?
+}
+
+//////////////////////////////////////////////////////////////////////////
+//
+//                         Realtime Pose Streaming
+//
+//////////////////////////////////////////////////////////////////////////
+
+message RealtimePoseStreamingRequestMsg
+{
+  int32 integer = 1;
+}
+
+message RealtimePoseStreamingMsg
+{   
+    // (tx ty tz) are locations in cm
+    // (rx ry rz) are unit vector elements, representing body orientation
+    repeated float txtytzrxryrz = 1;
+    uint64 timestamp_ns = 2; // use google.protobuf.timestamp?
+}
+
+
+//////////////////////////////////////////////////////////////////////////
+//
+//                 Force GPO message
+//
+//////////////////////////////////////////////////////////////////////////

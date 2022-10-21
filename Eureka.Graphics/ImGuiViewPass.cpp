@@ -225,14 +225,11 @@ namespace eureka::graphics
         ImGuiIO& io = ImGui::GetIO();
 
 
-        commandBuffer.Bind(
-            VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS,
-            _pipelineLayout->Get(),
-            _descriptorSet.Get(),
-            0u
-        );
+
 
         auto ownerViewpot = imDrawData->OwnerViewport;
+
+      
         VkViewport viewport
         {
             .x = ownerViewpot->Pos.x,
@@ -243,6 +240,15 @@ namespace eureka::graphics
             .maxDepth = 1.0f
         };
 
+
+        if (viewport.width <= 0.0f || viewport.height <= 0.0f) return;
+
+        commandBuffer.Bind(
+            VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS,
+            _pipelineLayout->Get(),
+            _descriptorSet.Get(),
+            0u
+        );
         commandBuffer.BindGraphicsPipeline(_pipeline.Get());
         commandBuffer.SetViewport(viewport);
         vulkan::ImGuiPushConstantsBlock pushConstanst

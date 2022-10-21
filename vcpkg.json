@@ -7,6 +7,8 @@
 		"asio-grpc",
         "boost-container",
 		"boost-hana",
+		"boost-lockfree",
+		"boost-pool",
         "catch2",
         "concurrencpp",
         "eigen3",

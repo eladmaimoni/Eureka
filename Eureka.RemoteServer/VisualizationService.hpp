@@ -9,7 +9,7 @@
 #include <debugger_trace.hpp>
 EUREKA_MSVC_WARNING_PUSH
 EUREKA_MSVC_WARNING_DISABLE(4702)
-#include <proto/eureka.grpc.pb.h>
+#include <proto/rgorpc.grpc.pb.h>
 #include <grpcpp/server_builder.h>
 EUREKA_MSVC_WARNING_POP
 using namespace std::chrono_literals;
@@ -106,7 +106,7 @@ namespace rgo
 
         uint32_t                                                         _id{0};
         HandlerState                                                     _state = HandlerState::Inactive;
-        eureka::LiveSlamControlCenter::AsyncService*                     _service;
+        eureka::LiveSlamUIService::AsyncService*                     _service;
         grpc::ServerCompletionQueue*                                     _completionQueue;
         eureka::StartPoseGraphUpdatesMsg                                 _clientRequest;
         std::unique_ptr<grpc::ServerContext>                                              _serverContext;
@@ -117,7 +117,7 @@ namespace rgo
 
         std::size_t _packetsNum{ 0 };
     public:
-        PoseGraphStreamingHandler(eureka::LiveSlamControlCenter::AsyncService* service, grpc::ServerCompletionQueue* completionQueue)
+        PoseGraphStreamingHandler(eureka::LiveSlamUIService::AsyncService* service, grpc::ServerCompletionQueue* completionQueue)
             : _completionQueue(completionQueue), _service(service)
 
         {
@@ -157,7 +157,7 @@ namespace rgo
         std::unique_ptr<grpc::ServerCompletionQueue> _completionQueue;
         std::unique_ptr<grpc::Server>                _grpcServer;
 
-        eureka::LiveSlamControlCenter::AsyncService  _service;
+        eureka::LiveSlamUIService::AsyncService  _service;
         PoseGraphStreamingHandler                    _poseGraphStreamingHandler;
 
     public:

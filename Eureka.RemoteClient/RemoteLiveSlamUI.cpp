@@ -77,7 +77,7 @@ namespace ImPlot
 
 #define IMGUI_SCOPED(stmt) auto EUREKA_CONCAT(__imgui_scoped_var__, 123) = stmt
 
-namespace eureka
+namespace eureka::ui
 {
     // https://www.rapidtables.com/web/color/RGB_Color.html
     // format 0x'A'B'G'R / IM_COL32(R, G, B, A);
@@ -189,12 +189,19 @@ namespace eureka
         }
     }
 
-    RemoteLiveSlamUI::RemoteLiveSlamUI(LiveSlamUIMemo memo, std::shared_ptr<RemoteLiveSlamClient> handler) :
+    RemoteLiveSlamUI::RemoteLiveSlamUI(LiveSlamUIMemo memo, std::shared_ptr<rpc::RemoteLiveSlamClient> handler) :
         _memo(memo),
         _remoteHandler(std::move(handler))
     {
+
+        _model.map_view.realtime_poses_t.reserve(1024 * 512);
+        _model.map_view.realtime_poses_r.reserve(1024 * 512);
+        _model.map_view.upper_right_text.reserve(1024);
+
         _model.top_view.input_ip_text.resize(20);
         _model.top_view.input_ip_text[0] = '\0';
+
+
 
         if (std::ranges::find(_memo.previously_used_ips, "localhost") == _memo.previously_used_ips.end())
         {
@@ -213,24 +220,46 @@ namespace eureka
     {
         _props = props;
 
-        
-
-
-
 
         ImPlot::CreateContext();
 
         // assumed on UI thread, TODO
 
+        _channelStateConnection = _remoteHandler->ConnectConnectionStateSlot(
+            [this](rpc::ConnectionState state)
+            {
+                HandleConnectionStateChange(state);
+            }
+        );
+
         _newPoseGraphConnection = _remoteHandler->ConnectPoseGraphSlot([this]
-        (std::shared_ptr<PoseGraphVisualizationUpdateMsg> msg)
+        (std::shared_ptr<rgoproto::PoseGraphStreamingMsg> msg)
             {
                 _model.map_view.last_pose_graph_msg = std::move(msg);
             }
         );
 
-        DoConnect();
-       
+        _newRealtimePoseConnection = _remoteHandler->ConnectRealtimePoseSlot([this]
+        (std::shared_ptr<rgoproto::RealtimePoseStreamingMsg> msg)
+            {
+                auto& data = msg->txtytzrxryrz();
+                
+                if (data.size() == 6)
+                {
+                    _model.map_view.realtime_poses_t.emplace_back(data[0]);
+                    _model.map_view.realtime_poses_t.emplace_back(data[1]);
+                    _model.map_view.realtime_poses_t.emplace_back(data[2]);
+                    _model.map_view.realtime_poses_r.emplace_back(data[3]);
+                    _model.map_view.realtime_poses_r.emplace_back(data[4]);
+                    _model.map_view.realtime_poses_r.emplace_back(data[5]);
+                }
+            }
+        );
+
+        _model.map_view.realtime_poses_t.clear();
+        _model.map_view.realtime_poses_r.clear();
+        _model.map_view.upper_right_text.clear();
+        InitiateConnection();
 
     }
 
@@ -350,16 +379,16 @@ namespace eureka
 
         switch (connectionState)
         {
-        case ConnectionState::Disconnected:
+        case rpc::ConnectionState::Disconnected:
         {
             if (ImGui::Button("Connect"))
             {
-                DoConnect();
+                InitiateConnection();
                 DEBUGGER_TRACE("Disconnect");
             }
             break;
         }
-        case ConnectionState::Connected:
+        case rpc::ConnectionState::Connected:
         {
             if (ImGui::Button("Disconnect"))
             {
@@ -370,7 +399,7 @@ namespace eureka
             ImGui::Text("Connected");
             break;
         }
-        case ConnectionState::Connecting:
+        case rpc::ConnectionState::Connecting:
         {
             if (ImGui::Button("Cancel"))
             {
@@ -387,21 +416,18 @@ namespace eureka
     void RemoteLiveSlamUI::MapView()
     {
         ImVec2 mapPlotSize(-1, -1);
-        ImPlotAxisFlags axisFlags = ImPlotAxisFlags_None;
+       
 
         //if (_fitMap)
         //{
         //    axisFlags |= ImPlotAxisFlags_AutoFit;
         //    _fitMap = false;
         //}
-
+        //ImPlot::SetNextAxesToFit();
         if (ImGui::Begin(MAP_WINDOW_NAME, nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoDecoration))
         {
             if (ImPlot::BeginPlot("Map", mapPlotSize, ImPlotFlags_Equal))
             {
-                ImPlot::SetupAxesLimits(-MAP_AXIS_LIMIT, MAP_AXIS_LIMIT, -MAP_AXIS_LIMIT, MAP_AXIS_LIMIT);
-                ImPlot::SetupAxes("x(cm)", "z(cm)", axisFlags, axisFlags);
-
                 PlotMapContent();
 
                 ImPlot::EndPlot();
@@ -415,13 +441,21 @@ namespace eureka
     {
         ImGui::Begin(MAIN_MENU_WINDOW_NAME, nullptr);
 
-
+        if (ImGui::CollapsingHeader("General"))
+        {
+            ImGui::Checkbox("realtime", &_memo.show_realtime);
+        }
         if (ImGui::CollapsingHeader("Pose Graph"))
         {
             ImGui::Checkbox("gpo optimized", &_memo.show_gpo_optimized);
             ImGui::Checkbox("pnp inliers", &_memo.show_pnp_inliers); 
             ImGui::Checkbox("pnp outliers", &_memo.show_pnp_outliers);
             ImGui::Checkbox("filter constraints", &_memo.show_filter_constraints);
+            if (ImGui::Button("Force Optimization"))
+            {
+                _remoteHandler->SendForceGPOOptimization();
+                DEBUGGER_TRACE("force optimization");
+            }
         }
 
         //if (ImGui::Button("Start Read Poses"))
@@ -463,18 +497,64 @@ namespace eureka
 
     void RemoteLiveSlamUI::PlotMapContent()
     {
+
+        ImPlotAxisFlags axisFlags = ImPlotAxisFlags_None;
+        ImPlot::SetupAxesLimits(-MAP_AXIS_LIMIT, MAP_AXIS_LIMIT, -MAP_AXIS_LIMIT, MAP_AXIS_LIMIT);
+        ImPlot::SetupAxes("x(cm)", "z(cm)", axisFlags, axisFlags);
+
         if (_model.map_view.last_pose_graph_msg)
         {
             if (_memo.show_gpo_optimized)
             {
                 PlotOptimizedCausalPoses();
             }
-      
-
+            
             PlotPoseConstraints();
-       
         }
-      
+
+        if (_memo.show_realtime && !_model.map_view.realtime_poses_t.empty())
+        {
+            PlotRealtimePose();
+        }
+        //ImPlot::SetupAxes("", "", ImPlotAxisFlags_None, ImPlotAxisFlags_None);
+        PlotMapText();
+
+    }
+
+    void RemoteLiveSlamUI::PlotMapText()
+    {
+
+        auto clicks = ImGui::GetMouseClickedCount(ImGuiMouseButton_Left);
+
+        if (clicks == 2)
+        {
+            // HACK: text is interpreted as data and messes up the autofit when double clicking.
+            // as a workaround we don't draw the text in case we need to autofit
+            // https://github.com/epezent/implot/issues/406
+            // auto p = ImPlot::GetCurrentPlot();
+            // auto fit = p->Axes[0].FitThisFrame;
+            // 
+            DEBUGGER_TRACE("frame fit, not drawing text this frame");
+            return;
+        }
+
+        ImPlot::PushPlotClipRect();
+        _model.map_view.upper_right_text.clear();
+        std::format_to(
+            std::back_inserter(_model.map_view.upper_right_text),
+            "position = {:<7.2f} {:<7.2f} {:<7.2f}",
+            _model.map_view.realtime_last_txtytz.x(),
+            _model.map_view.realtime_last_txtytz.y(),
+            _model.map_view.realtime_last_txtytz.z()
+        );
+
+   
+    
+        IMGUI_SCOPED(ImPlot::ScopedStyleColor(ImPlotCol_InlayText, IMGUI_COLOR_YELLOW));
+        auto textXY = ImPlot::GetPlotLimits().Min();
+        ImPlot::PlotText(_model.map_view.upper_right_text.c_str(), textXY.x, textXY.y, false, { 150.0f, -40.0f });
+
+        ImPlot::PopPlotClipRect();
     }
 
     void RemoteLiveSlamUI::PlotOptimizedCausalPoses()
@@ -510,7 +590,7 @@ namespace eureka
         }
 
         //if (_model->annotate_current_position && N > 1)
-
+/*
         if (N > 1)
         {
             auto last_id = reinterpret_cast<const uint32_t&>(poses[(N - 1) * POSES_STRIDE + OFFSET_ID]);
@@ -534,7 +614,8 @@ namespace eureka
                 last_tx,
                 last_tz
             );
-        }
+        }  */  
+
     }
 
     void RemoteLiveSlamUI::PlotPoseConstraints()
@@ -573,21 +654,104 @@ namespace eureka
 
     }
 
-    future_t<void> RemoteLiveSlamUI::DoConnect()
+    void RemoteLiveSlamUI::InitiateConnection()
     {
         try
         {
-            co_await _remoteHandler->ConnectAsync(_memo.previously_used_ips[_model.top_view.current_ip_combo_idx]);
-
-            _remoteHandler->StartReadingPoseGraphUpdates();
+            _remoteHandler->ConnectAsync(_memo.previously_used_ips[_model.top_view.current_ip_combo_idx]);
         }
         catch (const std::exception& err)
         {
             DEBUGGER_TRACE("DoConnect {}", err.what());
         }
 
-        co_return;
+    }
 
+    void RemoteLiveSlamUI::HandleConnectionStateChange(rpc::ConnectionState connectionState)
+    {
+        switch (connectionState)
+        {
+        case rpc::ConnectionState::Disconnecting:
+        case rpc::ConnectionState::Disconnected:
+        {
+            _remoteHandler->StopStreams();
+            break;
+        }
+        case rpc::ConnectionState::Connected:
+        {
+            _model.map_view = {};
+            _remoteHandler->StartStreams();
+            break;
+        }
+        case rpc::ConnectionState::Connecting:
+        {
+            break;
+        }
+        }
+
+    }
+
+    void RemoteLiveSlamUI::PlotRealtimePose()
+    {
+
+        const auto& txtytz = _model.map_view.realtime_poses_t;
+        const auto& rxryrz = _model.map_view.realtime_poses_r;
+
+        static constexpr int POSES_STRIDE = 3;
+        static constexpr int OFFSET_TX = 0;
+        static constexpr int OFFSET_TY = 1;
+        static constexpr int OFFSET_TZ = 2;
+
+        auto N = static_cast<int>(txtytz.size()) / POSES_STRIDE;
+
+        IMGUI_SCOPED(ImPlot::ScopedStyleColor(ImPlotCol_Line, IMGUI_COLOR_WHITE));
+
+        ImPlot::PlotLine("realtime", txtytz.data() + OFFSET_TX, txtytz.data() + OFFSET_TZ, N, 0, static_cast<int>(POSES_STRIDE * sizeof(float)));
+
+
+        {
+            auto drawlist = ImPlot::GetPlotDrawList();
+            auto last_txtytz = txtytz.data() + (N - 1) * POSES_STRIDE;
+            auto last_rxryrz = rxryrz.data() + (N - 1) * POSES_STRIDE;
+            auto tx = last_txtytz[0];
+            auto tz = last_txtytz[2];
+
+            _model.map_view.realtime_last_txtytz = Eigen::Vector3f(last_txtytz[0], last_txtytz[1], last_txtytz[2]);
+            _model.map_view.realtime_last_rxryrz = Eigen::Vector3f(last_rxryrz[0], last_rxryrz[1], last_rxryrz[2]);
+
+            Eigen::Vector2f tip(tx, tz);
+     
+            auto triangle = ImPlot::GenerateOrientationTriangle(_model.map_view.realtime_last_rxryrz, tip, 4.0f);
+
+            drawlist->AddTriangleFilled(triangle.tip, triangle.left, triangle.right, IMGUI_COLOR_WHITE);
+        }
+
+        //if (_model->annotate_current_position && N > 1)
+
+        //if (N > 1)
+        //{
+            //auto last_id = reinterpret_cast<const uint32_t&>(poses[(N - 1) * POSES_STRIDE]);
+            //auto last_tx = poses[(N - 1) * POSES_STRIDE + OFFSET_TX];
+            //auto last_tz = poses[(N - 1) * POSES_STRIDE + OFFSET_TZ];
+
+            //auto pre_tx = poses[(N - 2) * POSES_STRIDE + OFFSET_TX];
+            //auto pre_tz = poses[(N - 2) * POSES_STRIDE + OFFSET_TZ];
+
+            //Eigen::Vector2f dir = (Eigen::Vector2f(last_tx, last_tz) - Eigen::Vector2f(pre_tx, pre_tz)).normalized();
+
+            //dir *= -15.0f;
+
+            //ImPlot::Annotation(
+            //    static_cast<double>(last_tx), static_cast<double>(last_tz),
+            //    IMPGUI_COLOR4_YELLOW,
+            //    ImVec2(dir.x(), dir.y()),
+            //    false,
+            //    "%lu = (%.2f %.2f)",
+            //    last_id,
+            //    last_tx,
+            //    last_tz
+            //);
+        //}
     }
 
 }

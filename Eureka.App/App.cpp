@@ -7,9 +7,12 @@
 #include <AppTypes.hpp>
 #include <json_io.hpp>
 // TODO BUG BUG
+
+EUREKA_MSVC_WARNING_PUSH_DISABLE(4005) // warning C4005 : 'APIENTRY' : macro redefinition
 #define MemoryBarrier __faststorefence 
 #include <RemoteLiveSlamUI.hpp>
 #include <RemoteLiveSlamClient.hpp>
+EUREKA_MSVC_WARNING_POP
 
 namespace eureka
 {
@@ -73,7 +76,7 @@ namespace eureka
 
             }
 
-       
+      
         }
 
         _container.Wire(_memo);

@@ -2,7 +2,7 @@
 #include <ClientCompletionQueue.hpp>
 EUREKA_MSVC_WARNING_PUSH
 EUREKA_MSVC_WARNING_DISABLE(4127 4702)
-#include <proto/eureka.grpc.pb.h>
+#include <proto/rgorpc.grpc.pb.h>
 EUREKA_MSVC_WARNING_POP
 #include <asio/detached.hpp>
 #include <debugger_trace.hpp>
@@ -20,10 +20,10 @@ namespace eureka
 
     struct PoseGraphStreamReadPolicy
     {
-        using ServiceT = LiveSlamControlCenter;
-        static constexpr auto StreamPrepare = &ServiceT::Stub::PrepareAsyncStartPoseGraphStreaming;
-        using RequestMessage = StartPoseGraphUpdatesMsg;
-        using IncomingMessageT = PoseGraphVisualizationUpdateMsg;
+        using ServiceT = rgoproto::LiveSlamUIService;
+        static constexpr auto StreamPrepare = &ServiceT::Stub::PrepareAsyncPoseGraphStreaming;
+        using RequestMessage = rgoproto::PoseGraphStreamingRequestMsg;
+        using IncomingMessageT = rgoproto::PoseGraphStreamingMsg;
 
         static RequestMessage MakeRequestMessage()
         {
@@ -32,6 +32,22 @@ namespace eureka
             return clientRequest;
         }
     };
+
+    struct RealtimePoseStreamReadPolicy
+    {
+        using ServiceT = rgoproto::LiveSlamUIService;
+        static constexpr auto StreamPrepare = &ServiceT::Stub::PrepareAsyncRealtimePoseStreaming;
+        using RequestMessage = rgoproto::RealtimePoseStreamingRequestMsg;
+        using IncomingMessageT = rgoproto::RealtimePoseStreamingMsg;
+
+        static RequestMessage MakeRequestMessage()
+        {
+            RequestMessage clientRequest;
+            clientRequest.set_integer(42);
+            return clientRequest;
+        }
+    };
+
 
     template<typename Policy>
     class GenericStreamRead
@@ -46,10 +62,10 @@ namespace eureka
         std::shared_ptr<grpc::ClientContext>                                       _context;
         bool                                                                       _active{ false };
         std::vector<std::shared_ptr<IncomingMessageT>>                             _messages;
-        sigslot::signal<std::shared_ptr<PoseGraphVisualizationUpdateMsg>>          _newMessageSignal;
+        sigslot::signal<std::shared_ptr<IncomingMessageT>>                         _newMessageSignal;
 
 
-        std::shared_ptr<eureka::PoseGraphVisualizationUpdateMsg> GetAvailableMessage()
+        std::shared_ptr<IncomingMessageT> GetAvailableMessage()
         {
             // 
             // available message means a message which is owned solely by the stream
@@ -64,7 +80,7 @@ namespace eureka
             }
             else
             {
-                return _messages.emplace_back(std::make_shared<PoseGraphVisualizationUpdateMsg>());
+                return _messages.emplace_back(std::make_shared<IncomingMessageT>());
             }
         }
 
@@ -160,7 +176,7 @@ namespace eureka
                     ++packetNum;
                     if (!readOk)
                     {
-                        DEBUGGER_TRACE("client requesting pose graph updates - read failed");
+                         DEBUGGER_TRACE("client requesting pose graph updates - read failed");
                         break;
                     }
                     else if (packetNum % 10000 == 0)
@@ -254,5 +270,6 @@ namespace eureka
 
 
     using PoseGraphStreamRead = GenericStreamRead<PoseGraphStreamReadPolicy>;
+    using RealtimePoseStreamRead = GenericStreamRead<RealtimePoseStreamReadPolicy>;
 }
 

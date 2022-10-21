@@ -5,6 +5,7 @@
 #include "../Eureka.Graphics/SubmissionThreadExecutionContext.hpp"
 #include "../Eureka.Graphics/OneShotCopySubmission.hpp"
 #include "../Eureka.Graphics/ImguiIntegration.hpp"
+
 #include "../Eureka.Windowing/Window.hpp"
 
 
@@ -12,10 +13,12 @@
 #include "../Eureka.Graphics/TargetPass.hpp"
 //#include "../Eureka.Graphics/CameraPass.hpp"
 
+
+EUREKA_MSVC_WARNING_PUSH_DISABLE(4005) // warning C4005 : 'APIENTRY' : macro redefinition
 // TODO BUG BUG
 #define MemoryBarrier __faststorefence 
 #include "../Eureka.RemoteClient/RemoteLiveSlamUI.hpp"
-
+EUREKA_MSVC_WARNING_POP
 #include <profiling.hpp>
 
 namespace eureka
@@ -43,6 +46,7 @@ namespace eureka
         return runtime_desc;
     }
 
+    // auto swapchainSupport = QuerySwapchainSupport(&*(_deviceContext.PhysicalDevice()), _window->GetSurface());
     //DeviceContextConfig CreateDeviceContextConfig(vk::SurfaceKHR presentationSurface = nullptr)
     //{
     //    DeviceContextConfig device_context_desc{};
@@ -88,12 +92,12 @@ namespace eureka
         return _window;
     }
 
-    std::shared_ptr<RemoteLiveSlamClient> IOCContainer::GetRemoteHandler()
+    std::shared_ptr<rpc::RemoteLiveSlamClient> IOCContainer::GetRemoteHandler()
     {
         return _remoteHandler;
     }
 
-    std::shared_ptr<eureka::RemoteLiveSlamUI> IOCContainer::GetRemoteUI()
+    std::shared_ptr<ui::RemoteLiveSlamUI> IOCContainer::GetRemoteUI()
     {
         return _remoteUI;
     }
@@ -108,7 +112,24 @@ namespace eureka
         _copyQueue = _device->GetCopyQueue();
         _presentationQueue = _device->GetPresentQueue();
         _resourceAllocator = std::make_shared<vulkan::ResourceAllocator>(_instance, _device);
-        _swapChain = std::make_shared<vulkan::SwapChain>(_window, _device, _presentationQueue, _graphicsQueue);
+  
+        auto winWidth = _window->GetWidth();
+        auto winHeight = _window->GetHeight();
+        auto swapchainSupport = _device->GetSwapChainSupport(_window->GetSurface());
+        auto capabilities = swapchainSupport.capabilities;
+
+        if (capabilities.maxImageExtent.width < winWidth || capabilities.maxImageExtent.height < winHeight)
+        {
+            // HACK HACK HACK
+            _window->Resize(capabilities.maxImageExtent.width, capabilities.maxImageExtent.height);
+            _swapChain = std::make_shared<vulkan::SwapChain>(_window, _device, _presentationQueue, _graphicsQueue);
+            _window->Resize(winWidth, winHeight);
+        }
+        else
+        {
+            _swapChain = std::make_shared<vulkan::SwapChain>(_window, _device, _presentationQueue, _graphicsQueue);
+        }
+        // HACK HACK HACK
 
 
         auto submissionThreadExecutor = _concurrencyRuntime.make_executor<submission_thread_executor>();
@@ -170,7 +191,7 @@ namespace eureka
         //_pipelineCache = std::make_shared<PipelineCache>(_device, _setLayoutCache, colorPass->GetRenderPass());
 
 
-        _remoteUI = std::make_shared<RemoteLiveSlamUI>(std::move(appMemo.liveslam), _remoteHandler);
+        _remoteUI = std::make_shared<ui::RemoteLiveSlamUI>(std::move(appMemo.liveslam), _remoteHandler);
 
         auto imguiPass = std::make_shared<graphics::ImGuiViewPass>(
             globalInheritedData,
@@ -197,7 +218,7 @@ namespace eureka
 
     void IOCContainer::InitializeRemoteServices()
     {
-        _remoteHandler = std::make_shared<RemoteLiveSlamClient>();
+        _remoteHandler = std::make_shared<rpc::RemoteLiveSlamClient>();
     }
 
 }

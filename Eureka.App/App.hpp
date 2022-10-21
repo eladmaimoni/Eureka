@@ -2,10 +2,17 @@
 
 namespace eureka
 {
-
     class Window;
-    class RemoteLiveSlamClient;
-    class RemoteLiveSlamUI;
+
+    namespace rpc
+    {
+        class RemoteLiveSlamClient;
+    }
+
+    namespace ui
+    {
+        class RemoteLiveSlamUI;
+    }
 
 
     class App
@@ -29,7 +36,7 @@ namespace eureka
 
         std::stop_source      _cancellationSource;
         std::shared_ptr<Window> _window;
-        std::shared_ptr<RemoteLiveSlamClient> _remoteHandler;
-        std::shared_ptr<RemoteLiveSlamUI> _remoteUI;
+        std::shared_ptr<rpc::RemoteLiveSlamClient> _remoteHandler;
+        std::shared_ptr<ui::RemoteLiveSlamUI> _remoteUI;
     };
 }    

@@ -28,6 +28,7 @@ namespace eureka
         template<typename Callable>
         sigslot::connection ConnectResizeSlot(Callable&& slot)
         {
+            //slot(GetWidth(), GetHeight());
             return _resizeSignal.connect(std::forward<Callable>(slot));
         }
         void SetPostion(const WindowPosition& position) const;
@@ -36,6 +37,8 @@ namespace eureka
         int GetPostionX() const;
         int GetPostionY() const;
         
+   
+        void Resize(uint32_t width, uint32_t height);
         void HandleResize(uint32_t width, uint32_t height);
 
 

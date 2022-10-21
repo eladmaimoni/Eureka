@@ -31,8 +31,16 @@ namespace eureka
     class Window;
 
     class AsyncDataLoader;
-    class RemoteLiveSlamClient;
-    class RemoteLiveSlamUI;
+
+    namespace rpc
+    {
+        class RemoteLiveSlamClient;
+    }
+    namespace ui
+    {
+        class RemoteLiveSlamUI;
+    }
+
 
     class IOCContainer
     {
@@ -43,8 +51,8 @@ namespace eureka
 
         std::shared_ptr<graphics::RenderingSystem> GetRenderingSystem();
         std::shared_ptr<Window> GetWindow();
-        std::shared_ptr<RemoteLiveSlamClient> GetRemoteHandler();
-        std::shared_ptr<RemoteLiveSlamUI> GetRemoteUI();
+        std::shared_ptr<rpc::RemoteLiveSlamClient> GetRemoteHandler();
+        std::shared_ptr<ui::RemoteLiveSlamUI> GetRemoteUI();
     private:
         GLFWRuntime                                         _glfw;
         std::shared_ptr<vulkan::Instance>                   _instance;
@@ -67,8 +75,8 @@ namespace eureka
 
         //std::shared_ptr<vulkan::PipelineCache>                      _pipelineCache; // TODO per TargetPass
         std::shared_ptr<vulkan::DescriptorSetLayoutCache>           _setLayoutCache;
-        std::shared_ptr<RemoteLiveSlamClient>               _remoteHandler;
-        std::shared_ptr<RemoteLiveSlamUI>                   _remoteUI;
+        std::shared_ptr<rpc::RemoteLiveSlamClient>               _remoteHandler;
+        std::shared_ptr<ui::RemoteLiveSlamUI>                   _remoteUI;
         //std::shared_ptr<MTDescriptorAllocator>              _descPool;
 
         void InitializeGraphicsSubsystem(AppMemo& appMemo);

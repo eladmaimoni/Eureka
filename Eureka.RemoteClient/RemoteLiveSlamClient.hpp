@@ -2,13 +2,13 @@
 #include <ClientCompletionQueue.hpp>
 #include <compiler.hpp>
 EUREKA_MSVC_WARNING_PUSH
-EUREKA_MSVC_WARNING_DISABLE(4127 4702)
-#include <proto/eureka.grpc.pb.h>
+EUREKA_MSVC_WARNING_DISABLE(4127 4702 4005)
+#include <proto/rgorpc.grpc.pb.h>
 EUREKA_MSVC_WARNING_POP
 
 #include "PoseGraphStreamer.hpp"
 
-namespace eureka
+namespace eureka::rpc
 {
     enum class ConnectionState
     {
@@ -25,14 +25,19 @@ namespace eureka
         std::shared_ptr<ClientCompletionQueuePollingExecutor>                       _completionQueue;
 
         std::shared_ptr<grpc::Channel>                                              _channel;
-        std::shared_ptr<LiveSlamControlCenter::Stub>                                _remoteLiveSlamStub;
+        std::shared_ptr<rgoproto::LiveSlamUIService::Stub>                            _remoteLiveSlamStub;
         std::atomic<ConnectionState>                                                _state{ ConnectionState::Disconnected };
         std::stop_source                                                            _connectCancellationSource;
+        sigslot::signal<ConnectionState>                                            _connectionStateSignal;
 
         PoseGraphStreamRead _poseGraphStreamRead;
+        RealtimePoseStreamRead _realtimePoseStreamRead;
 
         asio::awaitable<void> DoDisconnect();
-        asio::awaitable<void> DoWaitForConnection(std::stop_token stopToken, std::shared_ptr <promise_t<void>> pendingConnection);
+        asio::awaitable<void> DoMonitorConnection(std::stop_token stopToken);
+        asio::awaitable<void> DoWaitForConnection(std::stop_token stopToken);
+
+        void SetConnectionState(ConnectionState state);
     public:
         RemoteLiveSlamClient();
         ~RemoteLiveSlamClient();
@@ -47,7 +52,7 @@ namespace eureka
         //
         // Connect
         //
-        future_t<void> ConnectAsync(std::string remoteServerEndpoint);
+        void ConnectAsync(std::string remoteServerEndpoint);
         void CancelConnecting();
         void Disconnect();
         ConnectionState GetConnectionState() const { return _state; }
@@ -56,14 +61,25 @@ namespace eureka
         // Pose Graph Streaming
         //
 
-        void StartReadingPoseGraphUpdates();
-        void StopReadingPoseGraphUpdates();
+        void StartStreams();
+        void StopStreams();
+        void SendForceGPOOptimization();
+        template<typename Callable>
+        sigslot::connection ConnectConnectionStateSlot(Callable&& slot)
+        {
+            return _connectionStateSignal.connect(std::move(slot));
+        }
+
         template<typename Callable>
         sigslot::connection ConnectPoseGraphSlot(Callable&& slot)
         {
             return _poseGraphStreamRead.ConnectSlot(std::move(slot));
         }
-
+        template<typename Callable>
+        sigslot::connection ConnectRealtimePoseSlot(Callable&& slot)
+        {
+            return _realtimePoseStreamRead.ConnectSlot(std::move(slot));
+        }
 
     };
 

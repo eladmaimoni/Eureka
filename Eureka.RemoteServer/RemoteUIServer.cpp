@@ -26,7 +26,7 @@ namespace eureka
             DEBUGGER_TRACE("waiting for client request");
 
             auto result = co_await agrpc::request(
-                &LiveSlamControlCenter::AsyncService::RequestDoForceUpdate,
+                &LiveSlamUIService::AsyncService::RequestDoForceUpdate,
                 _remoteUIService,
                 serverContext,
                 clientRequest,
@@ -64,7 +64,7 @@ namespace eureka
             grpc::ServerAsyncWriter<PoseGraphVisualizationUpdateMsg> writer{ &serverContext };
 
             auto initiateStreaming = co_await agrpc::request(
-                &LiveSlamControlCenter::AsyncService::RequestStartPoseGraphStreaming,
+                &LiveSlamUIService::AsyncService::RequestStartPoseGraphStreaming,
                 _remoteUIService,
                 serverContext,
                 clientRequest,

@@ -35,6 +35,10 @@ namespace eureka
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);   // no default rendering client, we'll hook vulkan later
         //glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);     // resizing breaks the swapchain, we'll disable it for now
         auto window = glfwCreateWindow(width, height, "Eureka Engine", nullptr, nullptr);
+        //int createdWidth = 0;
+        //int createdHeight = 0;
+
+        //glfwGetWindowSize(window, &createdWidth, &createdHeight);
 
         if (!window)
         {
@@ -43,7 +47,7 @@ namespace eureka
         VkSurfaceKHR c_style_surface;
 
         auto result = glfwCreateWindowSurface(instance, window, nullptr, &c_style_surface);
-        
+
         if (result != VK_SUCCESS)
         {
             throw std::runtime_error("failed creating window surface");

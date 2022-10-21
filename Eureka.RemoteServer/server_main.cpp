@@ -24,7 +24,7 @@ void TestCancellationRawGRPC()
     // build server
     grpc::ServerBuilder  serverBuilder;
     std::unique_ptr<grpc::ServerCompletionQueue> serverCompletionQueue = serverBuilder.AddCompletionQueue();
-    eureka::LiveSlamControlCenter::AsyncService  service;
+    rgoproto::LiveSlamUIService::AsyncService  service;
     serverBuilder.AddListeningPort(server_host, grpc::InsecureServerCredentials());
     serverBuilder.RegisterService(&service);
     std::unique_ptr<grpc::Server> grpcServer = serverBuilder.BuildAndStart();
@@ -33,21 +33,21 @@ void TestCancellationRawGRPC()
     // build client
 
     grpc::CompletionQueue clientCompletionQueue; 
-    eureka::LiveSlamControlCenter::Stub stub(grpc::CreateChannel(client_host, grpc::InsecureChannelCredentials()));
+    rgoproto::LiveSlamUIService::Stub stub(grpc::CreateChannel(client_host, grpc::InsecureChannelCredentials()));
 
 
     //
     // server listens to RPC request to start streaming
     // 
-    eureka::StartPoseGraphUpdatesMsg  clientRequestServerSide;
+    rgoproto::PoseGraphStreamingRequestMsg  clientRequestServerSide;
 
     grpc::ServerContext serverContext;
     serverContext.AsyncNotifyWhenDone((void*)SERVER_CANCELLATION_TAG);
 
-    grpc::ServerAsyncWriter<eureka::PoseGraphVisualizationUpdateMsg> writer(&serverContext);
+    grpc::ServerAsyncWriter<rgoproto::PoseGraphStreamingMsg> writer(&serverContext);
 
 
-    service.RequestStartPoseGraphStreaming(
+    service.RequestPoseGraphStreaming(
         &serverContext,
         &clientRequestServerSide,
         &writer,
@@ -60,7 +60,7 @@ void TestCancellationRawGRPC()
     // client requests RPC
     //
     grpc::ClientContext clientContext;
-    eureka::StartPoseGraphUpdatesMsg clientRequestClientSide;
+    rgoproto::PoseGraphStreamingRequestMsg clientRequestClientSide;
     clientRequestClientSide.set_integer(42);
     auto reader = stub.PrepareAsyncStartPoseGraphStreaming(&clientContext, clientRequestClientSide, &clientCompletionQueue);
     reader->StartCall((void*)CLIENT_STREAMING_TAG);
@@ -118,7 +118,7 @@ void TestCancellationWithAsioGRPCClient()
     // build server
     grpc::ServerBuilder  serverBuilder;
     std::unique_ptr<grpc::ServerCompletionQueue> serverCompletionQueue = serverBuilder.AddCompletionQueue();
-    eureka::LiveSlamControlCenter::AsyncService  service;
+    eureka::LiveSlamUIService::AsyncService  service;
     serverBuilder.AddListeningPort(server_host, grpc::InsecureServerCredentials());
     serverBuilder.RegisterService(&service);
     std::unique_ptr<grpc::Server> grpcServer = serverBuilder.BuildAndStart();
@@ -127,7 +127,7 @@ void TestCancellationWithAsioGRPCClient()
     // build client
 
     agrpc::GrpcContext clientCompletionQueue(std::make_unique<grpc::CompletionQueue>());
-    eureka::LiveSlamControlCenter::Stub stub(grpc::CreateChannel(client_host, grpc::InsecureChannelCredentials()));
+    eureka::LiveSlamUIService::Stub stub(grpc::CreateChannel(client_host, grpc::InsecureChannelCredentials()));
 
 
     //
@@ -161,7 +161,7 @@ void TestCancellationWithAsioGRPCClient()
         [&]() -> asio::awaitable<void>
         {
             auto [reader, ok] = co_await agrpc::request(
-                &eureka::LiveSlamControlCenter::Stub::PrepareAsyncStartPoseGraphStreaming,
+                &eureka::LiveSlamUIService::Stub::PrepareAsyncStartPoseGraphStreaming,
                 stub,
                 clientContext,
                 clientRequestClientSide,
