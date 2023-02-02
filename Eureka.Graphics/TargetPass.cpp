@@ -92,7 +92,7 @@ namespace eureka::graphics
 
         if (result == VkResult::VK_ERROR_OUT_OF_DATE_KHR)
         {
-            RecreateTargets();
+            //RecreateTargets();
         }
     }
 

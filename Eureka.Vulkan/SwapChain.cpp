@@ -267,7 +267,8 @@ namespace eureka::vulkan
             {
                 createInfo.imageSharingMode = VkSharingMode::VK_SHARING_MODE_EXCLUSIVE;
             }
-            _swapchain = nullptr; // first release then create
+
+            _device->DestroySwapChain(_swapchain); // first release then create
             _swapchain = _device->CreateSwapchain(createInfo);
 
             auto images = _device->GetSwapchainImages(_swapchain);
