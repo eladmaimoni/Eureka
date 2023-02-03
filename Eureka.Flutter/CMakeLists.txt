@@ -1,0 +1,38 @@
+﻿
+set_source_group(
+    flutter 
+    "FlutterUtils.hpp"
+    "FlutterUtils.cpp"
+    "FlutterProjectEmbedder.hpp"
+    "FlutterProjectEmbedder.cpp"
+    "FlutterTaskRunners.hpp"
+    "FlutterTaskRunners.cpp"
+    "FlutterVulkanCompositor.hpp"
+    "FlutterVulkanCompositor.cpp"
+
+)
+
+
+add_library(
+    Eureka.Flutter
+    ${flutter}
+ )
+
+target_include_directories(
+    Eureka.Flutter
+    PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+target_link_libraries(
+    Eureka.Flutter 
+    PUBLIC
+    Eureka.Core 
+    Eureka.Graphics 
+	Eureka.Windowing
+    Eureka.Shaders 
+    flutter_engine    
+    PRIVATE
+    eureka_strict_compiler_flags
+)
+

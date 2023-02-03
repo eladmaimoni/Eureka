@@ -9,7 +9,7 @@
         {
             "name": "base-preset",
             "hidden": true,
-            "binaryDir": "${sourceDir}/out/build/${presetName}",
+            "binaryDir": "${sourceDir}/build/${presetName}",
             "cacheVariables": {
                 "CMAKE_EXPORT_COMPILE_COMMANDS": true
             }
@@ -30,7 +30,7 @@
             "cacheVariables": {
                 "CMAKE_C_COMPILER": "cl.exe",
                 "CMAKE_CXX_COMPILER": "cl.exe",
-                "CMAKE_INSTALL_PREFIX": "${sourceDir}/out/install/${presetName}",
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/install/${presetName}",
                 "CMAKE_TOOLCHAIN_FILE": {
                     "value": "$env{VCPKG_MASTER}/scripts/buildsystems/vcpkg.cmake",
                     "type": "FILEPATH"
@@ -67,6 +67,35 @@
             "description": "Target Windows with the Visual Studio 2022 development environment",
             "inherits": "windows-x64-base-preset",
             "generator": "Visual Studio 17 2022"
+        }
+    ],
+	"buildPresets": [
+        {
+            "name": "vs2022r",
+            "configurePreset": "vs2022",
+            "configuration": "RelWithDebInfo"
+        },
+		{
+            "name": "vs2022r-clean",
+			"inherits" : "vs2022r",
+            "cleanFirst": true
+        },
+        {
+            "name": "vs2022d",
+            "configurePreset": "vs2022",
+            "configuration": "Debug"
+        },
+		{
+            "name": "vs2022r-tests",
+            "configurePreset": "vs2022",
+            "configuration": "RelWithDebInfo",
+            "targets": ["Eureka.UnitTests"]
+        },
+		{
+            "name": "vs2022d-tests",
+            "configurePreset": "vs2022",
+            "configuration": "Debug",
+            "targets": ["Eureka.UnitTests"]
         }
     ]
 }

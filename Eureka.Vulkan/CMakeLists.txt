@@ -90,7 +90,7 @@ add_library(
 	${runtime}
 ) 
  
-set_compiler_flags(Eureka.Vulkan) 
+#set_compiler_flags(Eureka.Vulkan) 
 
 target_include_directories(
     Eureka.Vulkan
@@ -102,7 +102,9 @@ target_link_libraries(
      PUBLIC
 	 Eureka.Core
 	 Eureka.Shaders
-     Eureka.Windowing 
+     #Eureka.Windowing 
 	 volk::volk volk::volk_headers	 
 	 unofficial::vulkan-memory-allocator::vulkan-memory-allocator
+	 PRIVATE
+	 eureka_strict_compiler_flags
 )

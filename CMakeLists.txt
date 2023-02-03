@@ -11,13 +11,34 @@ message("=======================================================================
 include(utility.cmake)
 project ("Eureka")
 
-############################################################################
-#                            CCACHE
-############################################################################
 
 
+add_library(eureka_strict_compiler_flags INTERFACE)
 
 
+#set(EUREKA_NOT_DEBUG "$<OR:$<CONFIG:Release>, $<CONFIG:RelWithDebInfo>>")
+set(EUREKA_NOT_DEBUG "$<NOT:$<CONFIG:Debug>>")
+set(EUREKA_COMPILER_IS_GCC_LIKE "$<COMPILE_LANG_AND_ID:CXX,ARMClang,AppleClang,Clang,GNU,LCC>")
+set(EUREKA_COMPILER_IS_MSVC "$<COMPILE_LANG_AND_ID:CXX,MSVC>")
+set(EUREKA_GCC_LIKE_STRICT_FLAGS "-Wall;-Wextra;-Wshadow;-Wformat=2;-Wunused")
+set(EUREKA_MSVC_STRICT_FLAGS "/W4;")
+set(EUREKA_WARNING_AS_ERROR_FLAG "$<IF:${EUREKA_COMPILER_IS_MSVC},/WX,-Werror>")
+set(EUREKA_TREAT_WARNING_AS_ERROR "$<${EUREKA_NOT_DEBUG}:${EUREKA_WARNING_AS_ERROR_FLAG}>")
+
+
+target_compile_options(
+  eureka_strict_compiler_flags 
+  INTERFACE
+  "$<${EUREKA_COMPILER_IS_GCC_LIKE}:${EUREKA_GCC_LIKE_STRICT_FLAGS}>"
+  "$<${EUREKA_COMPILER_IS_MSVC}:${EUREKA_MSVC_STRICT_FLAGS}>"
+  "${EUREKA_TREAT_WARNING_AS_ERROR}"
+)
+
+target_compile_features(
+    eureka_strict_compiler_flags
+    INTERFACE
+    cxx_std_23
+)
 ############################################################################
 #                            PACKAGES
 ############################################################################
@@ -83,6 +104,8 @@ message("=======================================================================
 ############################################################################
 
 set(dxc_executable "$ENV{VULKAN_SDK}/Bin/dxc.exe")
+
+
 configure_default_output_directories()
 
 message("Eureka: dxc_executable = ${dxc_executable}")
@@ -98,6 +121,7 @@ endif()
 
 # HACK
 if (MSVC)
+    set(CMAKE_CONFIGURATION_TYPES "Debug;RelWithDebInfo" CACHE STRING "" FORCE)
     # https://stackoverflow.com/questions/58708772/cmake-project-in-visual-studio-gives-flag-override-warnings-command-line-warnin
     string(REGEX REPLACE "/W[3|4]" "/w" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}") 
 endif()
@@ -116,6 +140,15 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 ############################################################################
 #                             SUBDIRECTORIES
 ############################################################################
+
+message("============== AVAILABLE TARGETS AFTER IMPORT ==============")
+get_all_targets(_targets_list)
+foreach(_target ${_targets_list})
+  message("Target: ${_target}")
+endforeach()
+
+
+add_subdirectory (3rdParty)
 add_subdirectory (Eureka.Precompiled)
 add_subdirectory (Eureka.Core)
 add_subdirectory (Eureka.Serialization)
@@ -126,8 +159,10 @@ add_subdirectory (Eureka.Vulkan)
 add_subdirectory (Eureka.Windowing)
 add_subdirectory (Eureka.Graphics)
 add_subdirectory (Eureka.Shaders)
+add_subdirectory (Eureka.Flutter)
 add_subdirectory (Eureka.App)
 add_subdirectory (Eureka.UnitTests)    
+add_subdirectory (Eureka.Playground)    
 add_subdirectory (Eureka.RPC)
 add_subdirectory (Eureka.RemoteProto)
 add_subdirectory (Eureka.RemoteServer)

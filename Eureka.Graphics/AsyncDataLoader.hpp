@@ -1,6 +1,8 @@
 #pragma once
 #include <Eureka.Vulkan/ResourceUpload.hpp>
 #include <Eureka.Vulkan/Commands.hpp>
+#include <future.hpp>
+#include <sigslot/signal.hpp>
 
 namespace eureka::vulkan
 {

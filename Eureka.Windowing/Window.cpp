@@ -1,9 +1,9 @@
 #include "Window.hpp"
 #include <debugger_trace.hpp>
+
+
 namespace eureka
 {
-
-
     Window::Window(GLFWRuntime& glfw, VkInstance instance, WindowConfig config)
         :
         _instance(instance),
