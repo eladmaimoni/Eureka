@@ -2,10 +2,9 @@
 #include "GLFWRuntime.hpp"
 #include "WindowTypes.hpp"
 #include <sigslot/signal.hpp>
+
 namespace eureka
 {
-;
-
     class Window
     {
         VkInstance                                  _instance{nullptr};
@@ -40,8 +39,6 @@ namespace eureka
    
         void Resize(uint32_t width, uint32_t height);
         void HandleResize(uint32_t width, uint32_t height);
-
-
         void UpdateMemo(WindowConfig& windowConfig) const;
     };
 

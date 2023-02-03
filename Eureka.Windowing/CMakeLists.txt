@@ -14,9 +14,6 @@ add_library(
  )
 
 
-set_compiler_flags(Eureka.Windowing)
-
-
 target_include_directories(
     Eureka.Windowing
     PUBLIC
@@ -31,8 +28,9 @@ target_link_libraries(
     PRIVATE 
     Eureka.Core 
     glfw
-	#Vulkan::Vulkan
-    volk::volk volk::volk_headers	 
+    volk::volk 
+    volk::volk_headers	 
+	eureka_strict_compiler_flags
 
 )
 

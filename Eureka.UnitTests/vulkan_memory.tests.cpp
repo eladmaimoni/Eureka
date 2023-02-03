@@ -6,7 +6,7 @@
 
 namespace vk = eureka::vulkan;
 
-TEST_CASE("pool allocation", "[vulkan]")
+TEST_CASE("pool allocation buffer ", "[vulkan]")
 {
     constexpr uint64_t CHUNK_SIZE = 1024;
     constexpr uint64_t CHUNK_COUNT = 4;
@@ -47,8 +47,10 @@ TEST_CASE("pool allocation", "[vulkan]")
         REQUIRE_THROWS(alloc1 = poolAllocator->AllocateBuffer(POOL_SIZE * 2));
     }
 
+}
 
 
-
+TEST_CASE("pool allocation image ", "[vulkan]")
+{
 
 }

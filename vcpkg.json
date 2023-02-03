@@ -35,5 +35,13 @@
         "vulkan",
         "vulkan-headers",
         "vulkan-memory-allocator"
-    ]
+    ],
+	"features":
+	{	
+		"vcpkg-optional-realsense" : 
+		{
+			"description": "build realsense2 using vcpkg",
+			"dependencies": ["realsense2"]
+		}
+	}
 }

@@ -121,14 +121,14 @@ shaders_group(hlsl_vertex_shaders vs_6_0 "ImGuiVS.hlsl" "ColoredVertexVS.hlsl" "
 ################################################################################
 #                              Shaders Targets
 ################################################################################
-add_custom_target(
-    Eureka.ShadersTarget 
-    DEPENDS
-    ${hlsl_vertex_shaders_generated_headers_list}
-    ${hlsl_fragment_shaders_generated_headers_list}
-    ${glsl_vertex_shaders_generated_headers_list}
-    ${glsl_fragment_shaders_generated_headers_list}
-)
+#add_custom_target(
+#    Eureka.ShadersTarget 
+#    DEPENDS
+#    ${hlsl_vertex_shaders_generated_headers_list}
+#    ${hlsl_fragment_shaders_generated_headers_list}
+#    ${glsl_vertex_shaders_generated_headers_list}
+#    ${glsl_fragment_shaders_generated_headers_list}
+#)
 
 configure_glsl_shaders_compilation(${glsl_vertex_shaders})
 configure_glsl_shaders_compilation(${glsl_fragment_shaders})
@@ -146,18 +146,28 @@ set_source_group(
     "ShadersImpl.cpp"
 )
 
+set_source_group(
+    generated_files
+    ${hlsl_vertex_shaders_generated_headers_list}
+    ${hlsl_fragment_shaders_generated_headers_list}
+    ${glsl_vertex_shaders_generated_headers_list}
+    ${glsl_fragment_shaders_generated_headers_list}
+)
+
 add_library(
     Eureka.Shaders 
     STATIC 
     ${common}
     ${shader_cache}
+    # shader files
     ${hlsl_vertex_shaders}
     ${hlsl_fragment_shaders}
     ${glsl_vertex_shaders}
     ${glsl_fragment_shaders}
-)
+    # generated headers
+    ${generated_files}
 
-set_compiler_flags(Eureka.Shaders)
+)
 
 target_include_directories(
     Eureka.Shaders
@@ -167,11 +177,12 @@ target_include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-add_dependencies(Eureka.Shaders Eureka.ShadersTarget)
+#add_dependencies(Eureka.Shaders Eureka.ShadersTarget)
 
 target_link_libraries(
     Eureka.Shaders
     PRIVATE
     Eureka.Core
     Eureka.Vulkan
+    eureka_strict_compiler_flags
 )

@@ -60,6 +60,8 @@ namespace eureka::vulkan
     {
         // eR8G8B8A8UnormSampledShaderResource
         Image2DAllocationPresetVals(VkFormat::VK_FORMAT_R8G8B8A8_UNORM, 1, VK_SAMPLE_COUNT_1_BIT , VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT),
+        // eR8G8B8A8UnormSampledShaderResourceRenderTargetTransferSrcDst
+        Image2DAllocationPresetVals(VkFormat::VK_FORMAT_R8G8B8A8_UNORM, 1, VK_SAMPLE_COUNT_1_BIT , VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_IMAGE_ASPECT_COLOR_BIT),
         // eD24UnormS8UintDepthImage
         Image2DAllocationPresetVals(VkFormat::VK_FORMAT_D24_UNORM_S8_UINT, 1, VK_SAMPLE_COUNT_1_BIT , VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_IMAGE_ASPECT_DEPTH_BIT)
     };
@@ -198,6 +200,57 @@ namespace eureka::vulkan
         return poolAllocation;
     }
 
+    PoolAllocation ResourceAllocator::AllocateImage2DPool(uint64_t byteSize, Image2DAllocationPreset preset, VmaAllocationCreateFlags allocationFlags, VmaPoolCreateFlags poolFlags)
+    {
+        const Image2DAllocationPresetVals& presetVals = IMAGE2D_ALLOCATION_PRESETS[preset];
+
+
+        VkImageCreateInfo createInfo
+        {
+            .sType = VkStructureType::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+            .imageType = VkImageType::VK_IMAGE_TYPE_2D,
+            .format = presetVals.format,
+            .extent = VkExtent3D{1920, 1080, 1},
+            .mipLevels = 1,
+            .arrayLayers = 1,
+            .samples = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT,
+            .tiling = VkImageTiling::VK_IMAGE_TILING_OPTIMAL,
+            .usage = presetVals.usage_flags,
+            .sharingMode = VkSharingMode::VK_SHARING_MODE_EXCLUSIVE,
+            .initialLayout = VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED
+        };
+
+
+        VmaAllocationCreateInfo allocationCreateInfo
+        {
+            .flags = allocationFlags,
+            .usage = VMA_MEMORY_USAGE_AUTO
+        };
+
+        uint32_t memTypeIndex;
+        VK_CHECK(vmaFindMemoryTypeIndexForImageInfo(
+            _vma,
+            &createInfo,
+            &allocationCreateInfo,
+            &memTypeIndex
+        ));
+
+        VmaPoolCreateInfo poolCreateInfo = {};
+        poolCreateInfo.flags = poolFlags;
+        poolCreateInfo.memoryTypeIndex = memTypeIndex;
+        poolCreateInfo.blockSize = byteSize;
+        poolCreateInfo.maxBlockCount = 0;
+
+        PoolAllocation poolAllocation{};
+
+        VK_CHECK(vmaCreatePool(_vma, &poolCreateInfo, &poolAllocation.pool));
+        assert(poolCreateInfo.blockSize == byteSize);
+
+        poolAllocation.byte_size = poolCreateInfo.blockSize;
+
+        return poolAllocation;
+    }
+
 
 
     BufferAllocation ResourceAllocator::AllocatePoolBuffer(VmaPool pool, uint64_t byteSize, VkBufferUsageFlags usage, VmaAllocationCreateFlags allocationFlags)
@@ -280,8 +333,9 @@ namespace eureka::vulkan
         return imageAllocation;
     }
 
-    std::optional<BufferAllocation> ResourceAllocator::TryAllocatePoolBuffer(VmaPool pool, uint64_t byteSize)
+    std::optional<BufferAllocation> ResourceAllocator::TryAllocatePoolBuffer(VmaPool pool, [[maybe_unused]]uint64_t byteSize)
     {
+        assert(false); // TODO
         VmaAllocationCreateInfo allocationCreateInfo
         {
             .pool = pool

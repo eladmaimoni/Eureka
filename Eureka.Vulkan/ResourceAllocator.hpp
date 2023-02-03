@@ -45,6 +45,7 @@ namespace eureka::vulkan
     enum Image2DAllocationPreset
     {
         eR8G8B8A8UnormSampledShaderResource,
+        eR8G8B8A8UnormSampledShaderResourceRenderTargetTransferSrcDst,
         eD24UnormS8UintDepthImage,
         IMAGE2D_ALLOCATION_PRESETS_COUNT
     };
@@ -53,7 +54,7 @@ namespace eureka::vulkan
     {
         std::shared_ptr<Instance> _instnace;
         std::shared_ptr<Device>   _device;
-        VmaAllocator              _vma{ nullptr };
+        VmaAllocator              _vma {nullptr};
 
     public:
         ResourceAllocator(std::shared_ptr<Instance> instance, std::shared_ptr<Device> device);
@@ -64,15 +65,21 @@ namespace eureka::vulkan
         BufferAllocation AllocateBuffer(uint64_t byteSize, BufferAllocationPreset preset);
         PoolAllocation   AllocateBufferPool(uint64_t byteSize, PoolAllocationPreset preset);
         ImageAllocation
-            AllocateImage2D(const VkExtent2D& extent, Image2DAllocationPreset preset, bool dedicated = false);
-        PoolAllocation                  AllocateBufferPool(uint64_t                 byteSize,
-            VkBufferUsageFlags       usageFlags,
-            VmaAllocationCreateFlags allocationFlags,
-            VmaPoolCreateFlags       poolFlags);
+        AllocateImage2D(const VkExtent2D& extent, Image2DAllocationPreset preset, bool dedicated = false);
+        PoolAllocation AllocateBufferPool(uint64_t                 byteSize,
+                                          VkBufferUsageFlags       usageFlags,
+                                          VmaAllocationCreateFlags allocationFlags,
+                                          VmaPoolCreateFlags       poolFlags);
+
+        PoolAllocation AllocateImage2DPool(uint64_t                 byteSize,
+                                         Image2DAllocationPreset  preset,
+                                         VmaAllocationCreateFlags allocationFlags,
+                                         VmaPoolCreateFlags       poolFlags);
+
         BufferAllocation                AllocatePoolBuffer(VmaPool                  pool,
-            uint64_t                 byteSize,
-            VkBufferUsageFlags       usage,
-            VmaAllocationCreateFlags allocationFlags);
+                                                           uint64_t                 byteSize,
+                                                           VkBufferUsageFlags       usage,
+                                                           VmaAllocationCreateFlags allocationFlags);
         std::optional<BufferAllocation> TryAllocatePoolBuffer(VmaPool pool, uint64_t byteSize);
         void                            DeallocateBuffer(const BufferAllocation& bufferAllocation);
         void                            DeallocatePool(const PoolAllocation& poolAllocation);

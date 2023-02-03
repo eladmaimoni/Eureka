@@ -74,9 +74,6 @@ add_library(
     ${renderdoc}
  )
 
-
-set_compiler_flags(Eureka.Graphics)
-
 target_precompile_headers(
     Eureka.Graphics 
     REUSE_FROM
@@ -89,26 +86,27 @@ target_include_directories(
     Eureka.Graphics
     PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
-    PRIVATE 
-    ${VULKAN_HPP_INCLUDE_DIRS}
-    ${TINYGLTF_INCLUDE_DIRS}
+    PRIVATE
+    #${TINYGLTF_INCLUDE_DIRS}
 )
 
 target_link_libraries(
     Eureka.Graphics 
     PUBLIC
     Eureka.Interfaces 
+    Eureka.Vulkan 
+	Eureka.Windowing
+    Pal::Sigslot
+    concurrencpp::concurrencpp
     PRIVATE 
     Eureka.Precompiled
     Eureka.Core 
-    Eureka.Vulkan 
-	Eureka.Windowing
     Eureka.Shaders 
-    glfw
-    imgui::imgui
-    implot::implot
-    concurrencpp::concurrencpp
-    unofficial::vulkan-memory-allocator::vulkan-memory-allocator
-    unofficial::spirv-reflect::spirv-reflect
+    imgui::imgui #TODO to different project
+    implot::implot #TODO to different project
+    #unofficial::vulkan-memory-allocator::vulkan-memory-allocator
+    #unofficial::spirv-reflect::spirv-reflect
+    eureka_strict_compiler_flags
+
 )
 

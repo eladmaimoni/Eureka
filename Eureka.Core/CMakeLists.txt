@@ -24,7 +24,7 @@ set_source_group(error "basic_errors.hpp" "assert.hpp")
 set_source_group(formatting "formatter_specializations.hpp")
 set_source_group(logging "logging.hpp" "logging_impl.hpp" "logging_impl.cpp")
 set_source_group(containers "containers_aliases.hpp" "fixed_capacity_vector.hpp")
-set_source_group(os "system.hpp" "system.cpp" "thread_name.hpp" "thread_name.cpp" "windows.hpp")
+set_source_group(os "system.hpp" "system.cpp" "thread_name.hpp" "thread_name.cpp" "windows.hpp" "future.hpp")
 
 set_source_group(profiling 
     "profiling.cpp" 
@@ -50,9 +50,6 @@ target_sources(
     ${os}
 )
 
-set_compiler_flags(Eureka.Core) 
-
-
 
 target_compile_definitions( # temporary hack, profiling is always enabled
     Eureka.Core
@@ -72,5 +69,6 @@ target_link_libraries(
     Eureka.Core 
     PRIVATE
     $<TARGET_NAME_IF_EXISTS:CUDA::nvToolsExt>
+    eureka_strict_compiler_flags
     #"$<$<CUDAToolkit_FOUND>:CUDA::nvToolsExt>"    
 )
