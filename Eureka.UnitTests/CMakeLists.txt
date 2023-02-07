@@ -57,3 +57,14 @@ target_link_libraries(
     eureka_strict_compiler_flags
     #concurrencpp::concurrencpp
 )
+
+########################################################################################################
+#
+# CTest Integration 
+# https://github.com/catchorg/Catch2/blob/devel/docs/cmake-integration.md#automatic-test-registration
+#
+########################################################################################################
+
+include(CTest)
+include(Catch)
+catch_discover_tests(Eureka.UnitTests)
