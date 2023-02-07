@@ -97,5 +97,14 @@
             "configuration": "Debug",
             "targets": ["Eureka.UnitTests"]
         }
-    ]
+    ],
+	"testPresets" : [
+		{
+            "name": "vs2022-all",
+            "configurePreset": "vs2022",
+			"configuration": "RelWithDebInfo",
+            "output": {"outputOnFailure": true},
+			"execution": {"noTestsAction": "error", "stopOnFailure": true}
+        }
+	]
 }
