@@ -7,7 +7,7 @@ My very own playground for learning all sorts of different technologies.
 - RPC, RemoteProto, RemoteServer, RemoteClients - toying with grpc, and asio-grpc for scalable, asynchronous client servers & clients using coroutines.
 
 Other technologies explored here:
-- latest C++23 features such as conecptd, ranges, coroutines
+- latest C++23 features such as conecpts, ranges, coroutines
 - imgui for simple UI, custom vulkan embedding.
 - shader authoring
 - writing good modern cmake
