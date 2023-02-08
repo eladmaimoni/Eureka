@@ -17,7 +17,7 @@ namespace eureka::vulkan
                 .stageFlags = VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT,
             });
             break;
-        case DescriptorSet0PresetType::ePerFont:
+        case DescriptorSet0PresetType::eSingleTexture:
             _bindings.emplace_back(VkDescriptorSetLayoutBinding {
                 .binding = 0,
                 .descriptorType = VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
@@ -50,7 +50,7 @@ namespace eureka::vulkan
     {
         // TODO iterate over enums
 
-        for(auto preset : {DescriptorSet0PresetType::ePerViewUniform, DescriptorSet0PresetType::ePerFont})
+        for(auto preset : {DescriptorSet0PresetType::ePerViewUniform, DescriptorSet0PresetType::eSingleTexture})
         {
             DescriptorSetLayoutPreset presetVal(preset);
 

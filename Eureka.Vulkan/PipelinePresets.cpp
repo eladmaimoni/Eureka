@@ -5,14 +5,14 @@ namespace eureka::vulkan
 {
     PipelineLayoutCreationPreset::PipelineLayoutCreationPreset(PipelinePresetType preset, const DescriptorSetLayoutCache& layoutCache)
     {
-        if (preset == PipelinePresetType::eImGui)
+        if (preset == PipelinePresetType::eImGui || preset == PipelinePresetType::eTexturedRegion)
         {
-            _setLayoutHandles.emplace_back(layoutCache.GetLayoutHandle(DescriptorSet0PresetType::ePerFont));
+            _setLayoutHandles.emplace_back(layoutCache.GetLayoutHandle(DescriptorSet0PresetType::eSingleTexture));
 
             VkPushConstantRange pushConstantsRange{
                 .stageFlags = VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT,
                 .offset = 0,
-                .size = sizeof(ImGuiPushConstantsBlock),
+                .size = sizeof(ScaleTranslatePushConstantsBlock),
             };
             _pushConstantRanges.emplace_back(pushConstantsRange);
 
@@ -38,6 +38,11 @@ namespace eureka::vulkan
             _vertexLayout = MakeInterleavedVertexLayout<ImGuiVertex>();
             _stages = MakeShaderPipeline(std::array<ShaderId, 2> { ImGuiVS, ImGuiFS }, shaderCache);
 
+        }
+        else if (preset == PipelinePresetType::eTexturedRegion)
+        {
+            // no vertex data
+            _stages = MakeShaderPipeline(std::array<ShaderId, 2> { Textured2DRegionVS, Textured2DRegionFS }, shaderCache);
         }
         else
         {

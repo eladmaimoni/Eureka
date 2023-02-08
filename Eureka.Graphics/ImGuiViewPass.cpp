@@ -117,7 +117,7 @@ namespace eureka::graphics
         _descriptorSet = vulkan::FreeableDescriptorSet(
             _globalInheritedData.device,
             _globalInheritedData.descriptor_allocator,
-            _globalInheritedData.layout_cache->GetLayoutHandle(vulkan::DescriptorSet0PresetType::ePerFont)
+            _globalInheritedData.layout_cache->GetLayoutHandle(vulkan::DescriptorSet0PresetType::eSingleTexture)
         );
 
         std::array<VkDescriptorImageInfo, 1> imageInfo
@@ -251,7 +251,7 @@ namespace eureka::graphics
         );
         commandBuffer.BindGraphicsPipeline(_pipeline.Get());
         commandBuffer.SetViewport(viewport);
-        vulkan::ImGuiPushConstantsBlock pushConstanst
+        vulkan::ScaleTranslatePushConstantsBlock pushConstanst
         {
             .scale = Eigen::Vector2f(2.0f / io.DisplaySize.x, 2.0f / io.DisplaySize.y),
             .translate = Eigen::Vector2f(-1.0f, -1.0f)

@@ -35,7 +35,7 @@ struct VertexData
 	float2 uv;
 };
 
-static VertexData vertices[6] =
+const static VertexData vertices[6] =
 {
 	{float2(-1.0, 1.0), float2(0.0, 0.0)},
 	{float2(-1.0, -1.0), float2(0.0, 1.0)},
