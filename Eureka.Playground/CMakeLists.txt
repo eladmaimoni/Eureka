@@ -3,7 +3,10 @@ set_source_group(
     "flutter_embedding_tests.cpp"
     #"flutter_embedding_google_sample.cpp"
 )
-
+set_source_group(
+    run 
+    "main.cpp"
+)
 add_executable(
     Eureka.Playground
     ${flutter}

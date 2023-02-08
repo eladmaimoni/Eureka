@@ -286,6 +286,48 @@ namespace eureka::vulkan
         return allocation;
     }
 
+    ImageAllocation ResourceAllocator::AllocatePoolImage(VmaPool pool, const VkExtent2D& extent, Image2DAllocationPreset preset)
+    {
+        const Image2DAllocationPresetVals& presetVals = IMAGE2D_ALLOCATION_PRESETS[preset];
+
+        VkImageCreateInfo createInfo
+        {
+            .sType = VkStructureType::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+            .imageType = VkImageType::VK_IMAGE_TYPE_2D,
+            .format = presetVals.format,
+            .extent = VkExtent3D{extent.width, extent.height, 1},
+            .mipLevels = 1,
+            .arrayLayers = 1,
+            .samples = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT,
+            .tiling = VkImageTiling::VK_IMAGE_TILING_OPTIMAL,
+            .usage = presetVals.usage_flags,
+            .sharingMode = VkSharingMode::VK_SHARING_MODE_EXCLUSIVE,
+            .initialLayout = VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED
+        };
+
+        ImageAllocation imageAllocation{};
+
+        VmaAllocationCreateInfo allocationCreateInfo
+        {
+            .usage = VMA_MEMORY_USAGE_AUTO,
+            .pool = pool,
+        };
+
+
+        VmaAllocationInfo allocationInfo{};
+
+        VK_CHECK(vmaCreateImage(
+            _vma,
+            &createInfo,
+            &allocationCreateInfo,
+            &imageAllocation.image,
+            &imageAllocation.allocation,
+            &allocationInfo
+        ));
+
+        return imageAllocation;
+    }
+
 
 
 
@@ -333,34 +375,33 @@ namespace eureka::vulkan
         return imageAllocation;
     }
 
-    std::optional<BufferAllocation> ResourceAllocator::TryAllocatePoolBuffer(VmaPool pool, [[maybe_unused]]uint64_t byteSize)
-    {
-        assert(false); // TODO
-        VmaAllocationCreateInfo allocationCreateInfo
-        {
-            .pool = pool
-        };
-        VmaAllocationInfo allocationInfo{};
-        BufferAllocation bufferAllocation{};
-        auto result = vmaCreateBuffer(
-            _vma,
-            nullptr,
-            &allocationCreateInfo,
-            &bufferAllocation.buffer,
-            &bufferAllocation.allocation,
-            &allocationInfo
-        );
+    //std::optional<BufferAllocation> ResourceAllocator::TryAllocatePoolBuffer(VmaPool pool, [[maybe_unused]] uint64_t byteSize)
+    //{
+    //    VmaAllocationCreateInfo allocationCreateInfo
+    //    {
+    //        .pool = pool
+    //    };
+    //    VmaAllocationInfo allocationInfo{};
+    //    BufferAllocation bufferAllocation{};
+    //    auto result = vmaCreateBuffer(
+    //        _vma,
+    //        nullptr,
+    //        &allocationCreateInfo,
+    //        &bufferAllocation.buffer,
+    //        &bufferAllocation.allocation,
+    //        &allocationInfo
+    //    );
 
-        if (result != VkResult::VK_SUCCESS)
-        {
-            return std::nullopt;
-        }
+    //    if (result != VkResult::VK_SUCCESS)
+    //    {
+    //        return std::nullopt;
+    //    }
 
-        assert(allocationInfo.pMappedData);
-        assert(allocationInfo.size == byteSize);
+    //    assert(allocationInfo.pMappedData);
+    //    assert(allocationInfo.size == byteSize);
 
-        return bufferAllocation;
-    }
+    //    return bufferAllocation;
+    //}
     
     void ResourceAllocator::DeallocateBuffer(const BufferAllocation& bufferAllocation)
     {

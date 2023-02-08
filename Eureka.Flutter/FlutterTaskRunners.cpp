@@ -39,9 +39,9 @@ namespace eureka::flutter
             {
                 _pending.erase(itr++);
                 lk.unlock();
-                DEBUGGER_TRACE("run task start");
+                //DEBUGGER_TRACE("run task start");
                 FLUTTER_CHECK(FlutterEngineRunTask(_engine, &task));
-                DEBUGGER_TRACE("run task end");
+                //DEBUGGER_TRACE("run task end");
                 lk.lock();
             }
             else

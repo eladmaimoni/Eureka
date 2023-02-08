@@ -53,6 +53,10 @@ set_source_group(
     "DescriptorAllocators.cpp"
 	"DescriptorSetsLayout.hpp"
     "DescriptorSetsLayout.cpp" 
+	"BufferMemoryPool.hpp"
+    "BufferMemoryPool.cpp"
+	"ImageMemoryPool.hpp"
+    "ImageMemoryPool.cpp"
 )
 
 set_source_group(

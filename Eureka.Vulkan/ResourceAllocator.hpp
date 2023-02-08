@@ -72,55 +72,23 @@ namespace eureka::vulkan
                                           VmaPoolCreateFlags       poolFlags);
 
         PoolAllocation AllocateImage2DPool(uint64_t                 byteSize,
-                                         Image2DAllocationPreset  preset,
-                                         VmaAllocationCreateFlags allocationFlags,
-                                         VmaPoolCreateFlags       poolFlags);
+                                           Image2DAllocationPreset  preset,
+                                           VmaAllocationCreateFlags allocationFlags,
+                                           VmaPoolCreateFlags       poolFlags);
 
-        BufferAllocation                AllocatePoolBuffer(VmaPool                  pool,
-                                                           uint64_t                 byteSize,
-                                                           VkBufferUsageFlags       usage,
-                                                           VmaAllocationCreateFlags allocationFlags);
-        std::optional<BufferAllocation> TryAllocatePoolBuffer(VmaPool pool, uint64_t byteSize);
-        void                            DeallocateBuffer(const BufferAllocation& bufferAllocation);
-        void                            DeallocatePool(const PoolAllocation& poolAllocation);
-        void                            DeallocateImage(const ImageAllocation& imageAllocation);
+        BufferAllocation AllocatePoolBuffer(VmaPool                  pool,
+                                            uint64_t                 byteSize,
+                                            VkBufferUsageFlags       usage,
+                                            VmaAllocationCreateFlags allocationFlags);
+
+        ImageAllocation AllocatePoolImage(VmaPool pool, const VkExtent2D& extent, Image2DAllocationPreset preset);
+        //std::optional<BufferAllocation> TryAllocatePoolBuffer(VmaPool pool, uint64_t byteSize);
+        void DeallocateBuffer(const BufferAllocation& bufferAllocation);
+        void DeallocatePool(const PoolAllocation& poolAllocation);
+        void DeallocateImage(const ImageAllocation& imageAllocation);
 
         void InvalidateBuffer(const BufferAllocation& bufferAllocation);
         void FlushBuffer(const BufferAllocation& bufferAllocation);
-    };
-
-    class BufferMemoryPool
-    {
-        std::shared_ptr<ResourceAllocator> _allocator;
-        PoolAllocation                     _allocation;
-        VmaAllocationCreateFlags           _allocationFlags;
-        VkBufferUsageFlags                 _usageFlags;
-
-    public:
-        BufferMemoryPool(std::shared_ptr<ResourceAllocator> allocator,
-                         uint64_t                           byteSize,
-                         VkBufferUsageFlags                 usageFlags,
-                         VmaAllocationCreateFlags           allocationFlags,
-                         VmaPoolCreateFlags                 poolFlags) :
-            _allocator(std::move(allocator)),
-            _allocationFlags(allocationFlags),
-            _usageFlags(usageFlags)
-        {
-            _allocation = _allocator->AllocateBufferPool(byteSize, usageFlags, _allocationFlags, poolFlags);
-        }
-
-        BufferAllocation AllocateBuffer(uint64_t byteSize)
-        {
-            return _allocator->AllocatePoolBuffer(_allocation.pool, byteSize, _usageFlags, _allocationFlags);
-        }
-        void DeallocateBuffer(const BufferAllocation& buffer)
-        {
-            return _allocator->DeallocateBuffer(buffer);
-        }
-        ~BufferMemoryPool()
-        {
-            _allocator->DeallocatePool(_allocation);
-        }
     };
 
     VkImageView CreateImage2DView(const Device& device, VkImage image, Image2DAllocationPreset preset);

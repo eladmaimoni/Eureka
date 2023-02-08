@@ -16,6 +16,8 @@ Note that this is just a high-level overview of the steps involved in rendering 
 */
 namespace eureka::flutter
 {
+    static constexpr uint64_t BACKING_STORE_IMAGE_POOL_DEFAULT_SIZE = 5120 * 1440 * 10;
+
     static void* FlutterGetInstanceProcAddressCallback(void* /*userData*/,
                                                        FlutterVulkanInstanceHandle /*instance*/,
                                                        const char* procname)
@@ -41,7 +43,8 @@ namespace eureka::flutter
         _allocator(std::move(allocator)),
         _graphicsQueue(_device->GetGraphicsQueue()),
         _frameContext(std::move(frameContext)),
-        _targetPass(std::move(targetPass))
+        _targetPass(std::move(targetPass)),
+        _backingStorePool(_allocator, BACKING_STORE_IMAGE_POOL_DEFAULT_SIZE, VMA_POOL_CREATE_LINEAR_ALGORITHM_BIT, vulkan::Image2DAllocationPreset::eR8G8B8A8UnormSampledShaderResourceRenderTargetTransferSrcDst)
     {
         _flutterRendererConfig.type = FlutterRendererType::kVulkan;
         _flutterRendererConfig.vulkan.struct_size = sizeof(FlutterVulkanRendererConfig);
@@ -76,62 +79,25 @@ namespace eureka::flutter
         return _flutterCompositor;
     }
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    //
-    //                                static callbacks boilerplate
-    //
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    bool FlutterVulkanCompositor::CreateBackingStoreStatic(const FlutterBackingStoreConfig* config,
-                                                           FlutterBackingStore*             backingStoreOut,
-                                                           void*                            userData)
-    {
-        return static_cast<FlutterVulkanCompositor*>(userData)->CreateBackingStore(config, backingStoreOut);
-    }
-
-    bool FlutterVulkanCompositor::CollectBackingStoreStatic(const FlutterBackingStore* backingStore, void* userData)
-    {
-        return static_cast<FlutterVulkanCompositor*>(userData)->CollectBackingStore(backingStore);
-    }
-
-    void FlutterVulkanCompositor::DestroyVulkanBackingStoreStatic(void* /*userData*/) {}
-
-    bool FlutterVulkanCompositor::LayersPresentStatic(const FlutterLayer** layers, size_t layersCount, void* userData)
-    {
-        return static_cast<FlutterVulkanCompositor*>(userData)->PresentLayers(layers, layersCount);
-    }
-
-    FlutterVulkanImage FlutterVulkanCompositor::GetNextImageStatic(void* /*userData*/,
-                                                                   const FlutterFrameInfo* /*frameInfo*/)
-    {
-        DEBUGGER_TRACE("GetNextImageStatic");
-        assert(false);
-
-        return FlutterVulkanImage {};
-    }
-
-    bool FlutterVulkanCompositor::PresentImageStatic(void* /*userData*/, const FlutterVulkanImage* /*image*/)
-    {
-        DEBUGGER_TRACE("PresentImageStatic");
-        assert(false);
-        return true;
-    }
-
     bool FlutterVulkanCompositor::CreateBackingStore(const FlutterBackingStoreConfig* config,
                                                      FlutterBackingStore*             backingStoreOut)
     {
         _renderDoc.StartCapture(_device->GetDevice());
-        DEBUGGER_TRACE("CreateBackingStore");
+        DEBUGGER_TRACE("CreateBackingStore {} {}", config->size.width, config->size.height);
         VkExtent2D extent {
             .width = static_cast<uint32_t>(config->size.width),
             .height = static_cast<uint32_t>(config->size.height),
         };
-        auto allocation = _allocator->AllocateImage2D(
-            extent,
-            vulkan::Image2DAllocationPreset::eR8G8B8A8UnormSampledShaderResourceRenderTargetTransferSrcDst,
-            true);
+        
+        auto allocation = _backingStorePool.AllocateImage(extent);
+
+        //auto allocation = _allocator->AllocateImage2D(
+        //    extent,
+        //    vulkan::Image2DAllocationPreset::eR8G8B8A8UnormSampledShaderResourceRenderTargetTransferSrcDst,
+        //    true);
 
         BackingStoreData* bkData = new BackingStoreData;
+        bkData->self = this;
         bkData->allocation = allocation;
         bkData->flutter_image = FlutterVulkanImage {
             .struct_size = sizeof(FlutterVulkanImage),
@@ -140,34 +106,40 @@ namespace eureka::flutter
         };
 
         backingStoreOut->struct_size = sizeof(FlutterBackingStore);
-        backingStoreOut->user_data = bkData;
+        backingStoreOut->user_data = nullptr; // we currently do nothing in collect backing store
         backingStoreOut->type = FlutterBackingStoreType::kFlutterBackingStoreTypeVulkan;
         backingStoreOut->vulkan.struct_size = sizeof(FlutterVulkanBackingStore);
         backingStoreOut->vulkan.image = &bkData->flutter_image;
-        backingStoreOut->vulkan.user_data = allocation.allocation;
+        backingStoreOut->vulkan.user_data = bkData;
         backingStoreOut->vulkan.destruction_callback = DestroyVulkanBackingStoreStatic;
-    
+
         return true;
     }
 
-    bool FlutterVulkanCompositor::CollectBackingStore(const FlutterBackingStore* backingStore)
+    bool FlutterVulkanCompositor::CollectBackingStore(const FlutterBackingStore* /*backingStore*/)
     {
-        BackingStoreData* bkData = static_cast<BackingStoreData*>(backingStore->user_data);
+        //BackingStoreData* bkData = static_cast<BackingStoreData*>(backingStore->user_data);
         //_allocator->DeallocateImage(bkData->allocation);
-        delete bkData;
+        //delete bkData;
         DEBUGGER_TRACE("CollectBackingStore");
         _renderDoc.EndCapture(_device->GetDevice());
         return true;
     }
 
+    void FlutterVulkanCompositor::DestroyVulkanBackingStore(BackingStoreData* data)
+    {
+        DEBUGGER_TRACE("DestroyVulkanBackingStore");
+        _backingStorePool.DeallocateImage(data->allocation);
+        delete data;
+    }
     bool FlutterVulkanCompositor::PresentLayers(const FlutterLayer** layers, size_t layersCount)
     {
-   
+
         // These should occur outside of this function in any case
         _frameContext->BeginFrame();
         _targetPass->Prepare();
         auto [valid, targetReady] = _targetPass->PreRecord();
-        if (!valid)
+        if(!valid)
         {
             return false;
         }
@@ -218,6 +190,50 @@ namespace eureka::flutter
         _frameContext->EndFrame();
 
         return true;
-        
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //
+    //                                static callbacks boilerplate
+    //
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    bool FlutterVulkanCompositor::CreateBackingStoreStatic(const FlutterBackingStoreConfig* config,
+                                                           FlutterBackingStore*             backingStoreOut,
+                                                           void*                            userData)
+    {
+        return static_cast<FlutterVulkanCompositor*>(userData)->CreateBackingStore(config, backingStoreOut);
+    }
+
+    bool FlutterVulkanCompositor::CollectBackingStoreStatic(const FlutterBackingStore* backingStore, void* userData)
+    {
+        return static_cast<FlutterVulkanCompositor*>(userData)->CollectBackingStore(backingStore);
+    }
+
+    void FlutterVulkanCompositor::DestroyVulkanBackingStoreStatic(void* userData) 
+    {
+        auto backingStoreData = static_cast<BackingStoreData*>(userData);
+        backingStoreData->self->DestroyVulkanBackingStore(backingStoreData);
+    }
+
+    bool FlutterVulkanCompositor::LayersPresentStatic(const FlutterLayer** layers, size_t layersCount, void* userData)
+    {
+        return static_cast<FlutterVulkanCompositor*>(userData)->PresentLayers(layers, layersCount);
+    }
+
+    FlutterVulkanImage FlutterVulkanCompositor::GetNextImageStatic(void* /*userData*/,
+                                                                   const FlutterFrameInfo* /*frameInfo*/)
+    {
+        DEBUGGER_TRACE("GetNextImageStatic");
+        assert(false);
+
+        return FlutterVulkanImage {};
+    }
+
+    bool FlutterVulkanCompositor::PresentImageStatic(void* /*userData*/, const FlutterVulkanImage* /*image*/)
+    {
+        DEBUGGER_TRACE("PresentImageStatic");
+        assert(false);
+        return true;
     }
 } // namespace eureka::flutter
