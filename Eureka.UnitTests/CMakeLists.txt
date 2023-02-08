@@ -58,13 +58,4 @@ target_link_libraries(
     #concurrencpp::concurrencpp
 )
 
-########################################################################################################
-#
-# CTest Integration 
-# https://github.com/catchorg/Catch2/blob/devel/docs/cmake-integration.md#automatic-test-registration
-#
-########################################################################################################
-
-include(CTest)
-include(Catch)
 catch_discover_tests(Eureka.UnitTests)
