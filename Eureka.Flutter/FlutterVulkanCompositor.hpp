@@ -2,6 +2,7 @@
 
 #include "../Eureka.Graphics/TargetPass.hpp"
 #include "../Eureka.Vulkan/FrameContext.hpp"
+#include "../Eureka.Vulkan/ImageMemoryPool.hpp"
 #include "../Eureka.Vulkan/SwapChain.hpp"
 #include <RenderDocIntegration.hpp> // TODO remove
 #include <flutter/flutter_embedder.h>
@@ -19,7 +20,9 @@ namespace eureka::flutter
         FlutterCompositor                          _flutterCompositor;
         std::shared_ptr<vulkan::FrameContext>      _frameContext;
         std::shared_ptr<graphics::ITargetPass>     _targetPass;
-        RenderDocIntegration                       _renderDoc;
+
+        RenderDocIntegration    _renderDoc;
+        vulkan::ImageMemoryPool _backingStorePool;
 
     public:
         FlutterVulkanCompositor(
@@ -38,6 +41,21 @@ namespace eureka::flutter
 
     private:
         //
+        // Flutter callbacks (members)
+        //
+        struct BackingStoreData
+        {
+            FlutterVulkanCompositor* self;
+            vulkan::ImageAllocation  allocation;
+            FlutterVulkanImage       flutter_image;
+        };
+
+        bool CreateBackingStore(const FlutterBackingStoreConfig* config, FlutterBackingStore* backingStoreOut);
+        bool CollectBackingStore(const FlutterBackingStore* backingStore);
+        void DestroyVulkanBackingStore(BackingStoreData* data);
+        bool PresentLayers(const FlutterLayer** layers, size_t layersCount);
+
+        //
         // Flutter callbacks boilerplate (static)
         //
         static bool CreateBackingStoreStatic(const FlutterBackingStoreConfig* config,
@@ -49,19 +67,6 @@ namespace eureka::flutter
         static bool               LayersPresentStatic(const FlutterLayer** layers, size_t layersCount, void* userData);
         static FlutterVulkanImage GetNextImageStatic(void* user_data, const FlutterFrameInfo* frame_info);
         static bool               PresentImageStatic(void* user_data, const FlutterVulkanImage* image);
-
-        //
-        // Flutter callbacks (members)
-        //
-        struct BackingStoreData
-        {
-            vulkan::ImageAllocation allocation;
-            FlutterVulkanImage      flutter_image;
-        };
-
-        bool CreateBackingStore(const FlutterBackingStoreConfig* config, FlutterBackingStore* backingStoreOut);
-        bool CollectBackingStore(const FlutterBackingStore* backingStore);
-        bool PresentLayers(const FlutterLayer** layers, size_t layersCount);
     };
 
 } // namespace eureka::flutter

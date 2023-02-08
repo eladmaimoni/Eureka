@@ -2,7 +2,7 @@
 #include <debugger_trace.hpp>
 #include "../Eureka.Vulkan/Instance.hpp"
 #include "../Eureka.Vulkan/Device.hpp"
-#include "../Eureka.Vulkan/ResourceAllocator.hpp"
+#include "../Eureka.Vulkan/BufferMemoryPool.hpp"
 
 namespace vk = eureka::vulkan;
 
@@ -17,10 +17,11 @@ TEST_CASE("pool allocation buffer ", "[vulkan]")
     auto memoryAllocator = std::make_shared<vk::ResourceAllocator>(instance, device);
     auto poolAllocator = std::make_shared<vk::BufferMemoryPool>(
         memoryAllocator, 
-        POOL_SIZE,
+        POOL_SIZE, 
+        VMA_POOL_CREATE_LINEAR_ALGORITHM_BIT,
         VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-        VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
-        VMA_POOL_CREATE_LINEAR_ALGORITHM_BIT
+        VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT
+
         );
     
 

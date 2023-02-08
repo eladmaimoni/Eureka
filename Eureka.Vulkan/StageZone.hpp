@@ -1,6 +1,7 @@
 #pragma once
 #include <containers_aliases.hpp>
 #include "../Eureka.Vulkan/Buffer.hpp"
+#include "../Eureka.Vulkan/BufferMemoryPool.hpp"
 
 
 namespace eureka::vulkan
