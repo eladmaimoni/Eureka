@@ -24,7 +24,7 @@ namespace eureka::graphics
 
         _renderPass = std::make_shared<vulkan::DepthColorRenderPass>(_globalInheritedData.device, depthColorConfig);
 
-
+        
         _resizeConnection = _swapChain->ConnectResizeSlot(
             [this](uint32_t w, uint32_t h)
             {
@@ -33,7 +33,7 @@ namespace eureka::graphics
         );
 
         _renderTargets = vulkan::CreateDepthColorTargetForSwapChain(_globalInheritedData.device, _globalInheritedData.resource_allocator, *_swapChain, _renderPass);
-
+        _targetInheritedData.render_pass = _renderPass;
         _currentRenderTarget = &_renderTargets[0];
 
 
@@ -43,7 +43,7 @@ namespace eureka::graphics
     {
         auto& vp = _viewPasses.emplace_back(std::move(viewPass));
 
-        vp->BindToTargetPass(TargetInheritedData{ _renderPass });
+        vp->BindToTargetPass(_targetInheritedData);
         vp->HandleResize(_width, _height);
     }
 

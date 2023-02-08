@@ -61,9 +61,9 @@ namespace eureka::graphics
     protected:
         sigslot::signal<uint32_t, uint32_t> _resizeSignal;
         sigslot::scoped_connection          _resizeConnection;
+        TargetInheritedData                 _targetInheritedData;
         ITargetPass(GlobalInheritedData globalInheritedData) : IPass(std::move(globalInheritedData)) {}
     public:
-
         virtual VkExtent2D GetSize() = 0;
 
         virtual TargetPassBeginInfo PreRecord() = 0;
@@ -83,6 +83,11 @@ namespace eureka::graphics
         sigslot::connection ConnectResizeSlot(Callable&& slot)
         {
             return _resizeSignal.connect(std::forward<Callable>(slot));
+        }
+
+        const TargetInheritedData& GetTargetInheritedData() const // TODO remove?
+        {
+            return _targetInheritedData;
         }
     };
 
