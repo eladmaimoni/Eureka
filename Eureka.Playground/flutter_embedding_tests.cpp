@@ -60,21 +60,30 @@ TEST_CASE("flutter engine debug mode", "[flutter][vulkan]")
         auto copyQueue = device->GetCopyQueue();
 
         auto swapChain = std::make_shared<vk::SwapChain>(window, device, presntationQueue, graphicsQueue);
-        eureka::graphics::GlobalInheritedData globalInheritedData
-        {
+
+
+        //auto asyncDataLoader = std::make_shared<graphics::AsyncDataLoader>(_oneShotSubmissionHandler, uploadPool);
+
+        auto shaderCache = std::make_shared<eureka::vulkan::ShaderCache>(device);
+        auto layoutCache = std::make_shared<eureka::vulkan::DescriptorSetLayoutCache>(device);
+        auto descriptorAllocator = std::make_shared<eureka::vulkan::FreeableDescriptorSetAllocator>(device);
+
+        eureka::graphics::GlobalInheritedData globalInheritedData{
             .device = device,
             .resource_allocator = resourceAllocator,
-            .shader_cache = nullptr,
-            .layout_cache = nullptr,
-            .descriptor_allocator = nullptr,
-            .async_data_loader = nullptr
+            .shader_cache = shaderCache,
+            .layout_cache = layoutCache,
+            .descriptor_allocator = descriptorAllocator,
+            .async_data_loader = nullptr,
         };
+
+
 
         auto depthColorTarget = std::make_shared<eureka::graphics::SwapChainDepthColorPass>(globalInheritedData, graphicsQueue, swapChain);
         auto frameContext = std::make_shared<vk::FrameContext>(device, copyQueue, graphicsQueue);
     
 
-        auto flutterCompositor = std::make_shared<fl::FlutterVulkanCompositor>(instance, device, resourceAllocator, frameContext, depthColorTarget);
+        auto flutterCompositor = std::make_shared<fl::FlutterVulkanCompositor>(instance, globalInheritedData, frameContext, depthColorTarget);
 
         auto flutterProjectEmbedder = std::make_shared<fl::FlutterProjectEmbedder>(flutterCompositor, window);
 
