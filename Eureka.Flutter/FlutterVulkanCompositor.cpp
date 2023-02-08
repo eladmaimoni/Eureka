@@ -146,7 +146,7 @@ namespace eureka::flutter
         auto [mainCommandBuffer, doneSemaphore] = _frameContext->NewGraphicsPresentCommandBuffer();
         mainCommandBuffer.Begin();
 
-        DEBUGGER_TRACE("PresentLayers");
+        DEBUGGER_TRACE("PresentLayers {}", layersCount);
         for(size_t i = 0u; i < layersCount; ++i)
         {
             auto pLayer = layers[i];
