@@ -14,6 +14,7 @@ namespace eureka::graphics
 
     struct GlobalInheritedData
     {
+        // TODO add memory pools
         std::shared_ptr<vulkan::Device>                         device;
         std::shared_ptr<vulkan::ResourceAllocator>              resource_allocator;
         std::shared_ptr<vulkan::ShaderCache>                    shader_cache;

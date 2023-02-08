@@ -37,7 +37,8 @@ namespace eureka::flutter
                                                      std::shared_ptr<vulkan::Device>                device,
                                                      std::shared_ptr<vulkan::ResourceAllocator>     allocator,
                                                      std::shared_ptr<vulkan::FrameContext>          frameContext,
-                                                     std::shared_ptr<eureka::graphics::ITargetPass> targetPass) :
+                                                     std::shared_ptr<eureka::graphics::ITargetPass> targetPass
+    ) :
         _instance(std::move(instance)),
         _device(std::move(device)),
         _allocator(std::move(allocator)),
@@ -90,11 +91,6 @@ namespace eureka::flutter
         };
         
         auto allocation = _backingStorePool.AllocateImage(extent);
-
-        //auto allocation = _allocator->AllocateImage2D(
-        //    extent,
-        //    vulkan::Image2DAllocationPreset::eR8G8B8A8UnormSampledShaderResourceRenderTargetTransferSrcDst,
-        //    true);
 
         BackingStoreData* bkData = new BackingStoreData;
         bkData->self = this;

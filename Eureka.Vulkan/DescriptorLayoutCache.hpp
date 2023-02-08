@@ -13,7 +13,7 @@ namespace eureka::vulkan
     enum class DescriptorSet0PresetType
     {
         ePerViewUniform, // MVP
-        ePerFont // all shaders use the same first texture
+        eSingleTexture // all shaders use the same first texture
     };
 
     static constexpr uint64_t MAX_SET_SLOTS = 4;

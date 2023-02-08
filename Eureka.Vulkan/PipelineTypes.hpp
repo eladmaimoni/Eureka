@@ -12,7 +12,7 @@ namespace eureka::vulkan
         uint32_t        color;
     };
 
-    struct ImGuiPushConstantsBlock
+    struct ScaleTranslatePushConstantsBlock
     {
         Eigen::Vector2f scale;
         Eigen::Vector2f translate;

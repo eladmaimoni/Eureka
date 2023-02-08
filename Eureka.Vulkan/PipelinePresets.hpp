@@ -16,7 +16,8 @@ namespace eureka::vulkan
 
     enum class PipelinePresetType
     {
-        eImGui
+        eImGui,
+        eTexturedRegion
     };
 
     class PipelineLayoutCreationPreset
