@@ -12,14 +12,13 @@ namespace eureka::flutter
 
     class FlutterVulkanCompositor
     {
-        std::shared_ptr<vulkan::Instance>          _instance;
-        std::shared_ptr<vulkan::Device>            _device;
-        std::shared_ptr<vulkan::ResourceAllocator> _allocator;
-        vulkan::Queue                              _graphicsQueue;
-        FlutterRendererConfig                      _flutterRendererConfig {};
-        FlutterCompositor                          _flutterCompositor;
-        std::shared_ptr<vulkan::FrameContext>      _frameContext;
-        std::shared_ptr<graphics::ITargetPass>     _targetPass;
+        std::shared_ptr<vulkan::Instance>      _instance;
+        graphics::GlobalInheritedData          _globalInheritedData;
+        vulkan::Queue                          _graphicsQueue;
+        FlutterRendererConfig                  _flutterRendererConfig {};
+        FlutterCompositor                      _flutterCompositor;
+        std::shared_ptr<vulkan::FrameContext>  _frameContext;
+        std::shared_ptr<graphics::ITargetPass> _targetPass;
 
         RenderDocIntegration    _renderDoc;
         vulkan::ImageMemoryPool _backingStorePool;
@@ -27,8 +26,7 @@ namespace eureka::flutter
     public:
         FlutterVulkanCompositor(
             std::shared_ptr<vulkan::Instance>              instance,
-            std::shared_ptr<vulkan::Device>                device,
-            std::shared_ptr<vulkan::ResourceAllocator>     allocator,
+            graphics::GlobalInheritedData                  globalInheritedData,
             std::shared_ptr<vulkan::FrameContext>          frameContext, // TODO should probably not be here?
             std::shared_ptr<eureka::graphics::ITargetPass> targetPass // TODO should probably not be here?
         );

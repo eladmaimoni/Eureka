@@ -34,31 +34,32 @@ namespace eureka::flutter
     }
 
     FlutterVulkanCompositor::FlutterVulkanCompositor(std::shared_ptr<vulkan::Instance>              instance,
-                                                     std::shared_ptr<vulkan::Device>                device,
-                                                     std::shared_ptr<vulkan::ResourceAllocator>     allocator,
+                                                     graphics::GlobalInheritedData                  globalInheritedData,
                                                      std::shared_ptr<vulkan::FrameContext>          frameContext,
-                                                     std::shared_ptr<eureka::graphics::ITargetPass> targetPass
-    ) :
+                                                     std::shared_ptr<eureka::graphics::ITargetPass> targetPass) :
         _instance(std::move(instance)),
-        _device(std::move(device)),
-        _allocator(std::move(allocator)),
-        _graphicsQueue(_device->GetGraphicsQueue()),
+        _globalInheritedData(std::move(globalInheritedData)),
+        _graphicsQueue(_globalInheritedData.device->GetGraphicsQueue()),
         _frameContext(std::move(frameContext)),
         _targetPass(std::move(targetPass)),
-        _backingStorePool(_allocator, BACKING_STORE_IMAGE_POOL_DEFAULT_SIZE, VMA_POOL_CREATE_LINEAR_ALGORITHM_BIT, vulkan::Image2DAllocationPreset::eR8G8B8A8UnormSampledShaderResourceRenderTargetTransferSrcDst)
+        _backingStorePool(
+            _globalInheritedData.resource_allocator,
+            BACKING_STORE_IMAGE_POOL_DEFAULT_SIZE,
+            VMA_POOL_CREATE_LINEAR_ALGORITHM_BIT,
+            vulkan::Image2DAllocationPreset::eR8G8B8A8UnormSampledShaderResourceRenderTargetTransferSrcDst)
     {
         _flutterRendererConfig.type = FlutterRendererType::kVulkan;
         _flutterRendererConfig.vulkan.struct_size = sizeof(FlutterVulkanRendererConfig);
         _flutterRendererConfig.vulkan.version = _instance->ApiVersion().Get();
         _flutterRendererConfig.vulkan.instance = _instance->Get();
-        _flutterRendererConfig.vulkan.physical_device = _device->GetPhysicalDevice();
-        _flutterRendererConfig.vulkan.device = _device->GetDevice();
+        _flutterRendererConfig.vulkan.physical_device = _globalInheritedData.device->GetPhysicalDevice();
+        _flutterRendererConfig.vulkan.device = _globalInheritedData.device->GetDevice();
         _flutterRendererConfig.vulkan.queue_family_index = _graphicsQueue.Family();
         _flutterRendererConfig.vulkan.queue = _graphicsQueue.Get();
         _flutterRendererConfig.vulkan.enabled_instance_extension_count = _instance->EnabledExtentions().size();
         _flutterRendererConfig.vulkan.enabled_instance_extensions = _instance->EnabledExtentions().data();
-        _flutterRendererConfig.vulkan.enabled_device_extension_count = _device->EnabledExtentions().size();
-        _flutterRendererConfig.vulkan.enabled_device_extensions = _device->EnabledExtentions().data();
+        _flutterRendererConfig.vulkan.enabled_device_extension_count = _globalInheritedData.device->EnabledExtentions().size();
+        _flutterRendererConfig.vulkan.enabled_device_extensions = _globalInheritedData.device->EnabledExtentions().data();
         _flutterRendererConfig.vulkan.get_instance_proc_address_callback = FlutterGetInstanceProcAddressCallback;
         _flutterRendererConfig.vulkan.get_next_image_callback = GetNextImageStatic;
         _flutterRendererConfig.vulkan.present_image_callback = PresentImageStatic;
@@ -83,13 +84,13 @@ namespace eureka::flutter
     bool FlutterVulkanCompositor::CreateBackingStore(const FlutterBackingStoreConfig* config,
                                                      FlutterBackingStore*             backingStoreOut)
     {
-        _renderDoc.StartCapture(_device->GetDevice());
+        _renderDoc.StartCapture(_globalInheritedData.device->GetDevice());
         DEBUGGER_TRACE("CreateBackingStore {} {}", config->size.width, config->size.height);
         VkExtent2D extent {
             .width = static_cast<uint32_t>(config->size.width),
             .height = static_cast<uint32_t>(config->size.height),
         };
-        
+
         auto allocation = _backingStorePool.AllocateImage(extent);
 
         BackingStoreData* bkData = new BackingStoreData;
@@ -118,7 +119,7 @@ namespace eureka::flutter
         //_allocator->DeallocateImage(bkData->allocation);
         //delete bkData;
         DEBUGGER_TRACE("CollectBackingStore");
-        _renderDoc.EndCapture(_device->GetDevice());
+        _renderDoc.EndCapture(_globalInheritedData.device->GetDevice());
         return true;
     }
 
@@ -206,7 +207,7 @@ namespace eureka::flutter
         return static_cast<FlutterVulkanCompositor*>(userData)->CollectBackingStore(backingStore);
     }
 
-    void FlutterVulkanCompositor::DestroyVulkanBackingStoreStatic(void* userData) 
+    void FlutterVulkanCompositor::DestroyVulkanBackingStoreStatic(void* userData)
     {
         auto backingStoreData = static_cast<BackingStoreData*>(userData);
         backingStoreData->self->DestroyVulkanBackingStore(backingStoreData);
