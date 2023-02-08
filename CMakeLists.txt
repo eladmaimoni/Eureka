@@ -104,12 +104,15 @@ message("=======================================================================
 ############################################################################
 
 set(dxc_executable "$ENV{VULKAN_SDK}/Bin/dxc.exe")
+message("Eureka: dxc_executable = ${dxc_executable}")
+message("Eureka: glslc_executable = ${glslc_executable}")
 
 
 configure_default_output_directories()
+enable_testing()
+include(CTest)
+include(Catch)
 
-message("Eureka: dxc_executable = ${dxc_executable}")
-message("Eureka: glslc_executable = ${glslc_executable}")
 
 
 if (CMAKE_GENERATOR MATCHES "Visual Studio")
@@ -167,6 +170,18 @@ add_subdirectory (Eureka.RPC)
 add_subdirectory (Eureka.RemoteProto)
 add_subdirectory (Eureka.RemoteServer)
 add_subdirectory (Eureka.RemoteClient)
+
+
+########################################################################################################
+#
+# CTest Integration 
+# https://github.com/catchorg/Catch2/blob/devel/docs/cmake-integration.md#automatic-test-registration
+#
+########################################################################################################
+
+
+
+
 
 message("======================================================================================")
 message("======================================================================================")
