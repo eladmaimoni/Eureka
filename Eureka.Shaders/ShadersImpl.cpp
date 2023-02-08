@@ -1,4 +1,6 @@
 #include <cstdint>
+#include <Textured2DRegionVS.spvhpp>
+#include <Textured2DRegionFS.spvhpp>
 #include <ImGuiVS.spvhpp>
 #include <ImGuiFS.spvhpp>
 #include <ImGuiGLSLVS.spvhpp>
