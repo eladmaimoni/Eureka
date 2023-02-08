@@ -4,6 +4,8 @@
 #include "../Eureka.Vulkan/FrameContext.hpp"
 #include "../Eureka.Vulkan/ImageMemoryPool.hpp"
 #include "../Eureka.Vulkan/SwapChain.hpp"
+#include <Eureka.Vulkan/Descriptor.hpp>
+#include <Eureka.Vulkan/Pipeline.hpp>
 #include <RenderDocIntegration.hpp> // TODO remove
 #include <flutter/flutter_embedder.h>
 
@@ -20,8 +22,12 @@ namespace eureka::flutter
         std::shared_ptr<vulkan::FrameContext>  _frameContext;
         std::shared_ptr<graphics::ITargetPass> _targetPass;
 
-        RenderDocIntegration    _renderDoc;
-        vulkan::ImageMemoryPool _backingStorePool;
+        std::shared_ptr<vulkan::PipelineLayout> _pipelineLayout;
+        vulkan::Pipeline                        _pipeline;
+        vulkan::FreeableDescriptorSet           _descriptorSet;
+        vulkan::Sampler                         _backingStoreSampler;
+        RenderDocIntegration                    _renderDoc;
+        vulkan::ImageMemoryPool                 _backingStorePool;
 
     public:
         FlutterVulkanCompositor(

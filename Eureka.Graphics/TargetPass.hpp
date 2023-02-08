@@ -24,9 +24,10 @@ namespace eureka::graphics
         void PostRecord() override;
         void PostSubmit(vulkan::BinarySemaphoreHandle waitSemaphore) override;
         
+
         VkRenderPass GetRenderPass()
         {
-            return _renderPass->Get();
+            return _targetInheritedData.render_pass->Get();
         }
 
         VkExtent2D GetSize() override

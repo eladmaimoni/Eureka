@@ -1,4 +1,5 @@
 #include "FlutterVulkanCompositor.hpp"
+#include "../Eureka.Vulkan/PipelinePresets.hpp"
 /*
 Here are the general steps required to render a textured quad using Vulkan:
 
@@ -35,18 +36,19 @@ namespace eureka::flutter
 
     FlutterVulkanCompositor::FlutterVulkanCompositor(std::shared_ptr<vulkan::Instance>              instance,
                                                      graphics::GlobalInheritedData                  globalInheritedData,
-                                                     std::shared_ptr<vulkan::FrameContext>          frameContext,
-                                                     std::shared_ptr<eureka::graphics::ITargetPass> targetPass) :
+                                                     std::shared_ptr<vulkan::FrameContext>          frameContext, // TODO should be the other way around
+                                                     std::shared_ptr<eureka::graphics::ITargetPass> targetPass) : // TODO should be the other way around
         _instance(std::move(instance)),
         _globalInheritedData(std::move(globalInheritedData)),
         _graphicsQueue(_globalInheritedData.device->GetGraphicsQueue()),
         _frameContext(std::move(frameContext)),
-        _targetPass(std::move(targetPass)),
+        _targetPass(std::move(targetPass)), // TODO should be the other way around
         _backingStorePool(
             _globalInheritedData.resource_allocator,
             BACKING_STORE_IMAGE_POOL_DEFAULT_SIZE,
             VMA_POOL_CREATE_LINEAR_ALGORITHM_BIT,
-            vulkan::Image2DAllocationPreset::eR8G8B8A8UnormSampledShaderResourceRenderTargetTransferSrcDst)
+            vulkan::Image2DAllocationPreset::eR8G8B8A8UnormSampledShaderResourceRenderTargetTransferSrcDst),
+        _descriptorSet(_globalInheritedData.device, _globalInheritedData.descriptor_allocator)
     {
         _flutterRendererConfig.type = FlutterRendererType::kVulkan;
         _flutterRendererConfig.vulkan.struct_size = sizeof(FlutterVulkanRendererConfig);
@@ -69,6 +71,42 @@ namespace eureka::flutter
         _flutterCompositor.create_backing_store_callback = CreateBackingStoreStatic;
         _flutterCompositor.collect_backing_store_callback = CollectBackingStoreStatic;
         _flutterCompositor.present_layers_callback = LayersPresentStatic;
+
+
+        vulkan::PipelineLayoutCreationPreset imguiPipelineLayoutPreset(vulkan::PipelinePresetType::eTexturedRegion, *_globalInheritedData.layout_cache);
+        _pipelineLayout = std::make_shared<vulkan::PipelineLayout>(_globalInheritedData.device, imguiPipelineLayoutPreset.GetCreateInfo());
+        vulkan::PipelineCreationPreset imguiPipelinePreset(
+            vulkan::PipelinePresetType::eTexturedRegion, *_globalInheritedData.shader_cache, _pipelineLayout->Get(), _targetPass->GetTargetInheritedData().render_pass->Get());
+
+        _pipeline = vulkan::Pipeline(_globalInheritedData.device, _pipelineLayout, _targetPass->GetTargetInheritedData().render_pass, imguiPipelinePreset.GetCreateInfo());
+
+
+        _descriptorSet = vulkan::FreeableDescriptorSet(
+            _globalInheritedData.device,
+            _globalInheritedData.descriptor_allocator,
+            _globalInheritedData.layout_cache->GetLayoutHandle(vulkan::DescriptorSet0PresetType::eSingleTexture)
+        );
+
+        _backingStoreSampler = vulkan::CreateSampler(_globalInheritedData.device, vulkan::SamplerCreationPreset::eLinearClampToEdge);
+
+
+
+        //std::array<VkDescriptorImageInfo, 1> imageInfo
+        //{
+        //    VkDescriptorImageInfo
+        //    {
+        //        .sampler = _backingStoreSampler.Get(),
+        //        .imageView = _fontImage.GetView(),
+        //        .imageLayout = VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+        //    }
+        //};
+
+        //_descriptorSet.SetBindings(
+        //    0,
+        //    VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+        //    imageInfo
+        //);
+
     }
 
     const FlutterRendererConfig& FlutterVulkanCompositor::GetFlutterRendererConfig() const
