@@ -7,6 +7,7 @@ endif()
 target_link_libraries(
   Eureka.Precompiled
   PUBLIC
+  eureka_strict_compiler_flags # must be public, since targets using it must have the same compiler flags
   Eureka.Core
   Eigen3::Eigen
   glm::glm

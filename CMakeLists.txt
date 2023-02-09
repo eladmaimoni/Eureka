@@ -21,7 +21,7 @@ set(EUREKA_NOT_DEBUG "$<NOT:$<CONFIG:Debug>>")
 set(EUREKA_COMPILER_IS_GCC_LIKE "$<COMPILE_LANG_AND_ID:CXX,ARMClang,AppleClang,Clang,GNU,LCC>")
 set(EUREKA_COMPILER_IS_MSVC "$<COMPILE_LANG_AND_ID:CXX,MSVC>")
 set(EUREKA_GCC_LIKE_STRICT_FLAGS "-Wall;-Wextra;-Wshadow;-Wformat=2;-Wunused")
-set(EUREKA_MSVC_STRICT_FLAGS "/W4;")
+set(EUREKA_MSVC_STRICT_FLAGS "/W4;/EHsc") # (/EHsc) is somehow not set on Ninja
 set(EUREKA_WARNING_AS_ERROR_FLAG "$<IF:${EUREKA_COMPILER_IS_MSVC},/WX,-Werror>")
 set(EUREKA_TREAT_WARNING_AS_ERROR "$<${EUREKA_NOT_DEBUG}:${EUREKA_WARNING_AS_ERROR_FLAG}>")
 
@@ -168,7 +168,7 @@ add_subdirectory (Eureka.UnitTests)
 add_subdirectory (Eureka.Playground)    
 add_subdirectory (Eureka.RPC)
 add_subdirectory (Eureka.RemoteProto)
-add_subdirectory (Eureka.RemoteServer)
+#add_subdirectory (Eureka.RemoteServer)
 add_subdirectory (Eureka.RemoteClient)
 
 
