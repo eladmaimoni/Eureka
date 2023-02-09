@@ -41,6 +41,29 @@
                 "VCPKG_TARGET_TRIPLET": "x64-windows-static-md"
             },
             "vendor": { "microsoft.com/VisualStudioSettings/CMake/1.0": { "hostOS": [ "Windows" ] } }
+        },
+		{
+            "name": "clang-cl-x64",
+            "hidden": true,
+            "description": "Target MSVC (Visual Studio 2022) x64",
+			"toolset": "ClangCL",
+            "architecture": {
+                "value": "x64",
+                "strategy": "external"
+            },
+            "cacheVariables": {
+                "CMAKE_C_COMPILER": "clang-cl",
+                "CMAKE_CXX_COMPILER": "clang-cl",
+                "VCPKG_TARGET_TRIPLET": "x64-win-llvm-static-md"
+            },
+            "vendor": 
+			{ 
+				"microsoft.com/VisualStudioSettings/CMake/1.0": 
+				{ 
+					"hostOS": [ "Windows" ],
+					"intelliSenseMode": "windows-clang-x64"
+				} 
+			}
         }
     ]
 }

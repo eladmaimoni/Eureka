@@ -29,6 +29,16 @@
                 "CMAKE_BUILD_TYPE": "RelWithDebInfo"
             }
         },
+		{
+            "name": "clang-vs2022-wr",
+            "displayName": "windows-x64-release-ninja",
+            "description": "Clang With VS2022",
+            "inherits": ["vcpkg", "clang-cl-x64"],
+            "generator": "Visual Studio 17 2022",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "RelWithDebInfo"
+            }
+        },
         {
             "name": "vs2022",
             "displayName": "vs2022",
