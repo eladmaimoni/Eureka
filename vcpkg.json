@@ -4,7 +4,10 @@
     "builtin-baseline": "34f072dfcb8b9356e6ed2c74947f87390ddb2706",
     "dependencies": [
 		"asio",
-		"asio-grpc",
+		{ 
+			"name": "asio-grpc", 
+			"version>=": "2.4.0" 
+		}, 
         "boost-container",
 		"boost-hana",
 		"boost-lockfree",
@@ -20,7 +23,10 @@
             "default-features": true,
             "features": [ "docking-experimental" ]
         },
-		"implot",
+		{ 
+			"name": "implot", 
+			"version>=": "0.14" 
+		},
 		"grpc",
         {
             "name": "grpc",
