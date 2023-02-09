@@ -25,8 +25,7 @@
         {
             "name": "msvc143-x64",
             "hidden": true,
-            "description": "Target Windows with the Visual Studio 2022 development environment",
-            "inherits": "vcpkg",
+            "description": "Target MSVC (Visual Studio 2022) x64",
 			"toolset": {
                 "value": "host=x64",
                 "strategy": "external"
