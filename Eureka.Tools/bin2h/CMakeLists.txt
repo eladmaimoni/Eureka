@@ -7,9 +7,8 @@ add_executable(
     "bin2h.cpp"    
 ) 
 
-set_compiler_flags(bin2h)   
-
 target_link_libraries(
     bin2h
-    PRIVATE 
+    PRIVATE
+    eureka_strict_compiler_flags
 )
