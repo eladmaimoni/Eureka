@@ -1,21 +1,6 @@
 # ignore all files in the build/ directory
 build/
-Bin/
-Debug/
-DebugVS2019/
-ReleaseVS2019/
-AnyCPU/
-Release/
-Deployment/
-dump/
-Sources/Dump/
-Sources/PythonModules/Beyeonics3dModeler/BeyeOnics
-Sources/BeyeOnics/obj
-Temp/
-obj/
-Output/
-x64/
-Generated Files/
+.vscode/
 
 # hlsl compiled files
 *.hlslhpp
