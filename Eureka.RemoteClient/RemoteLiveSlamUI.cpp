@@ -552,7 +552,7 @@ namespace eureka::ui
     
         IMGUI_SCOPED(ImPlot::ScopedStyleColor(ImPlotCol_InlayText, IMGUI_COLOR_YELLOW));
         auto textXY = ImPlot::GetPlotLimits().Min();
-        ImPlot::PlotText(_model.map_view.upper_right_text.c_str(), textXY.x, textXY.y, false, { 150.0f, -40.0f });
+        ImPlot::PlotText(_model.map_view.upper_right_text.c_str(), textXY.x, textXY.y, { 150.0f, -40.0f });
 
         ImPlot::PopPlotClipRect();
     }

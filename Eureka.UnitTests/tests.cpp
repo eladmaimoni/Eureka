@@ -3,6 +3,9 @@
 #include <debugger_trace.hpp>
 #include <boost/container/small_vector.hpp>
 
+#include <boost/hana/adapt_struct.hpp>
+
+
 TEST_CASE("small vector", "[vulkan]")
 {
     std::vector<int> outer_vec;

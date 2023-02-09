@@ -117,13 +117,15 @@ namespace eureka::rpc
         while (state != grpc_connectivity_state::GRPC_CHANNEL_READY && !stopToken.stop_requested())
         {
             auto deadline = std::chrono::system_clock::now() + 500ms;
+     
+            co_await agrpc::notify_on_state_change(_completionQueue->Get(), *_channel, state, deadline);
 
-            /*auto deadlineNotExpired = */co_await agrpc::grpc_initiate([this, state, deadline](agrpc::GrpcContext& grpc_context, void* tag)
-                {
-                    _channel->NotifyOnStateChange(state, deadline, agrpc::get_completion_queue(grpc_context), tag);
-                },
-                asio::use_awaitable
-                    );
+            ///*auto deadlineNotExpired = */co_await agrpc::grpc_initiate([this, state, deadline](agrpc::GrpcContext& grpc_context, void* tag)
+            //    {
+            //        _channel->NotifyOnStateChange(state, deadline, agrpc::get_completion_queue(grpc_context), tag);
+            //    },
+            //    asio::use_awaitable
+            //        );
 
             state = _channel->GetState(false);
 
@@ -188,12 +190,13 @@ namespace eureka::rpc
 
             auto deadline = std::chrono::system_clock::now() + 500ms;
 
-            co_await agrpc::grpc_initiate([this, channel, state, deadline](agrpc::GrpcContext& grpc_context, void* tag)
-                {
-                    channel->NotifyOnStateChange(state, deadline, agrpc::get_completion_queue(grpc_context), tag);
-                },
-                asio::use_awaitable
-                    );
+            co_await agrpc::notify_on_state_change(_completionQueue->Get(), *_channel, state, deadline);
+            //co_await agrpc::grpc_initiate([this, channel, state, deadline](agrpc::GrpcContext& grpc_context, void* tag)
+            //    {
+            //        channel->NotifyOnStateChange(state, deadline, agrpc::get_completion_queue(grpc_context), tag);
+            //    },
+            //    asio::use_awaitable
+            //        );
 
             state = channel->GetState(false);
 

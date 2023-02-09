@@ -14,7 +14,7 @@ namespace eureka
 
     ClientCompletionQueueExecutor::ClientCompletionQueueExecutor()
         :
-        _grpcContext(std::make_unique<grpc::CompletionQueue>()),
+        //_grpcContext(),
         _workGuard(asio::make_work_guard(_grpcContext))
     {
 
