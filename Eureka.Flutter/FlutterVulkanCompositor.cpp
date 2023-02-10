@@ -198,6 +198,8 @@ namespace eureka::flutter
         _frameContext->BeginFrame();
         _targetPass->Prepare();
         auto [valid, targetReady] = _targetPass->PreRecord();
+
+
         if(!valid)
         {
             return false;
@@ -206,14 +208,68 @@ namespace eureka::flutter
         mainCommandBuffer.Begin();
 
         DEBUGGER_TRACE("PresentLayers {}", layersCount);
+
+        mainCommandBuffer.BindGraphicsPipeline(_pipeline.Get());
+
+
+        auto targetSize = _targetPass->GetSize();
+        VkViewport viewport
+        {
+            .x = 0.0f,
+            .y = 0.0f,
+            .width = (float)targetSize.width,
+            .height = (float)targetSize.height,
+            .minDepth = 0.0f,
+            .maxDepth = 1.0f
+        };
+      
+        //mainCommandBuffer.Bind(
+        //    VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS,
+        //    _pipelineLayout->Get(),
+        //    _descriptorSet.Get(),
+        //    0u
+        //);
         for(size_t i = 0u; i < layersCount; ++i)
         {
             auto pLayer = layers[i];
 
             if(pLayer->type == FlutterLayerContentType::kFlutterLayerContentTypeBackingStore)
             {
-            
-                
+                auto backingStore = pLayer->backing_store;
+                auto backingStoreData = static_cast<BackingStoreData*>(backingStore->vulkan.user_data);
+                mainCommandBuffer.Bind(
+                    VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS,
+                    _pipelineLayout->Get(),
+                    backingStoreData->descriptor_set.Get(),
+                    0u
+                );
+
+                auto layerOffset = pLayer->offset;
+                auto layerSize = pLayer->size;
+
+                vulkan::ScaleTranslatePushConstantsBlock pushConstanst
+                {
+                    .scale = Eigen::Vector2f(2.0f / layerSize.width, 2.0f / layerSize.height),
+                    .translate = Eigen::Vector2f(layerOffset.x, layerOffset.y)
+                };
+
+                mainCommandBuffer.PushConstants(_pipelineLayout->Get(), VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT, pushConstanst);
+
+                VkRect2D scissorRect;
+                scissorRect.offset.x = (int32_t)layerOffset.x;
+                scissorRect.offset.y = (int32_t)layerOffset.y;
+                scissorRect.extent.width = (uint32_t)(layerSize.width);
+                scissorRect.extent.height = (uint32_t)(layerSize.height);
+
+
+                mainCommandBuffer.SetScissor(scissorRect);
+                mainCommandBuffer.DrawIndexed(
+                    6,
+                    1,
+                    0,
+                    0,
+                    1
+                );
             }
         }
 
