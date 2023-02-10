@@ -20,6 +20,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+      with:
+          lfs: 'true' # when cloning / checkout, do so with git lfs tracked files?
     - name: configure-build-test workflow
       run: cmake --workflow --preset=vs2022r
 
