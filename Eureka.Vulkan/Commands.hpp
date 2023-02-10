@@ -101,7 +101,7 @@ namespace eureka::vulkan
             );
         }
         
-        void SetViewport(const VkViewport& viewport)
+        void SetViewport(const VkViewport& viewport) const
         {
             vkCmdSetViewport(_commandBuffer, 0u, 1u, &viewport);
         }

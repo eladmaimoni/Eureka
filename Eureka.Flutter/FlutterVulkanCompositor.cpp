@@ -78,6 +78,7 @@ namespace eureka::flutter
             .maxDepth = 1.0f
         };
 
+        params.command_buffer.SetViewport(viewport);
 
         for(size_t i = 0u; i < _upcomingDrawLayers.size(); ++i)
         {
