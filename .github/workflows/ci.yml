@@ -1,0 +1,25 @@
+name: PR Check CI
+
+# resources
+# https://docs.github.com/en/actions/using-workflows#creating-a-workflow-file
+# https://thatonegamedev.com/cpp/ci-cd-for-c-c-games-using-github-actions/
+# https://github.com/florianvazelle/VulkanStarter/blob/main/.github/workflows/main.yml # uses conan and vulkan
+# https://github.com/marketplace/actions/setup-vulkan-sdk
+# https://www.youtube.com/watch?v=TWcmgyKrlFQ
+on:
+  #push:
+  #  branches: [ "master" ] # trigger when pushing to master
+  #pull_request:
+  #  branches: [ "master" ] 
+  workflow_dispatch: # allow manual runs 
+
+jobs:
+  build:
+
+    runs-on: self-hosted # windows-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: configure-build-test workflow
+      run: cmake --workflow --preset=vs2022r
+
