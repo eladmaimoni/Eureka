@@ -34,10 +34,109 @@ namespace eureka::flutter
         }
     }
 
+
+    
+
+
+    FlutterLayersViewPass::FlutterLayersViewPass(graphics::GlobalInheritedData globalInheritedData) :
+
+        graphics::IViewPass(std::move(globalInheritedData))
+    {
+
+
+
+
+
+    }
+    void FlutterLayersViewPass::BindToTargetPass(graphics::TargetInheritedData inheritedData)
+    {
+        _targetInheritedData = std::move(inheritedData);
+
+
+        vulkan::PipelineLayoutCreationPreset imguiPipelineLayoutPreset(vulkan::PipelinePresetType::eTexturedRegion, *_globalInheritedData.layout_cache);
+        _pipelineLayout = std::make_shared<vulkan::PipelineLayout>(_globalInheritedData.device, imguiPipelineLayoutPreset.GetCreateInfo());
+        vulkan::PipelineCreationPreset imguiPipelinePreset(
+            vulkan::PipelinePresetType::eTexturedRegion, *_globalInheritedData.shader_cache, _pipelineLayout->Get(), _targetInheritedData.render_pass->Get());
+
+        _pipeline = vulkan::Pipeline(_globalInheritedData.device, _pipelineLayout, _targetInheritedData.render_pass, imguiPipelinePreset.GetCreateInfo());
+
+
+    }
+    void FlutterLayersViewPass::RecordDraw(const graphics::RecordParameters& params)
+    {
+        params.command_buffer.BindGraphicsPipeline(_pipeline.Get());
+
+
+
+        VkViewport viewport
+        {
+            .x = 0.0f,
+            .y = 0.0f,
+            .width = (float)_w,
+            .height = (float)_h,
+            .minDepth = 0.0f,
+            .maxDepth = 1.0f
+        };
+
+
+        for(size_t i = 0u; i < _upcomingDrawLayers.size(); ++i)
+        {
+            auto pLayer = _upcomingDrawLayers[i];
+
+            if(pLayer->type == FlutterLayerContentType::kFlutterLayerContentTypeBackingStore)
+            {
+                auto backingStore = pLayer->backing_store;
+                auto backingStoreData = static_cast<BackingStoreData*>(backingStore->vulkan.user_data);
+                params.command_buffer.Bind(
+                    VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS,
+                    _pipelineLayout->Get(),
+                    backingStoreData->descriptor_set.Get(),
+                    0u
+                );
+
+                auto layerOffset = pLayer->offset;
+                auto layerSize = pLayer->size;
+
+                vulkan::ScaleTranslatePushConstantsBlock pushConstanst
+                {
+                    .scale = Eigen::Vector2f(2.0f / layerSize.width, 2.0f / layerSize.height),
+                    .translate = Eigen::Vector2f(layerOffset.x, layerOffset.y)
+                };
+
+                params.command_buffer.PushConstants(_pipelineLayout->Get(), VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT, pushConstanst);
+
+                VkRect2D scissorRect;
+                scissorRect.offset.x = (int32_t)layerOffset.x;
+                scissorRect.offset.y = (int32_t)layerOffset.y;
+                scissorRect.extent.width = (uint32_t)(layerSize.width);
+                scissorRect.extent.height = (uint32_t)(layerSize.height);
+
+
+                params.command_buffer.SetScissor(scissorRect);
+                params.command_buffer.Draw(
+                    6,
+                    1,
+                    0,
+                    0
+                );
+            }
+        }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
     FlutterVulkanCompositor::FlutterVulkanCompositor(std::shared_ptr<vulkan::Instance>              instance,
                                                      graphics::GlobalInheritedData                  globalInheritedData,
                                                      std::shared_ptr<vulkan::FrameContext>          frameContext, // TODO should be the other way around
                                                      std::shared_ptr<eureka::graphics::ITargetPass> targetPass) : // TODO should be the other way around
+
         _instance(std::move(instance)),
         _globalInheritedData(std::move(globalInheritedData)),
         _graphicsQueue(_globalInheritedData.device->GetGraphicsQueue()),
@@ -72,36 +171,11 @@ namespace eureka::flutter
         _flutterCompositor.present_layers_callback = LayersPresentStatic;
 
 
-        vulkan::PipelineLayoutCreationPreset imguiPipelineLayoutPreset(vulkan::PipelinePresetType::eTexturedRegion, *_globalInheritedData.layout_cache);
-        _pipelineLayout = std::make_shared<vulkan::PipelineLayout>(_globalInheritedData.device, imguiPipelineLayoutPreset.GetCreateInfo());
-        vulkan::PipelineCreationPreset imguiPipelinePreset(
-            vulkan::PipelinePresetType::eTexturedRegion, *_globalInheritedData.shader_cache, _pipelineLayout->Get(), _targetPass->GetTargetInheritedData().render_pass->Get());
-
-        _pipeline = vulkan::Pipeline(_globalInheritedData.device, _pipelineLayout, _targetPass->GetTargetInheritedData().render_pass, imguiPipelinePreset.GetCreateInfo());
-
-
-
-
         _backingStoreSampler = vulkan::CreateSampler(_globalInheritedData.device, vulkan::SamplerCreationPreset::eLinearClampToEdge);
 
+        _layersViewPass = std::make_shared<FlutterLayersViewPass>(_globalInheritedData);
 
-
-        //std::array<VkDescriptorImageInfo, 1> imageInfo
-        //{
-        //    VkDescriptorImageInfo
-        //    {
-        //        .sampler = _backingStoreSampler.Get(),
-        //        .imageView = _fontImage.GetView(),
-        //        .imageLayout = VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
-        //    }
-        //};
-
-        //_descriptorSet.SetBindings(
-        //    0,
-        //    VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-        //    imageInfo
-        //);
-
+        _targetPass->AddViewPass(_layersViewPass);
     }
 
     const FlutterRendererConfig& FlutterVulkanCompositor::GetFlutterRendererConfig() const
@@ -191,12 +265,16 @@ namespace eureka::flutter
 
         delete data;
     }
+
     bool FlutterVulkanCompositor::PresentLayers(const FlutterLayer** layers, size_t layersCount)
     {
 
         // These should occur outside of this function in any case
         _frameContext->BeginFrame();
         _targetPass->Prepare();
+
+
+
         auto [valid, targetReady] = _targetPass->PreRecord();
 
 
@@ -205,80 +283,25 @@ namespace eureka::flutter
             return false;
         }
         auto [mainCommandBuffer, doneSemaphore] = _frameContext->NewGraphicsPresentCommandBuffer();
+
         mainCommandBuffer.Begin();
 
         DEBUGGER_TRACE("PresentLayers {}", layersCount);
 
-        mainCommandBuffer.BindGraphicsPipeline(_pipeline.Get());
 
+        dspan<const FlutterLayer*> upcomingLayers(layers, layers + layersCount);
 
-        auto targetSize = _targetPass->GetSize();
-        VkViewport viewport
-        {
-            .x = 0.0f,
-            .y = 0.0f,
-            .width = (float)targetSize.width,
-            .height = (float)targetSize.height,
-            .minDepth = 0.0f,
-            .maxDepth = 1.0f
-        };
-      
-        //mainCommandBuffer.Bind(
-        //    VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS,
-        //    _pipelineLayout->Get(),
-        //    _descriptorSet.Get(),
-        //    0u
-        //);
-        for(size_t i = 0u; i < layersCount; ++i)
-        {
-            auto pLayer = layers[i];
+        _layersViewPass->SetUpcomingDrawLayers(upcomingLayers);
 
-            if(pLayer->type == FlutterLayerContentType::kFlutterLayerContentTypeBackingStore)
-            {
-                auto backingStore = pLayer->backing_store;
-                auto backingStoreData = static_cast<BackingStoreData*>(backingStore->vulkan.user_data);
-                mainCommandBuffer.Bind(
-                    VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS,
-                    _pipelineLayout->Get(),
-                    backingStoreData->descriptor_set.Get(),
-                    0u
-                );
+        _targetPass->RecordDraw({ mainCommandBuffer }); // will call flutter layers view with associated layers
 
-                auto layerOffset = pLayer->offset;
-                auto layerSize = pLayer->size;
-
-                vulkan::ScaleTranslatePushConstantsBlock pushConstanst
-                {
-                    .scale = Eigen::Vector2f(2.0f / layerSize.width, 2.0f / layerSize.height),
-                    .translate = Eigen::Vector2f(layerOffset.x, layerOffset.y)
-                };
-
-                mainCommandBuffer.PushConstants(_pipelineLayout->Get(), VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT, pushConstanst);
-
-                VkRect2D scissorRect;
-                scissorRect.offset.x = (int32_t)layerOffset.x;
-                scissorRect.offset.y = (int32_t)layerOffset.y;
-                scissorRect.extent.width = (uint32_t)(layerSize.width);
-                scissorRect.extent.height = (uint32_t)(layerSize.height);
-
-
-                mainCommandBuffer.SetScissor(scissorRect);
-                mainCommandBuffer.DrawIndexed(
-                    6,
-                    1,
-                    0,
-                    0,
-                    1
-                );
-            }
-        }
 
         _targetPass->RecordDraw({mainCommandBuffer});
 
+        mainCommandBuffer.End();
 
         _targetPass->PostRecord();
 
-        mainCommandBuffer.End();
 
         std::array<VkSemaphore, 1> waitSemaphores {targetReady};
 
@@ -356,4 +379,7 @@ namespace eureka::flutter
         assert(false);
         return true;
     }
+
+
+
 } // namespace eureka::flutter

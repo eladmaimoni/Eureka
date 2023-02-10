@@ -69,7 +69,7 @@ namespace eureka::vulkan
             VkPipelineLayout pipelineLayout,
             VkDescriptorSet set,
             uint32_t index
-        )
+        ) const
         {
             vkCmdBindDescriptorSets(
                 _commandBuffer,
@@ -92,7 +92,7 @@ namespace eureka::vulkan
             );
         }
 
-        void BindGraphicsPipeline(VkPipeline pipeline)
+        void BindGraphicsPipeline(VkPipeline pipeline) const
         {
             vkCmdBindPipeline(
                 _commandBuffer,
@@ -149,7 +149,7 @@ namespace eureka::vulkan
             );
         }
         template<typename BlockT>
-        void PushConstants(VkPipelineLayout pipelineLayout, VkShaderStageFlagBits stages, const BlockT& block, uint32_t offset = 0)
+        void PushConstants(VkPipelineLayout pipelineLayout, VkShaderStageFlagBits stages, const BlockT& block, uint32_t offset = 0) const
         {
             vkCmdPushConstants(
                 _commandBuffer,
@@ -161,15 +161,20 @@ namespace eureka::vulkan
             );
         }
 
-        void SetScissor(const VkRect2D& scissorRect)
+        void SetScissor(const VkRect2D& scissorRect) const
         {
             vkCmdSetScissor(_commandBuffer, 0u, 1, &scissorRect);
         }
 
-        void DrawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, uint32_t vertexOffset, uint32_t firstInstance)
+        void DrawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, uint32_t vertexOffset, uint32_t firstInstance) const
         {
             vkCmdDrawIndexed(_commandBuffer, indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
 
+        }
+
+        void Draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance) const
+        {
+            vkCmdDraw(_commandBuffer, vertexCount, instanceCount, firstVertex, firstInstance);
         }
 
         void EndRenderPass() const

@@ -16,7 +16,7 @@ namespace eureka::graphics
             std::shared_ptr<vulkan::SwapChain> swapChain
         );
         
-        void AddViewPass(std::shared_ptr<IViewPass> viewPass);
+        void AddViewPass(std::shared_ptr<IViewPass> viewPass) override;
 
         void Prepare() override;
         TargetPassBeginInfo PreRecord() override;
