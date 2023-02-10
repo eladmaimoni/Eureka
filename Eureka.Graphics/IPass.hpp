@@ -56,6 +56,23 @@ namespace eureka::graphics
         std::shared_ptr<vulkan::RenderPass> render_pass;
     };
 
+    class IViewPass : public IPass
+    {
+        /*
+         groups the set of mesh passes passes that uses the same view characteristics
+         - per view data (desc set 0)
+           in the simple case, holds
+           std::vector<IMeshPass> meshPasses;
+           and render them
+        */
+    public:
+        IViewPass(GlobalInheritedData globalInheritedData) : IPass(std::move(globalInheritedData)) {}
+        virtual void BindToTargetPass(TargetInheritedData targetInheritedData) = 0;
+        virtual void HandleResize(uint32_t w, uint32_t h) = 0;
+    };
+
+
+
     class ITargetPass : public IPass
     {
     protected:
@@ -65,7 +82,7 @@ namespace eureka::graphics
         ITargetPass(GlobalInheritedData globalInheritedData) : IPass(std::move(globalInheritedData)) {}
     public:
         virtual VkExtent2D GetSize() = 0;
-
+        virtual void AddViewPass(std::shared_ptr<IViewPass> viewPass) = 0;
         virtual TargetPassBeginInfo PreRecord() = 0;
         virtual void                PostRecord() = 0;
         virtual void                PostSubmit(vulkan::BinarySemaphoreHandle waitSemaphore) = 0;
@@ -91,20 +108,6 @@ namespace eureka::graphics
         }
     };
 
-    class IViewPass : public IPass
-    {
-        /*
-         groups the set of mesh passes passes that uses the same view characteristics
-         - per view data (desc set 0)
-           in the simple case, holds
-           std::vector<IMeshPass> meshPasses;
-           and render them
-        */
-    public:
-        IViewPass(GlobalInheritedData globalInheritedData) : IPass(std::move(globalInheritedData)) {}
-        virtual void BindToTargetPass(TargetInheritedData targetInheritedData) = 0;
-        virtual void HandleResize(uint32_t w, uint32_t h) = 0;
-    };
 
     //class IMeshPass : public IPass
     //{

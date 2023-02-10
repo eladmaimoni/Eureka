@@ -83,6 +83,8 @@ TEST_CASE("flutter engine debug mode", "[flutter][vulkan]")
         auto frameContext = std::make_shared<vk::FrameContext>(device, copyQueue, graphicsQueue);
     
 
+
+
         auto flutterCompositor = std::make_shared<fl::FlutterVulkanCompositor>(instance, globalInheritedData, frameContext, depthColorTarget);
 
         auto flutterProjectEmbedder = std::make_shared<fl::FlutterProjectEmbedder>(flutterCompositor, window);
