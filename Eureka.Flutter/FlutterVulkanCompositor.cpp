@@ -98,10 +98,13 @@ namespace eureka::flutter
                 auto layerOffset = pLayer->offset;
                 auto layerSize = pLayer->size;
 
+                auto widthPortion = layerSize.width / _w;
+                auto heightPortion = layerSize.height / _h;
+
                 vulkan::ScaleTranslatePushConstantsBlock pushConstanst
                 {
-                    .scale = Eigen::Vector2f(2.0f / layerSize.width, 2.0f / layerSize.height),
-                    .translate = Eigen::Vector2f(layerOffset.x, layerOffset.y)
+                    .scale = Eigen::Vector2f(widthPortion, heightPortion),
+                    .translate = Eigen::Vector2f(layerOffset.x, layerOffset.y) // TODO portion in NDC
                 };
 
                 params.command_buffer.PushConstants(_pipelineLayout->Get(), VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT, pushConstanst);
