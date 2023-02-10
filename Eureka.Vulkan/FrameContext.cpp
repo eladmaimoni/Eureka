@@ -187,13 +187,18 @@ namespace eureka::vulkan
 
     }
 
-    void FrameContext::BeginFrame()
+    void FrameContext::SyncCurrentFrame()
     {
-        _currentFrame = (_currentFrame + 1) % _maxFramesInFlight;
         _currentFrameGraphicsCommands = &_frameGraphicsCommands[_currentFrame];
         _currentFrameCopyCommands = &_frameCopyCommands[_currentFrame];
         _currentFrameGraphicsCommands->Reset();
         _currentFrameCopyCommands->Reset();
+    }
+
+    void FrameContext::BeginFrame()
+    {
+        _currentFrame = (_currentFrame + 1) % _maxFramesInFlight;
+        SyncCurrentFrame();
     }
 
     void FrameContext::EndFrame()

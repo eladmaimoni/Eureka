@@ -24,12 +24,22 @@ namespace eureka::vulkan
         std::vector<VkExtensionProperties> extentionProperties(propertyCount);
         VK_CHECK(vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &propertyCount, extentionProperties.data()));
 
+        for (auto availableExtention : extentionProperties)
+        {
+            std::string_view availableExtentionName(availableExtention.extensionName);
+        
+            DEBUGGER_TRACE("available device extention = {}", availableExtentionName);
+        }
+
+
         for (const auto& requestedExtension : config.required_extentions)
         {
             bool found = false;
             for (auto availableExtention : extentionProperties)
             {
                 std::string_view availableExtentionName(availableExtention.extensionName);
+
+
                 if (requestedExtension == availableExtentionName)
                 {
                     found = true;
@@ -48,7 +58,12 @@ namespace eureka::vulkan
         std::vector<VkLayerProperties> layerProperties(propertyCount);
         VK_CHECK(vkEnumerateDeviceLayerProperties(physicalDevice, &propertyCount, layerProperties.data()));
 
+        for (const auto& availableLayer : layerProperties)
+        {
+            std::string_view availableLayerName(availableLayer.layerName);
 
+            DEBUGGER_TRACE("available layer = {}", availableLayerName);
+        }
         for (const auto& requestedLayer : config.required_layers)
         {
             bool found = false;
@@ -129,7 +144,10 @@ namespace eureka::vulkan
         {
             deviceCreateInfoNext = &features12;
         }
-
+        //config.required_extentions.emplace_back(DEVICE_EXTENTION_PRE13_SYNCHRONIZATION2);
+        config.required_extentions.emplace_back("VK_KHR_create_renderpass2");
+        config.required_extentions.emplace_back("VK_KHR_synchronization2");
+        //config.required_layers.emplace_back("VK_LAYER_KHRONOS_synchronization2");
         VkDeviceCreateInfo deviceCreateInfo
         {
             .sType = VkStructureType::VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
@@ -806,8 +824,13 @@ namespace eureka::vulkan
 
         if (version.major == 1 && version.minor < 3)
         {
-            deviceConfig.required_layers.emplace_back(DEVICE_LAYER_PRE13_SYNCHRONIZATION2);
-            deviceConfig.required_extentions.emplace_back(DEVICE_EXTENTION_PRE13_SYNCHRONIZATION2);
+            //deviceConfig.required_layers.emplace_back(DEVICE_LAYER_PRE13_SYNCHRONIZATION2);
+
+            // I think synchronization2 is dependant on VK_KHR_get_physical_device_properties2 
+            // https://vulkan.lunarg.com/doc/view/1.3.236.0/windows/1.3-extensions/vkspec.html#VK_KHR_synchronization2
+            //deviceConfig.required_extentions.emplace_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+            //deviceConfig.required_extentions.emplace_back(DEVICE_EXTENTION_PRE13_SYNCHRONIZATION2);
+
         }
 
         DEBUG_ONLY(deviceConfig.required_layers.emplace_back(DEVICE_LAYER_VALIDATION));

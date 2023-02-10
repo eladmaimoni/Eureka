@@ -63,7 +63,11 @@ namespace eureka::vulkan
 
         std::vector<VkExtensionProperties> supportedExtentions(propertyCount);
         VK_CHECK(vkEnumerateInstanceExtensionProperties(nullptr, &propertyCount, supportedExtentions.data()));
-
+        for (const auto& supportedExtention : supportedExtentions)
+        {
+            std::string_view supported_extention_name(supportedExtention.extensionName);
+            DEBUGGER_TRACE("instance extention = {}", supported_extention_name);
+        }
         for(auto requiredExtention : desc.required_instance_extentions)
         {
 
@@ -93,7 +97,11 @@ namespace eureka::vulkan
 
         std::vector<VkLayerProperties> layerProperties(propertyCount);
         VK_CHECK(vkEnumerateInstanceLayerProperties(&propertyCount, layerProperties.data()));
-
+        for (const auto& supportedLayer : layerProperties)
+        {
+            std::string_view supported_layer_name(supportedLayer.layerName);
+            DEBUGGER_TRACE("instance layer = {}", supported_layer_name);
+        }
         for(const auto& requiredLayer : desc.required_layers)
         {
             bool found = false;
@@ -144,14 +152,19 @@ namespace eureka::vulkan
             .apiVersion = _apiVersion,
         };
 
+        //_config.required_instance_extentions.emplace_back("VK_KHR_synchronization2");
+        _config.required_instance_extentions.emplace_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+        _config.required_instance_extentions.emplace_back("VK_KHR_get_surface_capabilities2");
+        //_config.required_layers.emplace_back("VK_LAYER_KHRONOS_synchronization2");
+        
         VkInstanceCreateInfo createInfo {
             .sType = VkStructureType::VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
             .flags = {},
             .pApplicationInfo = &appInfo,
-            .enabledLayerCount = static_cast<uint32_t>(config.required_layers.size()),
-            .ppEnabledLayerNames = config.required_layers.data(), // enabled layers
-            .enabledExtensionCount = static_cast<uint32_t>(config.required_instance_extentions.size()),
-            .ppEnabledExtensionNames = config.required_instance_extentions.data(),
+            .enabledLayerCount = static_cast<uint32_t>(_config.required_layers.size()),
+            .ppEnabledLayerNames = _config.required_layers.data(), // enabled layers
+            .enabledExtensionCount = static_cast<uint32_t>(_config.required_instance_extentions.size()),
+            .ppEnabledExtensionNames = _config.required_instance_extentions.data(),
         };
 
         VK_CHECK(vkCreateInstance(&createInfo, nullptr, &_instance));
