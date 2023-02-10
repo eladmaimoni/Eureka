@@ -93,7 +93,7 @@ namespace eureka::graphics
 
         VkDeviceSize uploadSize = texWidth * texHeight * 4 * sizeof(char);
 
-        _fontImage = vulkan::Image2D(
+        _fontImage = vulkan::AllocatedImage2D(
             _globalInheritedData.device,
             _globalInheritedData.resource_allocator,
             vulkan::Image2DProperties

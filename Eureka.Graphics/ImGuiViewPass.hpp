@@ -29,7 +29,7 @@ namespace eureka::graphics
         std::shared_ptr<vulkan::PipelineLayout>                    _pipelineLayout;
         vulkan::Pipeline                                           _pipeline;
         vulkan::FreeableDescriptorSet                              _descriptorSet;
-        vulkan::Image2D                                            _fontImage;
+        vulkan::AllocatedImage2D                                            _fontImage;
         vulkan::Sampler                                            _fontSampler;
         vulkan::HostVisibleVertexAndIndexTransferableDeviceBuffer  _vertexIndexBuffer;
 

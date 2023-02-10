@@ -43,11 +43,11 @@ namespace eureka::flutter
         _graphicsQueue(_globalInheritedData.device->GetGraphicsQueue()),
         _frameContext(std::move(frameContext)),
         _targetPass(std::move(targetPass)), // TODO should be the other way around
-        _backingStorePool(
+        _backingStorePool(std::make_shared<vulkan::ImageMemoryPool>(
             _globalInheritedData.resource_allocator,
             BACKING_STORE_IMAGE_POOL_DEFAULT_SIZE,
             VMA_POOL_CREATE_LINEAR_ALGORITHM_BIT,
-            vulkan::Image2DAllocationPreset::eR8G8B8A8UnormSampledShaderResourceRenderTargetTransferSrcDst),
+            vulkan::Image2DAllocationPreset::eR8G8B8A8UnormSampledShaderResourceRenderTargetTransferSrcDst)),
         _descriptorSet(_globalInheritedData.device, _globalInheritedData.descriptor_allocator)
     {
         _flutterRendererConfig.type = FlutterRendererType::kVulkan;
@@ -129,14 +129,22 @@ namespace eureka::flutter
             .height = static_cast<uint32_t>(config->size.height),
         };
 
-        auto allocation = _backingStorePool.AllocateImage(extent);
+        vulkan::Image2DProperties imageProps
+        {
+            .extent = extent,
+            .preset = vulkan::Image2DAllocationPreset::eR8G8B8A8UnormSampledShaderResourceRenderTargetTransferSrcDst,
+        };
+        //auto allocation = _backingStorePool->AllocateImage(extent);
 
-        BackingStoreData* bkData = new BackingStoreData;
-        bkData->self = this;
-        bkData->allocation = allocation;
+        BackingStoreData* bkData = new BackingStoreData
+        {
+            .self = this,
+            .image = vulkan::PoolAllocatedImage2D(_globalInheritedData.device, _backingStorePool, imageProps),
+        };
+
         bkData->flutter_image = FlutterVulkanImage {
             .struct_size = sizeof(FlutterVulkanImage),
-            .image = reinterpret_cast<FlutterVulkanImageHandle>(allocation.image),
+            .image = reinterpret_cast<FlutterVulkanImageHandle>(bkData->image.Get()),
             .format = VK_FORMAT_R8G8B8A8_UNORM,
         };
 
@@ -164,7 +172,7 @@ namespace eureka::flutter
     void FlutterVulkanCompositor::DestroyVulkanBackingStore(BackingStoreData* data)
     {
         DEBUGGER_TRACE("DestroyVulkanBackingStore");
-        _backingStorePool.DeallocateImage(data->allocation);
+
         delete data;
     }
     bool FlutterVulkanCompositor::PresentLayers(const FlutterLayer** layers, size_t layersCount)

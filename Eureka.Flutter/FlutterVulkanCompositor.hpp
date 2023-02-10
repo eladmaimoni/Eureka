@@ -27,7 +27,7 @@ namespace eureka::flutter
         vulkan::FreeableDescriptorSet           _descriptorSet;
         vulkan::Sampler                         _backingStoreSampler;
         RenderDocIntegration                    _renderDoc;
-        vulkan::ImageMemoryPool                 _backingStorePool;
+        std::shared_ptr<vulkan::ImageMemoryPool>                 _backingStorePool;
 
     public:
         FlutterVulkanCompositor(
@@ -49,8 +49,8 @@ namespace eureka::flutter
         //
         struct BackingStoreData
         {
-            FlutterVulkanCompositor* self;
-            vulkan::ImageAllocation  allocation;
+            FlutterVulkanCompositor*      self;
+            vulkan::PoolAllocatedImage2D  image;
             FlutterVulkanImage       flutter_image;
         };
 

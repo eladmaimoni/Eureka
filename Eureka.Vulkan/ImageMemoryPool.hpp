@@ -1,3 +1,4 @@
+#pragma once
 #include "ResourceAllocator.hpp"
 
 namespace eureka::vulkan

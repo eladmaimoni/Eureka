@@ -37,7 +37,7 @@ namespace eureka::vulkan
             .extent = renderArea.extent,
             .preset = Image2DAllocationPreset::eD24UnormS8UintDepthImage // TODO
         };
-        auto depthImage = std::make_shared<Image2D>(device, std::move(allocator), depthImageProps);
+        auto depthImage = std::make_shared<AllocatedImage2D>(device, std::move(allocator), depthImageProps);
 
         // create frame buffer
         auto images = swapChain.Images();
@@ -79,7 +79,7 @@ namespace eureka::vulkan
         std::shared_ptr<RenderPass> renderPass, 
         FrameBuffer frameBuffer, 
         std::shared_ptr<Image> outputColorImage, 
-        std::shared_ptr<Image2D> depthImage
+        std::shared_ptr<AllocatedImage2D> depthImage
     ) :
         RenderTarget(area, std::move(renderPass), std::move(frameBuffer)),
         _outputColorImage(std::move(outputColorImage)),
