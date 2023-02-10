@@ -78,13 +78,48 @@ namespace eureka::vulkan
         }
     }
 
+
     //////////////////////////////////////////////////////////////////////////
     //
-    //                        Image2D
+    //                        PoolAllocatedImage
     //
     //////////////////////////////////////////////////////////////////////////
 
-    Image2D::Image2D(std::shared_ptr<Device> device,
+    PoolAllocatedImage::~PoolAllocatedImage() noexcept
+    {
+        Deallocate();
+    }
+
+    void PoolAllocatedImage::Allocate(const Image2DProperties& props)
+    {
+        Deallocate();
+
+        _allocation = _allocator->AllocateImage(props.extent);
+        _view = CreateImage2DView(*_device, _allocation.image, props.preset);
+    }
+
+    void PoolAllocatedImage::Deallocate()
+    {
+        if (_allocation.image)
+        {
+            _allocator->DeallocateImage(_allocation);
+        }
+    }
+    PoolAllocatedImage::PoolAllocatedImage(std::shared_ptr<Device> device, std::shared_ptr<ImageMemoryPool> allocator) :
+        Image(std::move(device)),
+        _allocator(std::move(allocator))
+    {
+    }
+
+
+
+    //////////////////////////////////////////////////////////////////////////
+    //
+    //                        AllocatedImage2D
+    //
+    //////////////////////////////////////////////////////////////////////////
+
+    AllocatedImage2D::AllocatedImage2D(std::shared_ptr<Device> device,
                      std::shared_ptr<ResourceAllocator> allocator,
                      const Image2DProperties& props) :
         AllocatedImage(std::move(device), std::move(allocator))
@@ -92,9 +127,29 @@ namespace eureka::vulkan
         Allocate(props);
     }
 
-    Image2D::Image2D(std::shared_ptr<Device> device, std::shared_ptr<ResourceAllocator> allocator) :
+    AllocatedImage2D::AllocatedImage2D(std::shared_ptr<Device> device, std::shared_ptr<ResourceAllocator> allocator) :
         AllocatedImage(std::move(device), std::move(allocator))
     {}
+
+    //////////////////////////////////////////////////////////////////////////
+    //
+    //                        PoolAllocatedImage2D
+    //
+    //////////////////////////////////////////////////////////////////////////
+
+    PoolAllocatedImage2D::PoolAllocatedImage2D(std::shared_ptr<Device> device, std::shared_ptr<ImageMemoryPool> allocator, const Image2DProperties& props)
+        : PoolAllocatedImage(std::move(device), std::move(allocator))
+    {
+        Allocate(props);
+    }
+
+    PoolAllocatedImage2D::PoolAllocatedImage2D(std::shared_ptr<Device> device, std::shared_ptr<ImageMemoryPool> allocator)
+        : PoolAllocatedImage(std::move(device), std::move(allocator))
+    {
+    
+    }
+
+
 
     //////////////////////////////////////////////////////////////////////////
     //
@@ -194,5 +249,9 @@ namespace eureka::vulkan
 
         return Sampler(std::move(device), samplerCreateInfo);
     }
+
+
+
+
 
 } // namespace eureka::vulkan

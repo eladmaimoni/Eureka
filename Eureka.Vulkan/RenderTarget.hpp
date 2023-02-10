@@ -74,7 +74,7 @@ namespace eureka::vulkan
     class DepthColorRenderTarget : public RenderTarget
     {
         std::shared_ptr<Image>         _outputColorImage;
-        std::shared_ptr<Image2D>       _depthImage;
+        std::shared_ptr<AllocatedImage2D>       _depthImage;
         std::array< VkClearValue, 2> _clearValues{};
     public:
         DepthColorRenderTarget(
@@ -82,7 +82,7 @@ namespace eureka::vulkan
             std::shared_ptr<RenderPass> renderPass,
             FrameBuffer frameBuffer,
             std::shared_ptr<Image> outputColorImage,
-            std::shared_ptr<Image2D> depthImage
+            std::shared_ptr<AllocatedImage2D> depthImage
         );
     };
 

@@ -1,5 +1,6 @@
 #pragma once
 #include "ResourceAllocator.hpp"
+#include "ImageMemoryPool.hpp"
 
 
 namespace eureka::vulkan
@@ -54,11 +55,27 @@ namespace eureka::vulkan
         AllocatedImage(AllocatedImage&& that) noexcept = default;
         AllocatedImage& operator=(AllocatedImage&& rhs) noexcept = default;
         AllocatedImage(std::shared_ptr<Device> device, std::shared_ptr<ResourceAllocator> allocator);
-  
-
     protected:
         std::shared_ptr<ResourceAllocator> _allocator;
     };
+
+    class PoolAllocatedImage : public Image
+    {
+    public:
+        virtual ~PoolAllocatedImage() noexcept;
+
+        void Allocate(const Image2DProperties& props);
+        void Deallocate();
+
+        PoolAllocatedImage(PoolAllocatedImage&& that) noexcept = default;
+        PoolAllocatedImage& operator=(PoolAllocatedImage&& rhs) noexcept = default;
+        PoolAllocatedImage(std::shared_ptr<Device> device, std::shared_ptr<ImageMemoryPool> allocator);
+    protected:
+        std::shared_ptr<ImageMemoryPool> _allocator;
+    };
+
+    
+
 
     //////////////////////////////////////////////////////////////////////////
     //
@@ -67,13 +84,23 @@ namespace eureka::vulkan
     //////////////////////////////////////////////////////////////////////////
 
 
-    class Image2D : public AllocatedImage
+    class AllocatedImage2D : public AllocatedImage
     {
     public:
-        Image2D(std::shared_ptr<Device> device, std::shared_ptr<ResourceAllocator> allocator);
-        Image2D(std::shared_ptr<Device> device, std::shared_ptr<ResourceAllocator> allocator, const Image2DProperties& props);
-        Image2D(Image2D&& that) noexcept = default;
-        Image2D& operator=(Image2D&& rhs) noexcept = default;
+        AllocatedImage2D(std::shared_ptr<Device> device, std::shared_ptr<ResourceAllocator> allocator);
+        AllocatedImage2D(std::shared_ptr<Device> device, std::shared_ptr<ResourceAllocator> allocator, const Image2DProperties& props);
+        AllocatedImage2D(AllocatedImage2D&& that) noexcept = default;
+        AllocatedImage2D& operator=(AllocatedImage2D&& rhs) noexcept = default;
+    };
+
+
+    class PoolAllocatedImage2D : public PoolAllocatedImage
+    {
+    public:
+        PoolAllocatedImage2D(std::shared_ptr<Device> device, std::shared_ptr<ImageMemoryPool> allocator);
+        PoolAllocatedImage2D(std::shared_ptr<Device> device, std::shared_ptr<ImageMemoryPool> allocator, const Image2DProperties& props);
+        PoolAllocatedImage2D(PoolAllocatedImage2D&& that) noexcept = default;
+        PoolAllocatedImage2D& operator=(PoolAllocatedImage2D&& rhs) noexcept = default;
     };
 
     //////////////////////////////////////////////////////////////////////////
