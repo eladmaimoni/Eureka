@@ -242,6 +242,8 @@ namespace eureka::graphics
 
 
         if (viewport.width <= 0.0f || viewport.height <= 0.0f) return;
+        commandBuffer.BindGraphicsPipeline(_pipeline.Get());
+        commandBuffer.SetViewport(viewport);
 
         commandBuffer.Bind(
             VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -249,8 +251,8 @@ namespace eureka::graphics
             _descriptorSet.Get(),
             0u
         );
-        commandBuffer.BindGraphicsPipeline(_pipeline.Get());
-        commandBuffer.SetViewport(viewport);
+
+   
         vulkan::ScaleTranslatePushConstantsBlock pushConstanst
         {
             .scale = Eigen::Vector2f(2.0f / io.DisplaySize.x, 2.0f / io.DisplaySize.y),
