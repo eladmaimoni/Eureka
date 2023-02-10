@@ -4,7 +4,7 @@ My very own playground for learning all sorts of different technologies.
 
 - Vulkan - contains my own vulkan C++ wrappers (vulkan.hpp compiles too slow and cripples IDEs)
 - Flutter - my attempt to write a Vulkan embedder for google's flutter UI framework.
-- RPC, RemoteProto, RemoteServer, RemoteClients - toying with grpc, and asio-grpc for scalable, asynchronous client servers & clients using coroutines.
+- RPC, RemoteProto, RemoteServer, RemoteClients - toying with grpc, and asio-grpc for scalable, asynchronous client & servers using coroutines.
 
 Other technologies explored here:
 - latest C++23 features such as concepts, ranges, coroutines
