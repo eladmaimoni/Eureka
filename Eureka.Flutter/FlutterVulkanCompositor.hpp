@@ -24,7 +24,7 @@ namespace eureka::flutter
 
         std::shared_ptr<vulkan::PipelineLayout> _pipelineLayout;
         vulkan::Pipeline                        _pipeline;
-        vulkan::FreeableDescriptorSet           _descriptorSet;
+        
         vulkan::Sampler                         _backingStoreSampler;
         RenderDocIntegration                    _renderDoc;
         std::shared_ptr<vulkan::ImageMemoryPool>                 _backingStorePool;
@@ -49,9 +49,10 @@ namespace eureka::flutter
         //
         struct BackingStoreData
         {
-            FlutterVulkanCompositor*      self;
-            vulkan::PoolAllocatedImage2D  image;
-            FlutterVulkanImage       flutter_image;
+            FlutterVulkanCompositor*         self;
+            vulkan::PoolAllocatedImage2D     image;
+            vulkan::FreeableDescriptorSet    descriptor_set; // TODO maybe simply linear allocation
+            FlutterVulkanImage               flutter_image;
         };
 
         bool CreateBackingStore(const FlutterBackingStoreConfig* config, FlutterBackingStore* backingStoreOut);
