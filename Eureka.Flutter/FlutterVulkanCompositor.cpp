@@ -47,8 +47,7 @@ namespace eureka::flutter
             _globalInheritedData.resource_allocator,
             BACKING_STORE_IMAGE_POOL_DEFAULT_SIZE,
             VMA_POOL_CREATE_LINEAR_ALGORITHM_BIT,
-            vulkan::Image2DAllocationPreset::eR8G8B8A8UnormSampledShaderResourceRenderTargetTransferSrcDst)),
-        _descriptorSet(_globalInheritedData.device, _globalInheritedData.descriptor_allocator)
+            vulkan::Image2DAllocationPreset::eR8G8B8A8UnormSampledShaderResourceRenderTargetTransferSrcDst))
     {
         _flutterRendererConfig.type = FlutterRendererType::kVulkan;
         _flutterRendererConfig.vulkan.struct_size = sizeof(FlutterVulkanRendererConfig);
@@ -81,11 +80,7 @@ namespace eureka::flutter
         _pipeline = vulkan::Pipeline(_globalInheritedData.device, _pipelineLayout, _targetPass->GetTargetInheritedData().render_pass, imguiPipelinePreset.GetCreateInfo());
 
 
-        _descriptorSet = vulkan::FreeableDescriptorSet(
-            _globalInheritedData.device,
-            _globalInheritedData.descriptor_allocator,
-            _globalInheritedData.layout_cache->GetLayoutHandle(vulkan::DescriptorSet0PresetType::eSingleTexture)
-        );
+
 
         _backingStoreSampler = vulkan::CreateSampler(_globalInheritedData.device, vulkan::SamplerCreationPreset::eLinearClampToEdge);
 
@@ -140,7 +135,28 @@ namespace eureka::flutter
         {
             .self = this,
             .image = vulkan::PoolAllocatedImage2D(_globalInheritedData.device, _backingStorePool, imageProps),
+            .descriptor_set = vulkan::FreeableDescriptorSet(
+                _globalInheritedData.device,
+                _globalInheritedData.descriptor_allocator,
+                _globalInheritedData.layout_cache->GetLayoutHandle(vulkan::DescriptorSet0PresetType::eSingleTexture)
+            ),
         };
+
+        std::array<VkDescriptorImageInfo, 1> imageInfo
+        {
+            VkDescriptorImageInfo
+            {
+                .sampler = _backingStoreSampler.Get(),
+                .imageView = bkData->image.GetView(),
+                .imageLayout = VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+            }
+        };
+
+        bkData->descriptor_set.SetBindings(
+            0,
+            VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            imageInfo
+        );
 
         bkData->flutter_image = FlutterVulkanImage {
             .struct_size = sizeof(FlutterVulkanImage),
@@ -195,10 +211,15 @@ namespace eureka::flutter
             auto pLayer = layers[i];
 
             if(pLayer->type == FlutterLayerContentType::kFlutterLayerContentTypeBackingStore)
-            {}
+            {
+            
+                
+            }
         }
 
         _targetPass->RecordDraw({mainCommandBuffer});
+
+
         _targetPass->PostRecord();
 
         mainCommandBuffer.End();
