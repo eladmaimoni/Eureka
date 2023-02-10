@@ -88,6 +88,7 @@ namespace eureka::vulkan
             Queue graphicsQueue
         );
         ~FrameContext();
+        void SyncCurrentFrame();
         void BeginFrame();
         void EndFrame();
         PresentCommandBuffer NewGraphicsPresentCommandBuffer();

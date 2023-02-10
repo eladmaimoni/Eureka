@@ -36,7 +36,10 @@ namespace eureka::vulkan
         {
             vkCmdPipelineBarrier2(_commandBuffer, &dependencyInfo);
         }
-
+        void PipelineBarrierKHR(const VkDependencyInfoKHR& dependencyInfo)
+        {
+            vkCmdPipelineBarrier2KHR(_commandBuffer, &dependencyInfo);
+        }
         void CopyBufferToImage(
             VkBuffer                 srcBuffer,
             VkImage                  dstImage,
