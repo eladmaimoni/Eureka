@@ -103,6 +103,7 @@ message("=======================================================================
 #                        GLOBAL VARIABLES
 ############################################################################
 
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 set(dxc_executable "$ENV{VULKAN_SDK}/Bin/dxc.exe")
 message("Eureka: dxc_executable = ${dxc_executable}")
 message("Eureka: glslc_executable = ${glslc_executable}")
@@ -164,13 +165,12 @@ add_subdirectory (Eureka.Graphics)
 add_subdirectory (Eureka.Shaders)
 add_subdirectory (Eureka.Flutter)
 add_subdirectory (Eureka.App)
-add_subdirectory (Eureka.UnitTests)    
-add_subdirectory (Eureka.Playground)    
+add_subdirectory (Eureka.UnitTests)     
 add_subdirectory (Eureka.RPC)
 add_subdirectory (Eureka.RemoteProto)
 #add_subdirectory (Eureka.RemoteServer)
 add_subdirectory (Eureka.RemoteClient)
-
+add_subdirectory (Examples)   
 
 ########################################################################################################
 #

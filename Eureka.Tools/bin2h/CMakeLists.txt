@@ -12,3 +12,5 @@ target_link_libraries(
     PRIVATE
     eureka_strict_compiler_flags
 )
+
+set_target_properties(bin2h PROPERTIES FOLDER "Tools")
