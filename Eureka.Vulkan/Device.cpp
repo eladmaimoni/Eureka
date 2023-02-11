@@ -128,7 +128,7 @@ namespace eureka::vulkan
         void* deviceCreateInfoNext = nullptr;
         VkPhysicalDeviceVulkan12Features features12{};
         features12.sType = VkStructureType::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
-        features12.timelineSemaphore = true;
+        features12. timelineSemaphore = true;
        
         auto version = _instance->ApiVersion();
 
@@ -144,14 +144,18 @@ namespace eureka::vulkan
         {
             deviceCreateInfoNext = &features12;
         }
+
         //config.required_extentions.emplace_back(DEVICE_EXTENTION_PRE13_SYNCHRONIZATION2);
         config.required_extentions.emplace_back("VK_KHR_create_renderpass2");
         config.required_extentions.emplace_back("VK_KHR_synchronization2");
         //config.required_layers.emplace_back("VK_LAYER_KHRONOS_synchronization2");
+
+        //void* deviceCreateInfoNext = nullptr;
+
         VkDeviceCreateInfo deviceCreateInfo
         {
             .sType = VkStructureType::VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-            .pNext = deviceCreateInfoNext,
+            .pNext = &features12,
             .flags = VkDeviceCreateFlags{},
             .queueCreateInfoCount = static_cast<uint32_t>(createDesc.queu_create_info.size()),
             .pQueueCreateInfos = createDesc.queu_create_info.data(),
