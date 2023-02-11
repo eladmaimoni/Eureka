@@ -40,12 +40,15 @@ namespace eureka::flutter
         FlutterCustomTaskRunners                 _taskRunners;
         FlutterEngine                            _flutterEngine {nullptr};
         sigslot::scoped_connection               _winSize;
+        sigslot::scoped_connection               _mouseButton;
+        sigslot::scoped_connection               _cursorPos;
         std::deque<intptr_t>                     _pendingBatons;
         uint64_t                                 _lastPresentDone;
         uint64_t                                 _nextPresentTime;
         std::chrono::nanoseconds                 _frameDuration = 16667us;
         uint64_t                                 _frameDurationNs;
-
+        double _cursorX{ 0.0 };
+        double _cursorY{ 0.0 };
     public:
         FlutterProjectEmbedder(std::shared_ptr<FlutterVulkanCompositor> compositor, std::shared_ptr<Window> window);
 

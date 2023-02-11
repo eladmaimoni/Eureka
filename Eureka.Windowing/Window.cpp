@@ -32,16 +32,11 @@ namespace eureka
             }
         );
 
+        glfwSetMouseButtonCallback(_windowSurface.window.get(), MouseButtonStatic);
+
         //glfwSetCursorEnterCallback(_window.get(), ImGui_ImplGlfw_CursorEnterCallback);
-        glfwSetCursorPosCallback(_windowSurface.window.get(), [](GLFWwindow* /*window*/, double /*x*/, double /*y*/)
-            {
-                //DEBUGGER_TRACE("cursor position = ({},{})", x, y);
-            });
-        glfwSetMouseButtonCallback(_windowSurface.window.get(), [](GLFWwindow* /*window*/, int /*button*/, int /*action*/, int /*mods*/)
-        {
-                //DEBUGGER_TRACE("mouse button = {} action = {} mods = {})", button, action, mods);
-        }       
-        );
+        glfwSetCursorPosCallback(_windowSurface.window.get(), CursorPosStatic);
+
         // ImGui_ImplGlfw_MouseButtonCallback
 
         glfwSetScrollCallback(_windowSurface.window.get(), [](GLFWwindow* /*window*/, double /*xoffset*/, double /*yoffset*/)
@@ -51,12 +46,6 @@ namespace eureka
         //glfwSetKeyCallback(_window.get(), ImGui_ImplGlfw_KeyCallback);
         //glfwSetCharCallback(_window.get(), ImGui_ImplGlfw_CharCallback);
 
-
-        //_presentationQueue = _deviceContext.CreatePresentQueue(*windowSurface.surface);
-
-        //InitializeSwapChain(windowSurface);
-
-   
     }
 
     Window::~Window()
@@ -143,6 +132,26 @@ namespace eureka
         windowConfig.width = GetWidth();
         windowConfig.height = GetHeight();
     }
+
+    static Window* GetWindowPointer(GLFWwindow* window)
+    {
+        auto userPtr = glfwGetWindowUserPointer(window);
+        return static_cast<Window*>(userPtr);
+    }
+
+    void Window::MouseButtonStatic(GLFWwindow* window, int button, int action, int mods)
+    {
+
+
+        GetWindowPointer(window)->_mouseButtonSignal(static_cast<MouseButton>(button), static_cast<MouseButtonState>(action));
+    }
+
+    void Window::CursorPosStatic(GLFWwindow* window, double x, double y)
+    {
+        GetWindowPointer(window)->_cursorSignal(x, y);
+    }
+
+
 
 }
 
