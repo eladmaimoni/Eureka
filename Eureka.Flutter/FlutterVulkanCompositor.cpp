@@ -198,7 +198,7 @@ namespace eureka::flutter
     {
         PROFILE_CATEGORIZED_SCOPE("CreateBackingStore", eureka::profiling::Color::Green, eureka::profiling::PROFILING_CATEGORY_RENDERING);
         _renderDoc.StartCapture(_globalInheritedData.device->GetDevice());
-        DEBUGGER_TRACE("CreateBackingStore {} {}", config->size.width, config->size.height);
+        //DEBUGGER_TRACE("CreateBackingStore {} {}", config->size.width, config->size.height);
         VkExtent2D extent {
             .width = static_cast<uint32_t>(config->size.width),
             .height = static_cast<uint32_t>(config->size.height),
@@ -268,7 +268,7 @@ namespace eureka::flutter
     void FlutterVulkanCompositor::DestroyVulkanBackingStore(BackingStoreData* data)
     {
         PROFILE_CATEGORIZED_SCOPE("DestroyVulkanBackingStore", eureka::profiling::Color::Green, eureka::profiling::PROFILING_CATEGORY_RENDERING);
-        DEBUGGER_TRACE("DestroyVulkanBackingStore");
+        //DEBUGGER_TRACE("DestroyVulkanBackingStore");
         _frameContext->SyncCurrentFrame(); // TODO, HACKISH to prevent destroting in flight descriptor, maybe pass this to "collect" list that will be released later
         delete data;
     }
@@ -371,7 +371,7 @@ namespace eureka::flutter
 
         mainCommandBuffer.Begin();
 
-        DEBUGGER_TRACE("PresentLayers {}", layersCount);
+        //DEBUGGER_TRACE("PresentLayers {}", layersCount);
 
 
         EnqueueImageBarriers(layers, layersCount, mainCommandBuffer);

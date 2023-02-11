@@ -13,22 +13,6 @@ namespace eureka::flutter
 {
     using namespace std::chrono_literals;
 
-    const std::filesystem::path FLUTTER_EXAMPLE_DBG_PROJECT_OUT_PATH = "C:/workspace/ultrawis/build/";
-    const std::filesystem::path FLUTTER_EXAMPLE_DBG_PROJECT_ASSETS_PATH =
-        FLUTTER_EXAMPLE_DBG_PROJECT_OUT_PATH / "flutter_assets";
-    //const std::filesystem::path FLUTTER_EXAMPLE_DBG_PROJECT_ICUDTL_PATH = FLUTTER_EXAMPLE_DBG_PROJECT_OUT_PATH / "icudtl.dat";
-    const std::filesystem::path FLUTTER_EXAMPLE_DBG_PROJECT_ICUDTL_PATH =
-        "C:/Libraries/flutter/bin/cache/artifacts/engine/windows-x64/icudtl.dat";
-
-    const std::filesystem::path FLUTTER_EXAMPLE_RELEASE_PROJECT_OUT_PATH =
-        "C:/workspace/ultrawis/build/windows/runner/Release/data";
-    const std::filesystem::path FLUTTER_EXAMPLE_RELEASE_PROJECT_ASSETS_PATH =
-        FLUTTER_EXAMPLE_RELEASE_PROJECT_OUT_PATH / "flutter_assets";
-    const std::filesystem::path FLUTTER_EXAMPLE_RELEASE_PROJECT_ICUDTL_PATH =
-        FLUTTER_EXAMPLE_RELEASE_PROJECT_OUT_PATH / "icudtl.dat";
-    const std::filesystem::path FLUTTER_EXAMPLE_RELEASE_PROJECT_AOT_ELF_PATH =
-        FLUTTER_EXAMPLE_RELEASE_PROJECT_OUT_PATH / "app.so";
-
     class FlutterVulkanCompositor;
 
     class FlutterProjectEmbedder
