@@ -4,19 +4,25 @@
 
 add_library(flutter_engine SHARED IMPORTED GLOBAL)
 
+set(FLUTTER_CONFIG_DIR $<IF:$<CONFIG:Debug>,Debug,Release>)
+set(FLUTTER_BIN_DIR ${CMAKE_CURRENT_SOURCE_DIR}/bin_for_dart_debug/${FLUTTER_CONFIG_DIR})
 
 set_target_properties(
     flutter_engine 
     PROPERTIES 
     IMPORTED_LOCATION 
-    ${CMAKE_CURRENT_SOURCE_DIR}/flutter_engine.dll
+    "${FLUTTER_BIN_DIR}/flutter_engine.dll"
 )
 
 set_target_properties(
     flutter_engine 
     PROPERTIES 
-    IMPORTED_IMPLIB  
-    ${CMAKE_CURRENT_SOURCE_DIR}/flutter_engine.dll.lib
+    IMPORTED_IMPLIB_DEBUG 
+    "${CMAKE_CURRENT_SOURCE_DIR}/bin_for_dart_debug/Debug/flutter_engine.dll.lib"
+	IMPORTED_IMPLIB_RELEASE
+	"${CMAKE_CURRENT_SOURCE_DIR}/bin_for_dart_debug/Debug/flutter_engine.dll.lib"
+	IMPORTED_IMPLIB_RELWITHDEBINFO
+	"${CMAKE_CURRENT_SOURCE_DIR}/bin_for_dart_debug/Debug/flutter_engine.dll.lib"
 )
 
 target_include_directories(
