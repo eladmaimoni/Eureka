@@ -270,6 +270,84 @@ namespace eureka::flutter
         delete data;
     }
 
+    void FlutterVulkanCompositor::EnqueueImageBarriers(
+        const FlutterLayer** layers, 
+        size_t layersCount,
+        vulkan::LinearCommandBufferHandle commandBuffer
+        )
+    {
+        // image memory barrier before setting up the final render pass on which we will read the images
+        // https://github.com/KhronosGroup/Vulkan-Docs/wiki/Synchronization-Examples#first-draw-writes-to-a-color-attachment-second-draw-samples-from-that-color-image-in-the-fragment-shader
+
+        svec5<VkImageMemoryBarrier> imageBarriers;
+        //svec5<VkImageMemoryBarrier2> imageBarriers;
+
+        for (auto i = 0u; i < layersCount; ++i)
+        {
+            auto pLayer = layers[i];
+
+            if (pLayer->type == FlutterLayerContentType::kFlutterLayerContentTypeBackingStore)
+            {
+
+                auto backingStore = pLayer->backing_store;
+                auto backingStoreData = static_cast<BackingStoreData*>(backingStore->vulkan.user_data);
+
+                imageBarriers.emplace_back(VkImageMemoryBarrier
+                    { 
+                        .sType = VkStructureType::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                        .srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                        .dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
+                        .oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                        .newLayout = VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
+                        .image = backingStoreData->image.Get(),
+                        .subresourceRange = VkImageSubresourceRange
+                         {
+                            .aspectMask = VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT,
+                            .baseMipLevel = 0,
+                            .levelCount = 1,
+                            .layerCount = 1
+                         },
+                    });
+
+                //imageBarriers.emplace_back(VkImageMemoryBarrier2KHR
+                //    {
+                //       .sType = VkStructureType::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+                //       .srcStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR, // we rendered to this texture
+                //       .srcAccessMask = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT_KHR,
+                //       .dstStageMask = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT_KHR, // we will read it in the fragment shader
+                //       .dstAccessMask = VK_ACCESS_2_SHADER_READ_BIT_KHR,
+                //       .oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                //       .newLayout = VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
+                //       .image = backingStoreData->image.Get(),
+                //       .subresourceRange = VkImageSubresourceRange
+                //       {
+                //          .aspectMask = VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT,
+                //          .baseMipLevel = 0,
+                //          .levelCount = 1,
+                //          .layerCount = 1
+                //       }
+                //    });
+            }
+        }
+
+        //VkDependencyInfoKHR dependencyInfo
+        //{
+        //    .sType = VkStructureType::VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+        //    .imageMemoryBarrierCount = static_cast<uint32_t>(imageBarriers.size()),
+        //    .pImageMemoryBarriers = imageBarriers.data(),
+        //};
+        vkCmdPipelineBarrier(commandBuffer.Get(),
+            VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+            VkPipelineStageFlagBits::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+            0u, //VkDependencyFlagBits::
+            0u, nullptr, // memory barriers
+            0u, nullptr, // buffer memory barriers
+            static_cast<uint32_t>(imageBarriers.size()),
+            imageBarriers.data()
+        );
+        //commandBuffer.PipelineBarrierKHR(dependencyInfo);
+    }
+
     bool FlutterVulkanCompositor::PresentLayers(const FlutterLayer** layers, size_t layersCount)
     {
 
@@ -293,55 +371,9 @@ namespace eureka::flutter
         DEBUGGER_TRACE("PresentLayers {}", layersCount);
 
 
+        EnqueueImageBarriers(layers, layersCount, mainCommandBuffer);
+
         dspan<const FlutterLayer*> upcomingLayers(layers, layers + layersCount);
-
-
-        // image memory barrier before setting up the final render pass on which we will read the images
-        // https://github.com/KhronosGroup/Vulkan-Docs/wiki/Synchronization-Examples#first-draw-writes-to-a-color-attachment-second-draw-samples-from-that-color-image-in-the-fragment-shader
-
-        svec5<VkImageMemoryBarrier2> imageBarriers; 
-
-        for (auto i = 0u; i < layersCount; ++i)
-        {
-            auto pLayer = layers[i];
-
-            if (pLayer->type == FlutterLayerContentType::kFlutterLayerContentTypeBackingStore)
-            {
-           
-                auto backingStore = pLayer->backing_store;
-                auto backingStoreData = static_cast<BackingStoreData*>(backingStore->vulkan.user_data);
-                imageBarriers.emplace_back(VkImageMemoryBarrier2KHR
-                {
-                   .sType = VkStructureType::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
-                   .srcStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR, // we rendered to this texture
-                   .srcAccessMask = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT_KHR,
-                   .dstStageMask = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT_KHR, // we will read it in the fragment shader
-                   .dstAccessMask = VK_ACCESS_2_SHADER_READ_BIT_KHR,
-                   .oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                   .newLayout = VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
-                   .image = backingStoreData->image.Get(),
-                   .subresourceRange = VkImageSubresourceRange
-                   {
-                      .aspectMask = VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT,
-                      .baseMipLevel = 0,
-                      .levelCount = 1,
-                      .layerCount = 1
-                   }
-                });
-            }
-        }
-
-
-      
-
-        VkDependencyInfoKHR dependencyInfo
-        {
-            .sType = VkStructureType::VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
-            .imageMemoryBarrierCount = static_cast<uint32_t>(imageBarriers.size()),
-            .pImageMemoryBarriers = imageBarriers.data(),
-        };
-        
-        mainCommandBuffer.PipelineBarrierKHR(dependencyInfo);
 
         _layersViewPass->SetUpcomingDrawLayers(upcomingLayers);
 

@@ -31,7 +31,10 @@ namespace eureka::vulkan
         {
             vkCmdPipelineBarrier(_commandBuffer, srcStageMask, dstStageMask, dependencyFlags, memoryBarrierCount, pMemoryBarriers, bufferMemoryBarrierCount, pBufferMemoryBarriers, imageMemoryBarrierCount, pImageMemoryBarriers);
         }
-    
+        //void ImageMemoryBarrier(const VkDependencyInfo& dependencyInfo)
+        //{
+        //    vkCmdPipelineBarrier(_commandBuffer, &dependencyInfo);
+        //}
         void PipelineBarrier(const VkDependencyInfo& dependencyInfo)
         {
             vkCmdPipelineBarrier2(_commandBuffer, &dependencyInfo);

@@ -93,11 +93,13 @@ namespace eureka::flutter
         // Flutter callbacks (members)
         //
 
-
+        void EnqueueImageBarriers(const FlutterLayer** layers, size_t layersCount, vulkan::LinearCommandBufferHandle commandBuffer);
         bool CreateBackingStore(const FlutterBackingStoreConfig* config, FlutterBackingStore* backingStoreOut);
         bool CollectBackingStore(const FlutterBackingStore* backingStore);
         void DestroyVulkanBackingStore(BackingStoreData* data);
         bool PresentLayers(const FlutterLayer** layers, size_t layersCount);
+
+
 
         //
         // Flutter callbacks boilerplate (static)
@@ -111,6 +113,8 @@ namespace eureka::flutter
         static bool               LayersPresentStatic(const FlutterLayer** layers, size_t layersCount, void* userData);
         static FlutterVulkanImage GetNextImageStatic(void* user_data, const FlutterFrameInfo* frame_info);
         static bool               PresentImageStatic(void* user_data, const FlutterVulkanImage* image);
+    
+    
     };
 
 } // namespace eureka::flutter
