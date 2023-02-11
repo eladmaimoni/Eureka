@@ -49,6 +49,7 @@ namespace eureka::flutter
         uint64_t                                 _frameDurationNs;
         double _cursorX{ 0.0 };
         double _cursorY{ 0.0 };
+        bool _mouseDown = false;
     public:
         FlutterProjectEmbedder(std::shared_ptr<FlutterVulkanCompositor> compositor, std::shared_ptr<Window> window);
 
@@ -122,7 +123,7 @@ namespace eureka::flutter
 
                     _nextPresentTime = now + 1000000000 / 60;
                     FLUTTER_CHECK(FlutterEngineOnVsync(_flutterEngine, oldestBaton, now, _nextPresentTime));
-                    DEBUGGER_TRACE("FlutterEngineOnVsync {} {}", now, _nextPresentTime);
+                    //DEBUGGER_TRACE("FlutterEngineOnVsync {} {}", now, _nextPresentTime);
                 }
 
                 //FLUTTER_CHECK(FlutterEngineScheduleFrame(_flutterEngine));
