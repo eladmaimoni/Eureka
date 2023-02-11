@@ -139,7 +139,7 @@ namespace eureka
         return static_cast<Window*>(userPtr);
     }
 
-    void Window::MouseButtonStatic(GLFWwindow* window, int button, int action, int mods)
+    void Window::MouseButtonStatic(GLFWwindow* window, int button, int action, int /*mods*/)
     {
 
 
