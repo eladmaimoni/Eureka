@@ -59,17 +59,30 @@ namespace eureka::flutter
         _mouseButton = _window->ConnectMouseButtonSlot(
             [this](MouseButton button, MouseButtonState state)
             {
+                if (button == MouseButton::eLeft)
+                {
+                    auto now = FlutterEngineGetCurrentTime();
+                    FlutterPointerEvent event{};
+                    event.struct_size = sizeof(FlutterPointerEvent);
+                    event.phase = (state == MouseButtonState::ePressed) ? FlutterPointerPhase::kDown : FlutterPointerPhase::kUp;
+                    event.timestamp = CurrentTimeMicroseconds();
+                    event.x = _cursorX;
+                    event.y = _cursorY;
 
-                auto now = FlutterEngineGetCurrentTime();
-                FlutterPointerEvent event{};
-                event.struct_size = sizeof(FlutterPointerEvent);
-                event.phase = (state == MouseButtonState::ePressed) ? FlutterPointerPhase::kDown : FlutterPointerPhase::kUp;
-                event.timestamp = CurrentTimeMicroseconds();
-                event.x = _cursorX;
-                event.y = _cursorY;
+                    if (state == MouseButtonState::ePressed)
+                    {
+                        _mouseDown = true;
+                        event.phase = FlutterPointerPhase::kDown;
+                    }
+                    else
+                    {
+                        _mouseDown = false;
+                        event.phase = FlutterPointerPhase::kUp;
+                    }
 
-                DEBUGGER_TRACE("mouse button phase {}", event.phase == FlutterPointerPhase::kDown ? "down" : "up");
-                FLUTTER_CHECK(FlutterEngineSendPointerEvent(_flutterEngine, &event, 1));
+                    DEBUGGER_TRACE("mouse button phase {}", event.phase == FlutterPointerPhase::kDown ? "down" : "up");
+                    FLUTTER_CHECK(FlutterEngineSendPointerEvent(_flutterEngine, &event, 1));
+                }
             }
 
         );
@@ -79,6 +92,15 @@ namespace eureka::flutter
             {
                 _cursorX = x;
                 _cursorY = y;
+
+                FlutterPointerEvent event{};
+                event.struct_size = sizeof(FlutterPointerEvent);
+                event.phase = _mouseDown ? FlutterPointerPhase::kMove : FlutterPointerPhase::kHover;
+                event.timestamp = CurrentTimeMicroseconds();
+                event.x = x;
+                event.y = y;
+
+                FLUTTER_CHECK(FlutterEngineSendPointerEvent(_flutterEngine, &event, 1));
             }
         );
     }
