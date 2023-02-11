@@ -63,16 +63,8 @@ int main(int argc, char* argv[])
 
         eureka::GLFWRuntime glfw;
 
-        vk::InstanceConfig config{};
-        config.version = vk::Version{ 1,2,170 };
-        config.required_layers.emplace_back(vk::INSTANCE_LAYER_VALIDATION);
-        //config.required_layers.emplace_back(vk::INSTANCE_LAYER_PRE13_SYNCHRONIZATION2);
-        config.required_instance_extentions.emplace_back(vk::INSTANCE_EXTENTION_DEBUG_UTILS);
-        config.required_instance_extentions.emplace_back(vk::INSTANCE_EXTENTION_SURFACE_EXTENSION_NAME);
-        WIN32_ONLY(config.required_instance_extentions.emplace_back(vk::INSTANCE_EXTENTION_WIN32_SURFACE_EXTENSION_NAME));
 
-
-        auto instance = std::make_shared<vk::Instance>(config);
+        auto instance = vk::MakeDefaultInstance(vk::Version{ 1,2,0 });
 
         auto window = std::make_shared<eureka::Window>(glfw, instance->Get(), eureka::WindowConfig{});
         auto device = vk::MakeDefaultDevice(instance, window->GetSurface());

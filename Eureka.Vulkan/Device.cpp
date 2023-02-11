@@ -128,7 +128,7 @@ namespace eureka::vulkan
         void* deviceCreateInfoNext = nullptr;
         VkPhysicalDeviceVulkan12Features features12{};
         features12.sType = VkStructureType::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
-        features12. timelineSemaphore = true;
+        features12.timelineSemaphore = true;
        
         auto version = _instance->ApiVersion();
 
@@ -144,13 +144,6 @@ namespace eureka::vulkan
         {
             deviceCreateInfoNext = &features12;
         }
-
-        //config.required_extentions.emplace_back(DEVICE_EXTENTION_PRE13_SYNCHRONIZATION2);
-        config.required_extentions.emplace_back("VK_KHR_create_renderpass2");
-        config.required_extentions.emplace_back("VK_KHR_synchronization2");
-        //config.required_layers.emplace_back("VK_LAYER_KHRONOS_synchronization2");
-
-        //void* deviceCreateInfoNext = nullptr;
 
         VkDeviceCreateInfo deviceCreateInfo
         {
@@ -827,7 +820,11 @@ namespace eureka::vulkan
         auto version = instance->ApiVersion();
 
         if (version.major == 1 && version.minor < 3)
-        {
+        {        
+            deviceConfig.required_extentions.emplace_back(DEVICE_EXTENTION_PRE13_SYNCHRONIZATION2);
+            deviceConfig.required_extentions.emplace_back("VK_KHR_create_renderpass2");
+            deviceConfig.required_extentions.emplace_back("VK_KHR_synchronization2");
+            deviceConfig.required_layers.emplace_back("VK_LAYER_KHRONOS_synchronization2");
             //deviceConfig.required_layers.emplace_back(DEVICE_LAYER_PRE13_SYNCHRONIZATION2);
 
             // I think synchronization2 is dependant on VK_KHR_get_physical_device_properties2 
