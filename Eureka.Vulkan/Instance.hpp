@@ -62,7 +62,7 @@ namespace eureka::vulkan
         dspan<const char*> EnabledExtentions() const;
     };
 
-    std::shared_ptr<Instance> MakeDefaultInstance();
+    std::shared_ptr<Instance> MakeDefaultInstance(std::optional<Version> version = std::nullopt);
 
 }
 

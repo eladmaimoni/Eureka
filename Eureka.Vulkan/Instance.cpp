@@ -152,10 +152,7 @@ namespace eureka::vulkan
             .apiVersion = _apiVersion,
         };
 
-        //_config.required_instance_extentions.emplace_back("VK_KHR_synchronization2");
-        _config.required_instance_extentions.emplace_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
-        _config.required_instance_extentions.emplace_back("VK_KHR_get_surface_capabilities2");
-        //_config.required_layers.emplace_back("VK_LAYER_KHRONOS_synchronization2");
+
         
         VkInstanceCreateInfo createInfo {
             .sType = VkStructureType::VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
@@ -236,7 +233,7 @@ namespace eureka::vulkan
         return _apiVersion;
     }
 
-    std::shared_ptr<Instance> MakeDefaultInstance()
+    std::shared_ptr<Instance> MakeDefaultInstance(std::optional<Version> version)
     {
         InstanceConfig config {};
         config.required_instance_extentions.emplace_back(INSTANCE_EXTENTION_SURFACE_EXTENSION_NAME);
@@ -248,7 +245,16 @@ namespace eureka::vulkan
         config.required_instance_extentions.emplace_back(INSTANCE_EXTENTION_DEBUG_UTILS);
         config.required_layers.emplace_back(INSTANCE_LAYER_VALIDATION);
 #endif
-
+        config.version = version;
+        if (config.version)
+        {
+            if (config.version->minor <= 2)
+            {
+                config.required_instance_extentions.emplace_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+                config.required_instance_extentions.emplace_back("VK_KHR_get_surface_capabilities2");
+                config.required_layers.emplace_back("VK_LAYER_KHRONOS_synchronization2");
+            }
+        }
         return std::make_shared<Instance>(config);
     }
 
