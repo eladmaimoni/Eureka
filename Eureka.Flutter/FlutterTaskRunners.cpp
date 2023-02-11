@@ -1,6 +1,7 @@
 #include "FlutterTaskRunners.hpp"
 #include "FlutterUtils.hpp"
 #include <debugger_trace.hpp>
+#include <profiling.hpp>
 
 namespace eureka::flutter
 {
@@ -23,38 +24,60 @@ namespace eureka::flutter
         return _description;
     }
     
-    void TaskRunner::PollReadyTasks()
+    void TaskRunner::RunReadyTasksFor(std::chrono::milliseconds duration)
     {
-        std::unique_lock lk(_mtx);
+        PROFILE_CATEGORIZED_SCOPE("RunReadyTasksFor", eureka::profiling::Color::Green, eureka::profiling::PROFILING_CATEGORY_SYSTEM);
+        auto now = std::chrono::high_resolution_clock::now();
+        auto until = now + duration;
 
-        auto itr = _pending.begin();
-        auto eitr = _pending.end();
-
-        while (itr != eitr)
+        while (now < until)
         {
+            std::unique_lock lk(_mtx);
             auto currentTime = FlutterEngineGetCurrentTime();
-            auto [task, targetTime] = *itr;
+            bool haveReadyTasks = !_pending.empty() && _pending.begin()->target_time_nanos <= currentTime;
 
-            if (targetTime <= currentTime)
+            //auto status = std::cv_status::no_timeout;
+
+            if (!haveReadyTasks /*&& status != std::cv_status::timeout*/)
             {
-                _pending.erase(itr++);
-                lk.unlock();
-                //DEBUGGER_TRACE("run task start");
-                FLUTTER_CHECK(FlutterEngineRunTask(_engine, &task));
-                //DEBUGGER_TRACE("run task end");
-                lk.lock();
+               /* status =*/ _cv.wait_until(lk, until);
             }
-            else
+
+            auto itr = _pending.begin();
+            auto eitr = _pending.end();
+
+            while (itr != eitr)
             {
-                // tasks are sorted by target time
-                break;
+                currentTime = FlutterEngineGetCurrentTime();
+                auto [task, targetTime] = *itr;
+
+                if (targetTime <= currentTime)
+                {
+                    _pending.erase(itr++);
+                    lk.unlock();
+
+                    PROFILE_CATEGORIZED_SCOPE("FlutterEngineRunTask", profiling::Color::Green, profiling::PROFILING_CATEGORY_SYSTEM);
+                    //DEBUGGER_TRACE("run task start");
+                    FLUTTER_CHECK(FlutterEngineRunTask(_engine, &task));
+                    //DEBUGGER_TRACE("run task end");
+                    lk.lock();
+                }
+                else
+                {
+                    // tasks are sorted by target time
+                    break;
+                }
             }
+
+            now = std::chrono::high_resolution_clock::now();
         }
+ 
     }
 
     void TaskRunner::PostTask(FlutterTask task, uint64_t targetTimeNanos)
     {
         std::scoped_lock lk(_mtx);
         _pending.emplace(PendingTask{ task, targetTimeNanos });
+        _cv.notify_one();
     }
 }

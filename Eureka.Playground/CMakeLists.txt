@@ -1,15 +1,15 @@
-set_source_group(
-    flutter 
-    "flutter_embedding_tests.cpp"
-    #"flutter_embedding_google_sample.cpp"
-)
+#set_source_group(
+#    flutter 
+#    #"flutter_embedding_tests.cpp"
+#    #"flutter_embedding_google_sample.cpp"
+#)
 set_source_group(
     run 
     "main.cpp"
 )
 add_executable(
     Eureka.Playground
-    ${flutter}
+    #${flutter}
     ${run}
 ) 
 
@@ -66,13 +66,6 @@ target_link_libraries(
     Eureka.Graphics
     Eureka.Shaders
     Eureka.Flutter
-    #Eureka.AssetLoading
-	#Eureka.RemoteProto 
-	#Eureka.RPC 
-	#Eureka.RemoteServer
-	#Eureka.RemoteClient
-    Catch2::Catch2 
-    
     eureka_strict_compiler_flags
     #concurrencpp::concurrencpp
 )
@@ -95,5 +88,5 @@ target_link_libraries(
 #    PROPERTY
 #    IMPORTED_IMPLIB
 #)
-message("222 flutter_engine IMPORTED_LOCATION = ${flutter_engine_imported_location}")
-message("222 flutter_engine IMPORTED_IMPLIB = ${flutter_engine_IMPORTED_IMPLIB}")
+#message("222 flutter_engine IMPORTED_LOCATION = ${flutter_engine_imported_location}")
+#message("222 flutter_engine IMPORTED_IMPLIB = ${flutter_engine_IMPORTED_IMPLIB}")

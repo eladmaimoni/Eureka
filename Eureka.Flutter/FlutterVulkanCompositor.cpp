@@ -1,5 +1,6 @@
 #include "FlutterVulkanCompositor.hpp"
 #include "../Eureka.Vulkan/PipelinePresets.hpp"
+#include <profiling.hpp>
 /*
 Here are the general steps required to render a textured quad using Vulkan:
 
@@ -195,6 +196,7 @@ namespace eureka::flutter
     bool FlutterVulkanCompositor::CreateBackingStore(const FlutterBackingStoreConfig* config,
                                                      FlutterBackingStore*             backingStoreOut)
     {
+        PROFILE_CATEGORIZED_SCOPE("CreateBackingStore", eureka::profiling::Color::Green, eureka::profiling::PROFILING_CATEGORY_RENDERING);
         _renderDoc.StartCapture(_globalInheritedData.device->GetDevice());
         DEBUGGER_TRACE("CreateBackingStore {} {}", config->size.width, config->size.height);
         VkExtent2D extent {
@@ -265,6 +267,7 @@ namespace eureka::flutter
 
     void FlutterVulkanCompositor::DestroyVulkanBackingStore(BackingStoreData* data)
     {
+        PROFILE_CATEGORIZED_SCOPE("DestroyVulkanBackingStore", eureka::profiling::Color::Green, eureka::profiling::PROFILING_CATEGORY_RENDERING);
         DEBUGGER_TRACE("DestroyVulkanBackingStore");
         _frameContext->SyncCurrentFrame(); // TODO, HACKISH to prevent destroting in flight descriptor, maybe pass this to "collect" list that will be released later
         delete data;
@@ -350,7 +353,7 @@ namespace eureka::flutter
 
     bool FlutterVulkanCompositor::PresentLayers(const FlutterLayer** layers, size_t layersCount)
     {
-
+        PROFILE_CATEGORIZED_SCOPE("PresentLayers", eureka::profiling::Color::Green, eureka::profiling::PROFILING_CATEGORY_RENDERING);
         // These should occur outside of this function in any case
         _frameContext->BeginFrame(); // synchronizes
         _targetPass->Prepare();
