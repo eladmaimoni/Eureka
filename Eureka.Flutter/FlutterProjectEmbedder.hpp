@@ -7,6 +7,7 @@
 
 #include "FlutterUtils.hpp"
 #include <debugger_trace.hpp>
+#include <profiling.hpp>
 
 namespace eureka::flutter
 {
@@ -35,7 +36,7 @@ namespace eureka::flutter
         std::mutex                               _mtx;
         std::shared_ptr<FlutterVulkanCompositor> _compositor;
         std::shared_ptr<Window>                  _window;
-        TaskRunner                               _platformTasksRunner;
+        //TaskRunner                               _platformTasksRunner;
         TaskRunner                               _renderTasksRunner;
         FlutterCustomTaskRunners                 _taskRunners;
         FlutterEngine                            _flutterEngine {nullptr};
@@ -69,7 +70,7 @@ namespace eureka::flutter
 
         void Vsync(intptr_t baton)
         {
-            DEBUGGER_TRACE("Vsync");
+            //DEBUGGER_TRACE("Vsync");
             std::scoped_lock lk(_mtx);
             _pendingBatons.emplace_back(baton);
         }
@@ -102,33 +103,7 @@ namespace eureka::flutter
             _frameDurationNs = _frameDuration.count();
         }
 
-        void DoTasks()
-        {
-            static constexpr uint64_t MILLI = std::chrono::duration_cast<std::chrono::nanoseconds>(1ms).count();
-            _platformTasksRunner.PollReadyTasks();
-            _renderTasksRunner.PollReadyTasks();
-
-            auto now = FlutterEngineGetCurrentTime();
-
-            if(now > _nextPresentTime || (_nextPresentTime - now) < MILLI)
-            {
-                // TODO atomic
-                std::unique_lock lk(_mtx);
-
-                if(!_pendingBatons.empty())
-                {
-                    auto oldestBaton = _pendingBatons.front();
-                    _pendingBatons.pop_front();
-                    lk.unlock();
-
-                    _nextPresentTime = now + 1000000000 / 60;
-                    FLUTTER_CHECK(FlutterEngineOnVsync(_flutterEngine, oldestBaton, now, _nextPresentTime));
-                    //DEBUGGER_TRACE("FlutterEngineOnVsync {} {}", now, _nextPresentTime);
-                }
-
-                //FLUTTER_CHECK(FlutterEngineScheduleFrame(_flutterEngine));
-            }
-        }
+        void Loop();
     };
 
 } // namespace eureka::flutter

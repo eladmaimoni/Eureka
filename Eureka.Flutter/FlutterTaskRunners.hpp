@@ -22,6 +22,7 @@ namespace eureka::flutter
     {
     protected:
         std::mutex                              _mtx;
+        std::condition_variable                 _cv;
         FlutterEngine                           _engine;
         FlutterTaskRunnerDescription            _description;
         std::thread::id                         _executionId;
@@ -54,7 +55,7 @@ namespace eureka::flutter
         void SetEngineHandle(FlutterEngine engine);
         const FlutterTaskRunnerDescription& GetDescription() const;
 
-        void PollReadyTasks();
+        void RunReadyTasksFor(std::chrono::milliseconds duration);
     };
 
 } // namespace eureka::flutter

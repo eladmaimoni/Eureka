@@ -7,14 +7,14 @@ namespace eureka::flutter
                                                    std::shared_ptr<Window>                  window) :
         _compositor(std::move(compositor)),
         _window(std::move(window)),
-        _platformTasksRunner(std::this_thread::get_id()),
+        //_platformTasksRunner(std::this_thread::get_id()),
         _renderTasksRunner(std::this_thread::get_id())
 
     {
 
         _taskRunners.thread_priority_setter = [](FlutterThreadPriority) -> void { return; };
         _taskRunners.struct_size = sizeof(FlutterCustomTaskRunners);
-        _taskRunners.platform_task_runner = &_platformTasksRunner.GetDescription();
+        _taskRunners.platform_task_runner = &_renderTasksRunner.GetDescription();
         _taskRunners.render_task_runner = &_renderTasksRunner.GetDescription();
 
         auto assets_path_str = FLUTTER_EXAMPLE_DBG_PROJECT_ASSETS_PATH.string();
@@ -44,7 +44,7 @@ namespace eureka::flutter
             throw std::runtime_error("failed to initialize flutter application");
         }
 
-        _platformTasksRunner.SetEngineHandle(_flutterEngine);
+        //_platformTasksRunner.SetEngineHandle(_flutterEngine);
         _renderTasksRunner.SetEngineHandle(_flutterEngine);
 
         _winSize = _window->ConnectResizeSlot([this](uint32_t w, uint32_t h) {
@@ -61,7 +61,6 @@ namespace eureka::flutter
             {
                 if (button == MouseButton::eLeft)
                 {
-                    auto now = FlutterEngineGetCurrentTime();
                     FlutterPointerEvent event{};
                     event.struct_size = sizeof(FlutterPointerEvent);
                     event.phase = (state == MouseButtonState::ePressed) ? FlutterPointerPhase::kDown : FlutterPointerPhase::kUp;
@@ -103,5 +102,39 @@ namespace eureka::flutter
                 FLUTTER_CHECK(FlutterEngineSendPointerEvent(_flutterEngine, &event, 1));
             }
         );
+    }
+
+    void FlutterProjectEmbedder::Loop()
+    {
+        static constexpr uint64_t MILLI = std::chrono::duration_cast<std::chrono::nanoseconds>(1ms).count();
+        while (!_window->ShouldClose())
+        {
+            _window->PollEvents();
+            _renderTasksRunner.RunReadyTasksFor(1ms);
+
+            auto now = FlutterEngineGetCurrentTime();
+
+            if (now > _nextPresentTime || (_nextPresentTime - now) < MILLI)
+            {
+                std::unique_lock lk(_mtx);
+
+                if (!_pendingBatons.empty())
+                {
+         
+                    auto oldestBaton = _pendingBatons.front();
+                    _pendingBatons.pop_front();
+                    lk.unlock();
+
+                    _nextPresentTime = now + 1000000000 / 60;
+                    PROFILE_CATEGORIZED_SCOPE("FlutterEngineOnVsync", eureka::profiling::Color::Green, eureka::profiling::PROFILING_CATEGORY_SYSTEM);
+                    FLUTTER_CHECK(FlutterEngineOnVsync(_flutterEngine, oldestBaton, now, _nextPresentTime));
+                    //DEBUGGER_TRACE("FlutterEngineOnVsync {} {}", now, _nextPresentTime);
+                }
+
+                //FLUTTER_CHECK(FlutterEngineScheduleFrame(_flutterEngine));
+            }
+
+
+        }
     }
 } // namespace eureka::flutter
