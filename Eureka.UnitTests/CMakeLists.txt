@@ -27,6 +27,8 @@ add_executable(
     ${run}
 ) 
 
+set_target_properties(Eureka.UnitTests PROPERTIES FOLDER "Tests")
+
 target_include_directories(
     Eureka.UnitTests
     PRIVATE

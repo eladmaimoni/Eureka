@@ -3,28 +3,26 @@
 #    #"flutter_embedding_tests.cpp"
 #    #"flutter_embedding_google_sample.cpp"
 #)
+
+
 set_source_group(
     run 
     "main.cpp"
 )
 add_executable(
-    Eureka.Playground
+    FlutterAppJIT
     #${flutter}
     ${run}
 ) 
 
+set_target_properties(FlutterAppJIT PROPERTIES FOLDER "Examples")
+
 target_include_directories(
-    Eureka.Playground
+    FlutterAppJIT
     PRIVATE
 )
 
-target_compile_definitions(
-   Eureka.Playground
-   PRIVATE
-   CATCH_CONFIG_ENABLE_BENCHMARKING
-)
-
-target_precompile_headers(Eureka.Playground REUSE_FROM Eureka.Precompiled)
+target_precompile_headers(FlutterAppJIT REUSE_FROM Eureka.Precompiled)
 
 function(link_library_and_copy_dynamic_library_to_output_path target_name dynamic_library_target)
     # get the full path to the dll of the dynamic library we wish to link
@@ -54,12 +52,12 @@ function(link_library_and_copy_dynamic_library_to_output_path target_name dynami
 endfunction()
 
 link_library_and_copy_dynamic_library_to_output_path(
-    Eureka.Playground
+    FlutterAppJIT
     flutter_engine
 )
 
 target_link_libraries(
-    Eureka.Playground
+    FlutterAppJIT
     PRIVATE 
     Eureka.Precompiled
     Eureka.Core
