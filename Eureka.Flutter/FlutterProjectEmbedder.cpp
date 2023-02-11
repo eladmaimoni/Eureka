@@ -2,6 +2,7 @@
 
 namespace eureka::flutter
 {
+
     FlutterProjectEmbedder::FlutterProjectEmbedder(std::shared_ptr<FlutterVulkanCompositor> compositor,
                                                    std::shared_ptr<Window>                  window) :
         _compositor(std::move(compositor)),
@@ -54,5 +55,31 @@ namespace eureka::flutter
             event.pixel_ratio = static_cast<double>(w) / static_cast<double>(h);
             FLUTTER_CHECK(FlutterEngineSendWindowMetricsEvent(_flutterEngine, &event));
         });
+
+        _mouseButton = _window->ConnectMouseButtonSlot(
+            [this](MouseButton button, MouseButtonState state)
+            {
+
+                auto now = FlutterEngineGetCurrentTime();
+                FlutterPointerEvent event{};
+                event.struct_size = sizeof(FlutterPointerEvent);
+                event.phase = (state == MouseButtonState::ePressed) ? FlutterPointerPhase::kDown : FlutterPointerPhase::kUp;
+                event.timestamp = CurrentTimeMicroseconds();
+                event.x = _cursorX;
+                event.y = _cursorY;
+
+                DEBUGGER_TRACE("mouse button phase {}", event.phase == FlutterPointerPhase::kDown ? "down" : "up");
+                FLUTTER_CHECK(FlutterEngineSendPointerEvent(_flutterEngine, &event, 1));
+            }
+
+        );
+
+        _cursorPos = _window->ConnectCursorSlot(
+            [this](double x, double y)
+            {
+                _cursorX = x;
+                _cursorY = y;
+            }
+        );
     }
 } // namespace eureka::flutter

@@ -4,7 +4,7 @@
 
 namespace eureka::flutter
 {
-
+    uint64_t CurrentTimeMicroseconds();
     void CheckFlutterResult(FlutterEngineResult result);
 
 } // namespace eureka::flutter
