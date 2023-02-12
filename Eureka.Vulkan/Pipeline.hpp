@@ -16,8 +16,8 @@ namespace eureka::vulkan
     public:
         PipelineLayout(const PipelineLayout&) = delete;
         PipelineLayout& operator=(const PipelineLayout&) = delete;
-        PipelineLayout(PipelineLayout&& that);
-        PipelineLayout& operator=(PipelineLayout&& rhs);
+        PipelineLayout(PipelineLayout&& that) noexcept;
+        PipelineLayout& operator=(PipelineLayout&& rhs) noexcept;
         PipelineLayout(std::shared_ptr<Device> device, const VkPipelineLayoutCreateInfo& pipelineLayoutCreateInfo);
         ~PipelineLayout();
         VkPipelineLayout Get() const
@@ -42,8 +42,8 @@ namespace eureka::vulkan
         Pipeline() = default;
         Pipeline(const Pipeline&) = delete;
         Pipeline& operator=(const Pipeline&) = delete;
-        Pipeline(Pipeline&& that);
-        Pipeline& operator=(Pipeline&& rhs);
+        Pipeline(Pipeline&& that) noexcept;
+        Pipeline& operator=(Pipeline&& rhs) noexcept;
         Pipeline(std::shared_ptr<Device>             device,
                  std::shared_ptr<PipelineLayout>     layout,
                  std::shared_ptr<RenderPass>         renderPass,

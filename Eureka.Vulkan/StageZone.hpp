@@ -40,8 +40,8 @@ namespace eureka::vulkan
         ~PoolSequentialStageZone();
         PoolSequentialStageZone(const PoolSequentialStageZone&) = delete;
         PoolSequentialStageZone& operator=(const PoolSequentialStageZone&) = delete;
-        PoolSequentialStageZone(PoolSequentialStageZone&& that);
-        PoolSequentialStageZone& operator=(PoolSequentialStageZone&& rhs);
+        PoolSequentialStageZone(PoolSequentialStageZone&& that) noexcept;
+        PoolSequentialStageZone& operator=(PoolSequentialStageZone&& rhs) noexcept;
 
 
         uint64_t Position() const;

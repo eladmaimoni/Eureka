@@ -8,14 +8,14 @@
 
 namespace eureka::vulkan
 {
-    PipelineLayout::PipelineLayout(PipelineLayout&& that)
+    PipelineLayout::PipelineLayout(PipelineLayout&& that) noexcept
         : 
         _device(std::move(that._device)),
         _pipelineLayout(steal(that._pipelineLayout))
     {
     }
 
-    PipelineLayout& PipelineLayout::operator=(PipelineLayout&& rhs)
+    PipelineLayout& PipelineLayout::operator=(PipelineLayout&& rhs) noexcept
     {
         _device = std::move(rhs._device);
         _pipelineLayout = steal(rhs._pipelineLayout);
@@ -62,7 +62,7 @@ namespace eureka::vulkan
         }
     }
 
-    Pipeline::Pipeline(Pipeline&& that)
+    Pipeline::Pipeline(Pipeline&& that) noexcept
         :
         _device(std::move(that._device)),
         _pipelineLayout(std::move(that._pipelineLayout)),
@@ -72,7 +72,7 @@ namespace eureka::vulkan
 
     }
 
-    Pipeline& Pipeline::operator=(Pipeline&& rhs)
+    Pipeline& Pipeline::operator=(Pipeline&& rhs) noexcept
     {
         _device = std::move(rhs._device);
         _pipelineLayout = std::move(rhs._pipelineLayout);

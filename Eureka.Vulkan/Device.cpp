@@ -35,7 +35,7 @@ namespace eureka::vulkan
         for (const auto& requestedExtension : config.required_extentions)
         {
             bool found = false;
-            for (auto availableExtention : extentionProperties)
+            for (const auto& availableExtention : extentionProperties)
             {
                 std::string_view availableExtentionName(availableExtention.extensionName);
 

@@ -12,7 +12,7 @@ namespace eureka::vulkan
         _pool = _device->CreateDescriptorPool(descriptorPoolCreateInfo);
     }
 
-    DescriptorPool::DescriptorPool(DescriptorPool&& that) :
+    DescriptorPool::DescriptorPool(DescriptorPool&& that) noexcept :
         _pool(steal(that._pool)),
         _device(std::move(that._device))
     {}
@@ -25,7 +25,7 @@ namespace eureka::vulkan
         }
     }
 
-    DescriptorPool& DescriptorPool::operator=(DescriptorPool&& rhs)
+    DescriptorPool& DescriptorPool::operator=(DescriptorPool&& rhs) noexcept
     {
         _pool = steal(rhs._pool);
         _device = std::move(rhs._device);

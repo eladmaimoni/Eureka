@@ -8,7 +8,7 @@ namespace eureka::vulkan
 
     }
 
-    Semaphore::Semaphore(Semaphore&& that) :
+    Semaphore::Semaphore(Semaphore&& that) noexcept :
         _device(std::move(that._device)), _semaphore(that._semaphore)
     {
         that._semaphore = nullptr;
@@ -19,7 +19,7 @@ namespace eureka::vulkan
         return _semaphore;
     }
 
-    Semaphore& Semaphore::operator=(Semaphore&& rhs)
+    Semaphore& Semaphore::operator=(Semaphore&& rhs) noexcept
     {
         _device = std::move(rhs._device);
         _semaphore = rhs._semaphore;
@@ -173,14 +173,14 @@ namespace eureka::vulkan
         _fence = _device->CreateFence(fenceCreateInfo);
     }
 
-    Fence::Fence(Fence&& that) :
+    Fence::Fence(Fence&& that) noexcept :
         _device(std::move(that._device)),
         _fence(steal(that._fence))
     {
 
     }
     
-    Fence& Fence::operator=(Fence&& rhs)
+    Fence& Fence::operator=(Fence&& rhs) noexcept
     {
         _device = std::move(rhs._device);
         _fence = steal(rhs._fence);

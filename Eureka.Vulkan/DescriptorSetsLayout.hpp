@@ -11,8 +11,8 @@ namespace eureka::vulkan
         std::shared_ptr<Device> _device;
         VkDescriptorSetLayout _layout{ nullptr };
     public:
-        DescriptorSetLayout(DescriptorSetLayout&& that);
-        DescriptorSetLayout& operator=(DescriptorSetLayout&& rhs);
+        DescriptorSetLayout(DescriptorSetLayout&& that) noexcept;
+        DescriptorSetLayout& operator=(DescriptorSetLayout&& rhs) noexcept;
         DescriptorSetLayout(const DescriptorSetLayout& that) = delete;
         DescriptorSetLayout& operator=(const DescriptorSetLayout& rhs) = delete;
         ~DescriptorSetLayout();

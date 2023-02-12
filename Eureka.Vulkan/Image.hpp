@@ -122,8 +122,8 @@ namespace eureka::vulkan
     public:
         Sampler() = default;
         Sampler(std::shared_ptr<Device> device, const VkSamplerCreateInfo& createInfo);
-        Sampler(Sampler&& that);
-        Sampler& operator=(Sampler&& rhs);
+        Sampler(Sampler&& that) noexcept;
+        Sampler& operator=(Sampler&& rhs) noexcept;
         Sampler(const Sampler&) = delete;
         Sampler& operator=(const Sampler&) = delete;
         ~Sampler();

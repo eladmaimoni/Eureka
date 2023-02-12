@@ -41,14 +41,14 @@ namespace eureka::vulkan
 
     }
 
-    PoolSequentialStageZone::PoolSequentialStageZone(PoolSequentialStageZone&& that)
+    PoolSequentialStageZone::PoolSequentialStageZone(PoolSequentialStageZone&& that) noexcept
         : _pool(std::move(that._pool)), _allocation(that._allocation), _front(that._front)
     {
         that._allocation = {};
         that._front = {};
     }
 
-    PoolSequentialStageZone& PoolSequentialStageZone::operator=(PoolSequentialStageZone&& rhs)
+    PoolSequentialStageZone& PoolSequentialStageZone::operator=(PoolSequentialStageZone&& rhs) noexcept
     {
         _pool = std::move(rhs._pool);
         _allocation = std::move(rhs._allocation);

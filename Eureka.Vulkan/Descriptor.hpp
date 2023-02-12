@@ -26,8 +26,8 @@ namespace eureka::vulkan
     public:
         VkDescriptorSet Get() { return _set; }
         DescriptorSetHandle(std::shared_ptr<Device> device, VkDescriptorSet set);
-        DescriptorSetHandle& operator=(DescriptorSetHandle&& rhs);
-        DescriptorSetHandle(DescriptorSetHandle&& that);
+        DescriptorSetHandle& operator=(DescriptorSetHandle&& rhs) noexcept;
+        DescriptorSetHandle(DescriptorSetHandle&& that) noexcept;
         ~DescriptorSetHandle() = default;
 
         void SetBinding(uint32_t bindingSlot, VkDescriptorType descType, const VkDescriptorBufferInfo& bufferInfo);
@@ -47,8 +47,8 @@ namespace eureka::vulkan
 
         void SetBindings(uint32_t startSlot, VkDescriptorType descType, dynamic_cspan<VkDescriptorImageInfo> imageInfos);
         VkDescriptorSet Get() const;
-        FreeableDescriptorSet& operator=(FreeableDescriptorSet&& rhs);
-        FreeableDescriptorSet(FreeableDescriptorSet&& that);       
+        FreeableDescriptorSet& operator=(FreeableDescriptorSet&& rhs) noexcept;
+        FreeableDescriptorSet(FreeableDescriptorSet&& that) noexcept;
         ~FreeableDescriptorSet();
 
 

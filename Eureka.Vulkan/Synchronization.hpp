@@ -15,8 +15,8 @@ namespace eureka::vulkan
         ~Semaphore();
         Semaphore(const Semaphore& semaphore) = default;
         Semaphore& operator=(const Semaphore& semaphore) = default;
-        Semaphore(Semaphore&& that);
-        Semaphore& operator=(Semaphore&& rhs);
+        Semaphore(Semaphore&& that) noexcept;
+        Semaphore& operator=(Semaphore&& rhs) noexcept;
     public:
        VkSemaphore Get() const;
     };
@@ -202,8 +202,8 @@ namespace eureka::vulkan
         Fence(std::shared_ptr<Device> device, bool signaled = false);
         Fence(const Fence&) = delete;
         Fence& operator=(const Fence&) = delete;
-        Fence(Fence&& that);
-        Fence& operator=(Fence&& rhs);
+        Fence(Fence&& that) noexcept;
+        Fence& operator=(Fence&& rhs) noexcept;
         ~Fence();
         VkFence Get() const { return _fence; }
         void WaitAndReset() const;

@@ -21,7 +21,7 @@ namespace eureka::vulkan
         {
             _frameBuffer = _device->CreateFrameBuffer(createInfo);
         }
-        FrameBuffer(FrameBuffer&& that)
+        FrameBuffer(FrameBuffer&& that) noexcept
             : _device(std::move(that._device)),
             _frameBuffer(std::move(that._frameBuffer))
         {
@@ -67,7 +67,7 @@ namespace eureka::vulkan
         VkRect2D                     _area;
         std::shared_ptr<RenderPass>  _renderPass{ nullptr };
         FrameBuffer                  _frameBuffer;
-        VkRenderPassBeginInfo        _beginInfo;
+        VkRenderPassBeginInfo        _beginInfo{ VkStructureType::VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO, };
     };
 
 

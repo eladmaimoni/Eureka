@@ -66,7 +66,7 @@ namespace eureka::profiling
         ProfileUnthreadedScope& operator=(ProfileUnthreadedScope&&) = delete;
         ProfileUnthreadedScope& operator=(const ProfileUnthreadedScope&) = delete;
     private:
-        uint64_t _id;
+        uint64_t _id{};
     };
 
 }

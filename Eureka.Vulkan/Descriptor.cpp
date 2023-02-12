@@ -65,14 +65,14 @@ namespace eureka::vulkan
 
     }
 
-    DescriptorSetHandle& DescriptorSetHandle::operator=(DescriptorSetHandle&& rhs)
+    DescriptorSetHandle& DescriptorSetHandle::operator=(DescriptorSetHandle&& rhs) noexcept
     {
         DescriptorSetBase::operator=(std::move(rhs));
         _set = steal(rhs._set);
         return *this;
     }
 
-    DescriptorSetHandle::DescriptorSetHandle(DescriptorSetHandle&& that) 
+    DescriptorSetHandle::DescriptorSetHandle(DescriptorSetHandle&& that) noexcept
         : 
         DescriptorSetBase(std::move(that)),
         _set(steal(that._set))
@@ -133,7 +133,7 @@ namespace eureka::vulkan
         }
     }
 
-    FreeableDescriptorSet::FreeableDescriptorSet(FreeableDescriptorSet&& that) :
+    FreeableDescriptorSet::FreeableDescriptorSet(FreeableDescriptorSet&& that) noexcept :
         DescriptorSetBase(std::move(that)),
         _allocator(std::move(that._allocator)),
         _allocation(that._allocation)
@@ -143,7 +143,7 @@ namespace eureka::vulkan
 
 
 
-    FreeableDescriptorSet& FreeableDescriptorSet::operator=(FreeableDescriptorSet&& rhs)
+    FreeableDescriptorSet& FreeableDescriptorSet::operator=(FreeableDescriptorSet&& rhs) noexcept
     {
         DescriptorSetBase::operator=(std::move(rhs));
         _allocator = std::move(rhs._allocator);

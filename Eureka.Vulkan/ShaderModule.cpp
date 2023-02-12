@@ -12,7 +12,7 @@ namespace eureka::vulkan
         _shaderModule = _device->CreateShaderModule(shaderModuleCreateInfo);
     }
 
-    ShaderModule::ShaderModule(ShaderModule&& that)
+    ShaderModule::ShaderModule(ShaderModule&& that) noexcept
         :
         _device(std::move(that._device)),
         _shaderModule(steal(that._shaderModule))
@@ -20,7 +20,7 @@ namespace eureka::vulkan
 
     }
 
-    ShaderModule& ShaderModule::operator=(ShaderModule&& rhs)
+    ShaderModule& ShaderModule::operator=(ShaderModule&& rhs) noexcept
     {
         _device = std::move(rhs._device);
         _shaderModule = steal(rhs._shaderModule);

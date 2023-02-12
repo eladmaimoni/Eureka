@@ -35,14 +35,14 @@ namespace eureka::vulkan
         _pool = _device->CreateCommandPool(createInfo);
     }
 
-    LinearCommandPool::LinearCommandPool(LinearCommandPool&& that) :
+    LinearCommandPool::LinearCommandPool(LinearCommandPool&& that) noexcept :
         _device(std::move(that._device)),
         _pool(steal(that._pool))
     {
 
     }
     
-    LinearCommandPool& LinearCommandPool::operator=(LinearCommandPool&& rhs)
+    LinearCommandPool& LinearCommandPool::operator=(LinearCommandPool&& rhs) noexcept
     {
         _device = std::move(rhs._device);
         _pool = steal(rhs._pool);

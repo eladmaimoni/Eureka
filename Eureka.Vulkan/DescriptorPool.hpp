@@ -14,8 +14,8 @@ namespace eureka::vulkan
         DescriptorPool(const DescriptorPool&) = delete;
         DescriptorPool& operator=(const DescriptorPool&) = delete;
         DescriptorPool(std::shared_ptr<Device> device, const VkDescriptorPoolCreateInfo& descriptorPoolCreateInfo);
-        DescriptorPool(DescriptorPool&& that);
-        DescriptorPool& operator=(DescriptorPool&& rhs);
+        DescriptorPool(DescriptorPool&& that) noexcept;
+        DescriptorPool& operator=(DescriptorPool&& rhs) noexcept;
         ~DescriptorPool();
         VkDescriptorPool Get() const { return _pool; }
 

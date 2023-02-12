@@ -210,8 +210,8 @@ namespace eureka::vulkan
         std::shared_ptr<Device> _device{nullptr};
         VkCommandPool _pool{nullptr};
     public:
-        LinearCommandPool(LinearCommandPool&& that);
-        LinearCommandPool& operator=(LinearCommandPool&& rhs);
+        LinearCommandPool(LinearCommandPool&& that) noexcept;
+        LinearCommandPool& operator=(LinearCommandPool&& rhs) noexcept;
         LinearCommandPool(const LinearCommandPool& that) = delete;
         LinearCommandPool& operator=(const LinearCommandPool& rhs) = delete;
         LinearCommandPool(std::shared_ptr<Device> device, uint32_t queueFamilyIndex);

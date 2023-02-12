@@ -11,7 +11,7 @@ namespace eureka::vulkan
 
     }
 
-    DescriptorSetLayout::DescriptorSetLayout(DescriptorSetLayout&& that)
+    DescriptorSetLayout::DescriptorSetLayout(DescriptorSetLayout&& that) noexcept
         : 
         _device(std::move(that._device)),
         _layout(steal(that._layout))
@@ -19,7 +19,7 @@ namespace eureka::vulkan
 
     }
 
-    DescriptorSetLayout& DescriptorSetLayout::operator=(DescriptorSetLayout&& rhs)
+    DescriptorSetLayout& DescriptorSetLayout::operator=(DescriptorSetLayout&& rhs) noexcept
     {
         _device = std::move(rhs._device);
         _layout = steal(rhs._layout);

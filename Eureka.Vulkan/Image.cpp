@@ -200,14 +200,14 @@ namespace eureka::vulkan
         _sampler = _device->CreateSampler(createInfo);
     }
 
-    Sampler::Sampler(Sampler&& that)
+    Sampler::Sampler(Sampler&& that) noexcept
         : 
         _device(std::move(that._device)),
         _sampler(steal(that._sampler))
     {
     }
 
-    Sampler& Sampler::operator=(Sampler&& rhs)
+    Sampler& Sampler::operator=(Sampler&& rhs) noexcept
     {
         _device = std::move(rhs._device);
         _sampler = steal(rhs._sampler);

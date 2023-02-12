@@ -12,8 +12,8 @@ namespace eureka::vulkan
         ShaderModule() = default;
         ShaderModule(std::shared_ptr<Device> device, const VkShaderModuleCreateInfo& shaderModuleCreateInfo);
         ~ShaderModule();
-        ShaderModule(ShaderModule&& that);
-        ShaderModule& operator=(ShaderModule&& rhs);
+        ShaderModule(ShaderModule&& that) noexcept;
+        ShaderModule& operator=(ShaderModule&& rhs) noexcept;
         ShaderModule(const ShaderModule&) = delete;
         ShaderModule& operator=(const ShaderModule&) = delete;
         VkShaderModule Get() const { return _shaderModule; }
