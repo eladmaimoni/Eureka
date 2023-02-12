@@ -1,4 +1,5 @@
 name: PR Check CI
+run-name: PR Check run by ${{ github.actor }}
 
 # resources
 # https://docs.github.com/en/actions/using-workflows#creating-a-workflow-file
