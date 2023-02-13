@@ -24,36 +24,11 @@ target_include_directories(
 
 target_precompile_headers(FlutterAppJIT REUSE_FROM Eureka.Precompiled)
 
-function(link_library_and_copy_dynamic_library_to_output_path target_name dynamic_library_target)
-    # get the full path to the dll of the dynamic library we wish to link
-    get_target_property(
-        dynamic_library_target_imported_location # out value
-        ${dynamic_library_target}
-        IMPORTED_LOCATION
-    )
 
-    #message("dynamic_library_target_imported_location = ${dynamic_library_target_imported_location}")
-
-    add_custom_command(
-        TARGET 
-        ${target_name}  # the target that uses the dll 
-        PRE_BUILD       # this command is executed as a pre build step for the target
-        COMMAND 
-        ${CMAKE_COMMAND} -E copy_if_different  # which executes "cmake - E copy_if_different..."
-        "${dynamic_library_target_imported_location}"  # <--this is in-file
-        $<TARGET_FILE_DIR:${target_name}>   # <--this is out-file path
-    )    
-    
-    target_link_libraries(
-        ${target_name}
-        PRIVATE
-        ${dynamic_library_target}
-    )
-endfunction()
 
 link_library_and_copy_dynamic_library_to_output_path(
     FlutterAppJIT
-    flutter_engine
+    flutter_engine_jit
 )
 
 target_link_libraries(
@@ -64,6 +39,7 @@ target_link_libraries(
     Eureka.Graphics
     Eureka.Shaders
     Eureka.Flutter
+    flutter_engine
     eureka_strict_compiler_flags
     #concurrencpp::concurrencpp
 )
