@@ -27,8 +27,8 @@ namespace eureka::flutter
         _config(std::move(config)),
         _compositor(std::move(compositor)),
         _window(std::move(window)),
-        _combinedTaskRunner(std::this_thread::get_id())
-
+        _combinedTaskRunner(std::this_thread::get_id()),
+        _aotData(nullptr, FlutterEngineCollectAOTData)
     {
 
         _taskRunners.thread_priority_setter = [](FlutterThreadPriority) -> void { return; };
@@ -38,6 +38,21 @@ namespace eureka::flutter
 
         auto assets_path_str = _config.asset_dir.string();
         auto icu_data_path_str = _config.icudtl_path.string();
+        std::string aot_path_str;
+
+        FlutterEngineAOTData aotData = nullptr;
+
+        if (!_config.aot_path.empty())
+        {
+            aot_path_str = _config.aot_path.string();
+            FlutterEngineAOTDataSource source = {};
+            source.type = kFlutterEngineAOTDataSourceTypeElfPath;
+            source.elf_path = aot_path_str.c_str();
+
+            FLUTTER_CHECK(FlutterEngineCreateAOTData(&source, &aotData));
+            _aotData.reset(aotData);
+        }
+
 
         FlutterProjectArgs flutterProjectArgs {
             .struct_size = sizeof(FlutterProjectArgs),
@@ -48,7 +63,7 @@ namespace eureka::flutter
             .vsync_callback = VsyncStatic,
             .custom_task_runners = &_taskRunners,
             .compositor = &_compositor->GetFlutterCompositor(),
-            .aot_data = nullptr,
+            .aot_data = _aotData.get(),
 
         };
 

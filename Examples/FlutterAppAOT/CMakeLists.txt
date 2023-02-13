@@ -10,34 +10,34 @@ set_source_group(
     "main.cpp"
 )
 add_executable(
-    FlutterAppJIT
+    FlutterAppAOT
     #${flutter}
     ${run}
 ) 
 # we set a different output directory since we may have conflicting dll with aot mode
-set_target_properties(FlutterAppJIT
+set_target_properties(FlutterAppAOT
     PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/flutter_jit"
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/flutter_aot"
 )
 
-set_target_properties(FlutterAppJIT PROPERTIES FOLDER "Examples")
+set_target_properties(FlutterAppAOT PROPERTIES FOLDER "Examples")
 
 target_include_directories(
-    FlutterAppJIT
+    FlutterAppAOT
     PRIVATE
 )
 
-target_precompile_headers(FlutterAppJIT REUSE_FROM Eureka.Precompiled)
+target_precompile_headers(FlutterAppAOT REUSE_FROM Eureka.Precompiled)
 
 
 
 link_library_and_copy_dynamic_library_to_output_path(
-    FlutterAppJIT
-    flutter_engine_jit
+    FlutterAppAOT
+    flutter_engine_aot
 )
 
 target_link_libraries(
-    FlutterAppJIT
+    FlutterAppAOT
     PRIVATE 
     Eureka.Precompiled
     Eureka.Core
