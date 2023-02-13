@@ -15,6 +15,7 @@ namespace eureka::flutter
 
     class FlutterVulkanCompositor;
 
+    using UniqueAotDataPtr = std::unique_ptr<_FlutterEngineAOTData, FlutterEngineCollectAOTDataFnPtr>;
 
     struct EmbedderConfig
     {
@@ -26,6 +27,7 @@ namespace eureka::flutter
     class Embedder
     {
         EmbedderConfig                           _config;
+        UniqueAotDataPtr                         _aotData;
         std::mutex                               _mtx;
         std::shared_ptr<FlutterVulkanCompositor> _compositor;
         std::shared_ptr<Window>                  _window;
