@@ -15,13 +15,21 @@ namespace eureka::flutter
 
     class FlutterVulkanCompositor;
 
-    class FlutterProjectEmbedder
+
+    struct EmbedderConfig
     {
+        std::filesystem::path asset_dir;
+        std::filesystem::path icudtl_path;
+        std::filesystem::path aot_path;
+    };
+
+    class Embedder
+    {
+        EmbedderConfig                           _config;
         std::mutex                               _mtx;
         std::shared_ptr<FlutterVulkanCompositor> _compositor;
         std::shared_ptr<Window>                  _window;
-        //TaskRunner                               _platformTasksRunner;
-        TaskRunner                               _renderTasksRunner;
+        TaskRunner                               _combinedTaskRunner;
         FlutterCustomTaskRunners                 _taskRunners;
         FlutterEngine                            _flutterEngine {nullptr};
         sigslot::scoped_connection               _winSize;
@@ -36,7 +44,7 @@ namespace eureka::flutter
         double _cursorY{ 0.0 };
         bool _mouseDown = false;
     public:
-        FlutterProjectEmbedder(std::shared_ptr<FlutterVulkanCompositor> compositor, std::shared_ptr<Window> window);
+        Embedder(EmbedderConfig config, std::shared_ptr<FlutterVulkanCompositor> compositor, std::shared_ptr<Window> window);
 
         static void PlatformMessageStatic(const FlutterPlatformMessage* /* message*/, void* /* user data */)
         {
@@ -48,7 +56,7 @@ namespace eureka::flutter
         }
         static void VsyncStatic(void* userData, intptr_t baton)
         {
-            auto self = static_cast<FlutterProjectEmbedder*>(userData);
+            auto self = static_cast<Embedder*>(userData);
             self->Vsync(baton);
         }
 
@@ -59,7 +67,7 @@ namespace eureka::flutter
             _pendingBatons.emplace_back(baton);
         }
 
-        ~FlutterProjectEmbedder()
+        ~Embedder()
         {
             if(_flutterEngine)
             {

@@ -260,7 +260,7 @@ namespace eureka::flutter
         //BackingStoreData* bkData = static_cast<BackingStoreData*>(backingStore->user_data);
         //_allocator->DeallocateImage(bkData->allocation);
         //delete bkData;
-        DEBUGGER_TRACE("CollectBackingStore");
+        //DEBUGGER_TRACE("CollectBackingStore");
         _renderDoc.EndCapture(_globalInheritedData.device->GetDevice());
         return true;
     }

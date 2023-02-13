@@ -39,7 +39,12 @@ cd /c/workspace/ultrawis
 flutter build bundle --debug --local-engine-src-path=/c/Libraries/engine/src --local-engine=/c/Libraries/engine/src/out/host_debug_unopt
 */
 
-
+const std::filesystem::path FLUTTER_EXAMPLE_DBG_PROJECT_OUT_PATH = "C:/workspace/";
+const std::filesystem::path FLUTTER_EXAMPLE_DBG_PROJECT_ASSETS_PATH =
+FLUTTER_EXAMPLE_DBG_PROJECT_OUT_PATH / "flutter_ultwrawis_debug_with_release_engine";
+//const std::filesystem::path FLUTTER_EXAMPLE_DBG_PROJECT_ICUDTL_PATH = FLUTTER_EXAMPLE_DBG_PROJECT_OUT_PATH / "icudtl.dat";
+const std::filesystem::path FLUTTER_EXAMPLE_DBG_PROJECT_ICUDTL_PATH =
+"C:/workspace/flutter_engine/Debug/icudtl.dat";
 int main(int argc, char* argv[])
 {
     eureka::os::set_system_timer_frequency(1ms);
@@ -97,11 +102,15 @@ int main(int argc, char* argv[])
         auto frameContext = std::make_shared<vk::FrameContext>(device, copyQueue, graphicsQueue);
 
 
-
+        fl::EmbedderConfig embedderConfig
+        {
+            .asset_dir = FLUTTER_EXAMPLE_DBG_PROJECT_ASSETS_PATH,
+            .icudtl_path = FLUTTER_EXAMPLE_DBG_PROJECT_ICUDTL_PATH,
+        };
 
         auto flutterCompositor = std::make_shared<fl::FlutterVulkanCompositor>(instance, globalInheritedData, frameContext, depthColorTarget);
 
-        auto flutterProjectEmbedder = std::make_shared<fl::FlutterProjectEmbedder>(flutterCompositor, window);
+        auto flutterProjectEmbedder = std::make_shared<fl::Embedder>(embedderConfig, flutterCompositor, window);
 
         flutterProjectEmbedder->Run();
         
