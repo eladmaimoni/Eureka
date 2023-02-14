@@ -1,0 +1,17 @@
+add_subdirectory (Eureka.Precompiled)
+add_subdirectory (Eureka.Core)
+add_subdirectory (Eureka.Serialization)
+add_subdirectory (Eureka.Interfaces)
+
+#add_subdirectory (Eureka.AssetLoading)
+add_subdirectory (Eureka.Vulkan)
+add_subdirectory (Eureka.Windowing)
+add_subdirectory (Eureka.Graphics)
+add_subdirectory (Eureka.Shaders)
+add_subdirectory (Eureka.Flutter)
+add_subdirectory (Eureka.FlutterEmbedderAPI)
+add_subdirectory (Eureka.RemoteClient)     
+add_subdirectory (Eureka.RPC)
+add_subdirectory (Eureka.RemoteProto)
+#add_subdirectory (Eureka.RemoteServer)
+
