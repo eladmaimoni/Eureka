@@ -4,8 +4,9 @@ set_source_group(api
     "FlutterEmbedderAPI.cpp"
 ) 
 
-
 add_library(FlutterEmbedderAPI SHARED ${api})
+
+target_compile_definitions(FlutterEmbedderAPI PUBLIC EUREKA_FLUTTER_EMBEDDER_EXPORT)
 
 set_target_properties(FlutterEmbedderAPI PROPERTIES FOLDER "Libs")
 
