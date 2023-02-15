@@ -1,5 +1,5 @@
 
-set_source_group(ImGuiApp 
+set_source_group(app 
     "EurekaMain.cpp"
     "App.hpp"
     "App.cpp"

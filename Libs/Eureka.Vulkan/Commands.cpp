@@ -51,7 +51,7 @@ namespace eureka::vulkan
 
     LinearCommandPool::~LinearCommandPool()
     {
-        if (_pool)
+        if (nullptr != _pool)
         {
             _device->DestroyCommandPool(_pool);
         }

@@ -134,7 +134,7 @@ namespace eureka::vulkan
 
     BinarySemaphore::~BinarySemaphore()
     {
-        if (_semaphore)
+        if (nullptr != _semaphore)
         {
             _device->DestroySemaphore(_semaphore);
         }
@@ -142,7 +142,7 @@ namespace eureka::vulkan
 
     TimelineSemaphore::~TimelineSemaphore()
     {
-        if (_semaphore)
+        if (nullptr != _semaphore)
         {
             _device->DestroySemaphore(_semaphore);
         }
@@ -150,7 +150,7 @@ namespace eureka::vulkan
 
     CounterSemaphore::~CounterSemaphore()
     {
-        if (_semaphore)
+        if (nullptr != _semaphore)
         {
             _device->DestroySemaphore(_semaphore);
         }
@@ -189,7 +189,7 @@ namespace eureka::vulkan
 
     Fence::~Fence()
     {
-        if (_fence)
+        if (nullptr != _fence)
         {
             _device->DestroyFence(_fence);
         }

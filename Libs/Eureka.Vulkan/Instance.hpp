@@ -50,7 +50,7 @@ namespace eureka::vulkan
         VkInstance _instance{};
         VkDebugUtilsMessengerEXT _debugMessenger{};
     public:
-        Instance(const InstanceConfig& desc);
+        Instance(const InstanceConfig& config);
         ~Instance();
         std::vector<VkPhysicalDevice> EnumeratePhysicalDevices();
         Version ApiVersion() const;

@@ -12,16 +12,16 @@ namespace eureka::vulkan
 
     Image::~Image() noexcept
     {
-        if(_view)
+        if(nullptr != _view)
         {
             _device->DestroyImageView(_view);
         }
     }
 
     Image::Image(Image&& that) noexcept :
+        _device(std::move(that._device)),
         _allocation(that._allocation),
-        _view(steal(that._view)),
-        _device(that._device)
+        _view(steal(that._view))
     {
         that._allocation = {};
     }
@@ -29,7 +29,7 @@ namespace eureka::vulkan
     Image& Image::operator=(Image&& rhs) noexcept
     {
         _device = std::move(rhs._device);
-        _allocation = std::move(rhs._allocation);
+        _allocation = rhs._allocation;
         _view = steal(rhs._view);
         rhs._allocation = {};
         return *this;
@@ -72,7 +72,7 @@ namespace eureka::vulkan
 
     void AllocatedImage::Deallocate()
     {
-        if(_allocation.image)
+        if(nullptr != _allocation.image)
         {
             _allocator->DeallocateImage(_allocation);
         }
@@ -100,7 +100,7 @@ namespace eureka::vulkan
 
     void PoolAllocatedImage::Deallocate()
     {
-        if (_allocation.image)
+        if (nullptr != _allocation.image)
         {
             _allocator->DeallocateImage(_allocation);
         }
@@ -195,9 +195,10 @@ namespace eureka::vulkan
     //}
 
     Sampler::Sampler(std::shared_ptr<Device> device, const VkSamplerCreateInfo& createInfo)
-        : _device(std::move(device))
+        : 
+        _device(std::move(device)),
+        _sampler(_device->CreateSampler(createInfo))
     {
-        _sampler = _device->CreateSampler(createInfo);
     }
 
     Sampler::Sampler(Sampler&& that) noexcept
@@ -216,7 +217,7 @@ namespace eureka::vulkan
 
     Sampler::~Sampler()
     {
-        if (_sampler)
+        if (nullptr != _sampler)
         {
             _device->DestroySampler(_sampler);
         }

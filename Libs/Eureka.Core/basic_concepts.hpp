@@ -27,7 +27,7 @@ namespace eureka
     };
 
     template <typename Iterable>
-    using iterable_value_t = iterable_value<Iterable>::type;
+    using iterable_value_t = typename iterable_value<Iterable>::type;
 
     template<typename T>
     concept formattable = requires (T & v, std::format_context ctx) 

@@ -37,7 +37,7 @@ namespace eureka
         std::array<char, TOTAL> formatted_str{};
 
         auto current = 0;
-        for (auto i = 0; i < LINE_STR_N - 1; ++i)
+        for (auto i = 0u; i < LINE_STR_N - 1; ++i)
         {
             formatted_str[current++] = line_str[i];
         }

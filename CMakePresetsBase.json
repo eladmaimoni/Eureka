@@ -40,7 +40,13 @@
 				"MSVC_TOOLSET_VERSION": "143",
                 "VCPKG_TARGET_TRIPLET": "x64-windows-static-md"
             },
-            "vendor": { "microsoft.com/VisualStudioSettings/CMake/1.0": { "hostOS": [ "Windows" ] } }
+            "vendor": 
+				{ "microsoft.com/VisualStudioSettings/CMake/1.0": 
+				{ 
+					"hostOS": [ "Windows" ],
+					"enableClangTidyCodeAnalysis" : true
+				} 
+				}
         },
 		{
             "name": "clang-cl-x64",
