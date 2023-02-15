@@ -28,7 +28,7 @@ namespace eureka::vulkan
 
     DescriptorSetLayout::~DescriptorSetLayout()
     {
-        if (_layout)
+        if (nullptr != _layout)
         {
             _device->DestroyDescriptorSetLayout(_layout);
         }

@@ -1,0 +1,8 @@
+Checks: '
+    cppcoreguidelines-*,
+    performance-*,
+    readability-*,
+    -readability-uppercase-literal-suffix,
+    '
+   
+

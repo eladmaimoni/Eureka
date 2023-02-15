@@ -7,7 +7,7 @@ namespace eureka::vulkan
 
     VkFormat GetDefaultDepthBufferFormat(const Device& device)
     {
-        bool found = false;
+        //bool found = false;
         VkFormat depthFormat = DEFAULT_DEPTH_BUFFER_FORMAT;
         for (auto format : { VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT })
         {
@@ -16,14 +16,14 @@ namespace eureka::vulkan
             if (props.optimalTilingFeatures & VkFormatFeatureFlagBits::VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)
             {
                 depthFormat = format;
-                found = true;
+                //found = true;
                 break;
             }
         }
         return depthFormat;
     }
     
-    constexpr float DEFAULT_CLEAR_COLOR[4]{0.79f, 0.65f, 0.93f, 1.0f};
+    constexpr std::array<float, 4> DEFAULT_CLEAR_COLOR{0.79f, 0.65f, 0.93f, 1.0f};
 
     std::vector<DepthColorRenderTarget> CreateDepthColorTargetForSwapChain(const std::shared_ptr<Device>& device, std::shared_ptr<ResourceAllocator> allocator, const SwapChain& swapChain, const std::shared_ptr<DepthColorRenderPass>& renderPass)
     {

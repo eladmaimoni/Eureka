@@ -7,7 +7,8 @@
 //#include <vulkan/vulkan.h>
 #include <volk.h>
 #include <compiler.hpp>
-EUREKA_MSVC_WARNING_PUSH_DISABLE(4005) // warning C4005 : 'APIENTRY' : macro redefinition
+EUREKA_MSVC_WARNING_PUSH
+EUREKA_MSVC_WARNING_DISABLE(4005) // warning C4005 : 'APIENTRY' : macro redefinition
 #include <GLFW/glfw3.h>
 EUREKA_MSVC_WARNING_POP
 #include <vector>
