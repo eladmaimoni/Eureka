@@ -2,7 +2,7 @@
 
 namespace eureka::vulkan
 {
-    SequentialStageZone::SequentialStageZone(std::shared_ptr<ResourceAllocator>& allocator, uint64_t byteSize) 
+    SequentialStageZone::SequentialStageZone(std::shared_ptr<ResourceAllocator> allocator, uint64_t byteSize) 
         : _buffer(std::move(allocator), byteSize)
     {
 

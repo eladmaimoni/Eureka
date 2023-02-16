@@ -30,7 +30,7 @@ namespace eureka
     vulkan::InstanceConfig CreateInstanceConfig(const GLFWRuntime& glfw)
     {
         vulkan::InstanceConfig runtime_desc {};
-
+        runtime_desc.version = vulkan::Version{ 1, 3, 0 };
         runtime_desc.required_instance_extentions = glfw.QueryRequiredVulkanExtentions();
         runtime_desc.required_instance_extentions.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
         //runtime_desc.required_instance_extentions.emplace_back("VK_LAYER_KHRONOS_synchronization2");
@@ -59,7 +59,7 @@ namespace eureka
     //}
 
     IOCContainer::IOCContainer() :
-        _instance(std::make_shared<vulkan::Instance>(CreateInstanceConfig(_glfw)))
+        _instance(vulkan::MakeDefaultInstance(vulkan::Version{ 1, 3, 0 }))
     {}
 
     IOCContainer::~IOCContainer()
