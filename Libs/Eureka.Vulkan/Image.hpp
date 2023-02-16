@@ -24,7 +24,7 @@ namespace eureka::vulkan
         Image& operator=(Image&& rhs) noexcept;
         Image(std::shared_ptr<Device> device, VkImage image, VkImageView view);
         Image(std::shared_ptr<Device> device);
-        VkImage Get() const { return _allocation.image; };
+        VkImage Get() const { return _allocation.image; }
         VkImageView GetView() const { return _view; }
     protected:
         std::shared_ptr<Device> _device;
