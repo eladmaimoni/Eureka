@@ -13,7 +13,7 @@ namespace eureka::vulkan
         uint64_t                _front{ 0 };
 
     public:
-        SequentialStageZone(std::shared_ptr<ResourceAllocator>& allocator, uint64_t byteSize);
+        SequentialStageZone(std::shared_ptr<ResourceAllocator> allocator, uint64_t byteSize);
         uint64_t Position() const;
         uint64_t LeftoverBytes() const;
 

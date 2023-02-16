@@ -177,7 +177,7 @@ namespace eureka::vulkan
     {
     public:
         EUREKA_DEFAULT_MOVEONLY(BinarySemaphore);
-        BinarySemaphore(std::shared_ptr<Device> device) : BinarySemaphoreBase(device) {};
+        BinarySemaphore(std::shared_ptr<Device> device) : BinarySemaphoreBase(device) {}
         ~BinarySemaphore();
 
         friend class BinarySemaphoreHandle;
