@@ -24,12 +24,12 @@ namespace eureka::vulkan
         std::vector<VkExtensionProperties> extentionProperties(propertyCount);
         VK_CHECK(vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &propertyCount, extentionProperties.data()));
 
-        for (auto availableExtention : extentionProperties)
-        {
-            std::string_view availableExtentionName(availableExtention.extensionName);
-        
-            DEBUGGER_TRACE("available device extention = {}", availableExtentionName);
-        }
+        //for (auto availableExtention : extentionProperties)
+        //{
+        //    std::string_view availableExtentionName(availableExtention.extensionName);
+        //
+        //    DEBUGGER_TRACE("available device extention = {}", availableExtentionName);
+        //}
 
 
         for (const auto& requestedExtension : config.required_extentions)
@@ -130,6 +130,7 @@ namespace eureka::vulkan
         features12.sType = VkStructureType::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
         features12.timelineSemaphore = true;
        
+
         auto version = _instance->ApiVersion();
 
         VkPhysicalDeviceVulkan13Features features13{};
@@ -148,7 +149,7 @@ namespace eureka::vulkan
         VkDeviceCreateInfo deviceCreateInfo
         {
             .sType = VkStructureType::VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-            .pNext = &features12,
+            .pNext = deviceCreateInfoNext,
             .flags = VkDeviceCreateFlags{},
             .queueCreateInfoCount = static_cast<uint32_t>(createDesc.queu_create_info.size()),
             .pQueueCreateInfos = createDesc.queu_create_info.data(),
@@ -159,9 +160,8 @@ namespace eureka::vulkan
             .pEnabledFeatures = &deviceFeatures
         };
 
-
         VK_CHECK(vkCreateDevice(_physicalDevice, &deviceCreateInfo, nullptr, &_logicalDevice));
-    
+
         volkLoadDevice(_logicalDevice);
         
         

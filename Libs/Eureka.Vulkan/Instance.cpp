@@ -63,11 +63,11 @@ namespace eureka::vulkan
 
         std::vector<VkExtensionProperties> supportedExtentions(propertyCount);
         VK_CHECK(vkEnumerateInstanceExtensionProperties(nullptr, &propertyCount, supportedExtentions.data()));
-        for (const auto& supportedExtention : supportedExtentions)
-        {
-            std::string_view supported_extention_name(supportedExtention.extensionName);
-            DEBUGGER_TRACE("instance extention = {}", supported_extention_name);
-        }
+        //for (const auto& supportedExtention : supportedExtentions)
+        //{
+        //    std::string_view supported_extention_name(supportedExtention.extensionName);
+        //    DEBUGGER_TRACE("instance extention = {}", supported_extention_name);
+        //}
         for(auto requiredExtention : desc.required_instance_extentions)
         {
 
@@ -97,11 +97,11 @@ namespace eureka::vulkan
 
         std::vector<VkLayerProperties> layerProperties(propertyCount);
         VK_CHECK(vkEnumerateInstanceLayerProperties(&propertyCount, layerProperties.data()));
-        for (const auto& supportedLayer : layerProperties)
-        {
-            std::string_view supported_layer_name(supportedLayer.layerName);
-            DEBUGGER_TRACE("instance layer = {}", supported_layer_name);
-        }
+        //for (const auto& supportedLayer : layerProperties)
+        //{
+        //    std::string_view supported_layer_name(supportedLayer.layerName);
+        //    DEBUGGER_TRACE("instance layer = {}", supported_layer_name);
+        //}
         for(const auto& requiredLayer : desc.required_layers)
         {
             bool found = false;
