@@ -16,7 +16,7 @@ add_library(
 	${async}
 ) 
 set_target_properties(Eureka.RPC PROPERTIES FOLDER "Libs")
-set_compiler_flags(Eureka.RPC) 
+
 
 target_include_directories(
     Eureka.RPC
@@ -29,5 +29,7 @@ target_link_libraries(
      PUBLIC
 	 Eureka.Core
 	 gRPC::gpr gRPC::grpc gRPC::grpc++ gRPC::grpc++_alts
-     asio-grpc::asio-grpc-standalone-asio     
+     asio-grpc::asio-grpc-standalone-asio
+	 PRIVATE
+	 eureka_strict_compiler_flags
 )
