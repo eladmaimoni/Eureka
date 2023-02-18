@@ -1,4 +1,4 @@
-
+// NOLINTBEGIN
 
 // Copyright (C) 2019 The Android Open Source Project
 //
@@ -77191,4 +77191,4 @@ PIMAGE_TLS_CALLBACK perfetto_thread_callback_base = PerfettoOnThreadExit;
 }  // extern "C"
 
 #endif  // OS_WIN
-
+// NOLINTEND
