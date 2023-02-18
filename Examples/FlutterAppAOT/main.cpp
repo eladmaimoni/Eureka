@@ -28,9 +28,7 @@ static_assert(FLUTTER_ENGINE_VERSION == 1,
 
 
 
-#ifdef WIN32
-#pragma comment(lib, "ws2_32.lib")
-#endif
+
 /*
 invalid options:
 --target-platform=windows

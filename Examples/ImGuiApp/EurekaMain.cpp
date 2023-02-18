@@ -7,9 +7,6 @@
 
 using namespace eureka;
 
-#ifdef WIN32
-#pragma comment(lib, "ws2_32.lib")
-#endif
 
 int main(int argc, char* argv[])
 {

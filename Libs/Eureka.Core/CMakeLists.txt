@@ -73,3 +73,7 @@ target_link_libraries(
     eureka_strict_compiler_flags
     #"$<$<CUDAToolkit_FOUND>:CUDA::nvToolsExt>"    
 )
+
+if(WIN32)
+  target_link_libraries(Eureka.Core INTERFACE wsock32 ws2_32) # for perfetto tracing, clients must link winsock
+endif()
