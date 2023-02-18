@@ -51,7 +51,7 @@ target_sources(
 )
 
 set_target_properties(Eureka.Core PROPERTIES FOLDER "Libs")
-
+configure_code_analysis(Eureka.Core)
 target_compile_definitions( # temporary hack, profiling is always enabled
     Eureka.Core
     PUBLIC 

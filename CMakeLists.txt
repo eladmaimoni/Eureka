@@ -8,6 +8,7 @@ message("========================       PROJECT EUREKA      ====================
 message("======================================================================================")
 message("======================================================================================")
 
+include(targets_utils.cmake)
 include(utility.cmake)
 project ("Eureka")
 
@@ -18,6 +19,10 @@ set(EUREKA_CLANG_TIDY_CONFIG_PATH "${CMAKE_CURRENT_SOURCE_DIR}/.clang-tidy")
 #  -header-filter=.;
 #  --config-file=${EUREKA_CLANG_TIDY_CONFIG_PATH};
 #)
+
+
+
+
 
 add_library(eureka_strict_compiler_flags INTERFACE)
 
@@ -170,7 +175,6 @@ add_subdirectory (Examples)
 # https://github.com/catchorg/Catch2/blob/devel/docs/cmake-integration.md#automatic-test-registration
 #
 ########################################################################################################
-
 
 
 

@@ -88,7 +88,7 @@ namespace eureka::vulkan
                     .inputRate = VkVertexInputRate::VK_VERTEX_INPUT_RATE_VERTEX,
                 };
 
-                layout.attributes[i] = VkVertexInputBindingDescription {
+                layout.attributes[i] = VkVertexInputAttributeDescription{
                     .location = i,
                     .binding = i,
                     .format = GetAttributeDefaultFormat<Attribute>(),

@@ -14,6 +14,7 @@ add_library(
  )
 
 set_target_properties(Eureka.Windowing PROPERTIES FOLDER "Libs")
+configure_code_analysis(Eureka.Windowing)
 
 target_include_directories(
     Eureka.Windowing

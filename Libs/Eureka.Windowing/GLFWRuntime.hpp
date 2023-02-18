@@ -27,8 +27,6 @@ namespace eureka
 
     using GLFWWindowPtr = std::unique_ptr<GLFWwindow, GLFWWindowDeleter>;
 
-
-
     struct GLFWVulkanSurface
     {
         GLFWWindowPtr  window;
