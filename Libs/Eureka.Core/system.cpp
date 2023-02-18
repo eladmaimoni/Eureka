@@ -2,6 +2,7 @@
 #include "thread_name.hpp"
 #include <cstdint>
 
+// NOLINTBEGIN
 #ifdef _WIN32
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
@@ -28,7 +29,7 @@ namespace eureka::os
     const DWORD MS_VC_EXCEPTION = 0x406D1388;
 
 #pragma pack(push,8)
-    typedef struct tagTHREADNAME_INFO
+    typedef struct tagTHREADNAME_INFO // NOLINT
     {
         DWORD dwType; // Must be 0x1000.
         LPCSTR szName; // Pointer to name (in user addr space).
@@ -96,3 +97,5 @@ namespace eureka::os
 
 #endif
 
+
+// NOLINTEND

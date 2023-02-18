@@ -11,7 +11,13 @@ message("=======================================================================
 include(utility.cmake)
 project ("Eureka")
 
+set(EUREKA_CLANG_TIDY_CONFIG_PATH "${CMAKE_CURRENT_SOURCE_DIR}/.clang-tidy")
 
+#set(CMAKE_CXX_CLANG_TIDY 
+#  clang-tidy;
+#  -header-filter=.;
+#  --config-file=${EUREKA_CLANG_TIDY_CONFIG_PATH};
+#)
 
 add_library(eureka_strict_compiler_flags INTERFACE)
 
@@ -21,7 +27,7 @@ set(EUREKA_NOT_DEBUG "$<NOT:$<CONFIG:Debug>>")
 set(EUREKA_COMPILER_IS_GCC_LIKE "$<COMPILE_LANG_AND_ID:CXX,ARMClang,AppleClang,Clang,GNU,LCC>")
 set(EUREKA_COMPILER_IS_MSVC "$<COMPILE_LANG_AND_ID:CXX,MSVC>")
 set(EUREKA_GCC_LIKE_STRICT_FLAGS "-Wall;-Wextra;-Wshadow;-Wformat=2;-Wunused")
-set(EUREKA_MSVC_STRICT_FLAGS "/W4;/EHsc") # (/EHsc) is somehow not set on Ninja
+set(EUREKA_MSVC_STRICT_FLAGS "/W4") # (/EHsc) is somehow not set on Ninja
 set(EUREKA_WARNING_AS_ERROR_FLAG "$<IF:${EUREKA_COMPILER_IS_MSVC},/WX,-Werror>")
 set(EUREKA_TREAT_WARNING_AS_ERROR "$<${EUREKA_NOT_DEBUG}:${EUREKA_WARNING_AS_ERROR_FLAG}>")
 
