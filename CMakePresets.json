@@ -44,7 +44,11 @@
             "displayName": "vs2022",
             "description": "",
             "inherits": ["vcpkg", "msvc143-x64"],
-            "generator": "Visual Studio 17 2022"
+            "generator": "Visual Studio 17 2022",
+			"cacheVariables": {
+                "EUREKA_ENABLE_CODE_ANALYSIS": "ON"
+            }
+			
         }
     ],
 	"buildPresets": [

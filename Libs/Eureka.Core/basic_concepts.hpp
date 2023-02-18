@@ -3,7 +3,7 @@
 #include <type_traits>
 #include <ostream>
 #include <format>
-
+// NOLINTBEGIN
 namespace eureka
 {
     struct dummy_to_string {};
@@ -79,3 +79,5 @@ namespace eureka
 
 
 }
+
+// NOLINTEND

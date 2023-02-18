@@ -94,6 +94,7 @@ add_library(
 	${runtime}
 ) 
  
+configure_code_analysis(Eureka.Vulkan)
 #set_compiler_flags(Eureka.Vulkan) 
 
 target_include_directories(
