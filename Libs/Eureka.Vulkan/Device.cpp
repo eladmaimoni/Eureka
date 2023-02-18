@@ -86,7 +86,7 @@ namespace eureka::vulkan
         return true;
     }
 
-    std::string to_string(VkPhysicalDeviceType deviceType)
+    std::string to_string(VkPhysicalDeviceType deviceType) // 
     {
         std::string str;
 

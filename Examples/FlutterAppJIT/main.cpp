@@ -64,7 +64,7 @@ int main(int argc, char* argv[])
         PROFILE_PUSH_CATEGORIZED_RANGE("System Initialization", prof::Color::Blue, prof::PROFILING_CATEGORY_SYSTEM);
 
 
-        eureka::GLFWRuntime glfw;
+        eureka::GLFWRuntime glfw{};
 
 
         auto instance = vk::MakeDefaultInstance(vk::Version{ 1,2,0 });
