@@ -20,7 +20,11 @@ set_target_properties(FlutterAppJIT
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/flutter_jit"
 )
 
+
 set_target_properties(FlutterAppJIT PROPERTIES FOLDER "Examples")
+
+configure_code_analysis(FlutterAppJIT)
+
 
 target_include_directories(
     FlutterAppJIT

@@ -18,7 +18,7 @@ add_library(
     ${flutter}
  )
  set_target_properties(Eureka.Flutter PROPERTIES FOLDER "Libs")
-
+ configure_code_analysis(Eureka.Flutter)
 target_include_directories(
     Eureka.Flutter
     PUBLIC
