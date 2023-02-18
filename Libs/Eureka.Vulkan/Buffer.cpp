@@ -78,7 +78,7 @@ namespace eureka::vulkan
 
     AllocatedBuffer::~AllocatedBuffer() noexcept
     {
-        if (_allocation.buffer)
+        if (nullptr != _allocation.buffer)
         {
             _allocator->DeallocateBuffer(_allocation);
         }

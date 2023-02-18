@@ -18,7 +18,14 @@
                     "type": "FILEPATH"
                 },
                 "VCPKG_INSTALLED_DIR": "${sourceDir}/build/packages",
-				"VCPKG_OVERLAY_TRIPLETS" : "${sourceDir}/vcpkg_scripts",
+				"VCPKG_OVERLAY_TRIPLETS" : "${sourceDir}/vcpkg_scripts"
+            }
+        },
+		{
+            "name": "ninja-export-commands",
+			"description": "tells ninja to export compile database (compile_commands.json)",
+            "hidden": true,
+            "cacheVariables": {
                 "CMAKE_EXPORT_COMPILE_COMMANDS": true
             }
         },
