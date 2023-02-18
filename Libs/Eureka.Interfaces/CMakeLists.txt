@@ -15,6 +15,7 @@ add_library(
 set_target_properties(Eureka.Interfaces PROPERTIES FOLDER "Libs")
 
 set_compiler_flags(Eureka.Interfaces) 
+configure_code_analysis(Eureka.Interfaces)
 
 target_include_directories(
     Eureka.Interfaces

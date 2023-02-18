@@ -33,7 +33,9 @@ target_precompile_headers(
     Eureka.Precompiled
 )
 
-set_compiler_flags(Eureka.RemoteClient)   
+
+configure_code_analysis(Eureka.RemoteClient)
+
 set_target_properties(Eureka.RemoteClient PROPERTIES FOLDER "Libs")
 
  target_link_libraries(
@@ -46,4 +48,5 @@ set_target_properties(Eureka.RemoteClient PROPERTIES FOLDER "Libs")
 	 Eureka.RPC	 
 	 Eureka.RemoteProto
      implot::implot
+     eureka_strict_compiler_flags
  )

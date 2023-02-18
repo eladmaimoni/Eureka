@@ -24,6 +24,8 @@ target_include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
+configure_code_analysis(Eureka.RPC)
+
 target_link_libraries(
      Eureka.RPC 
      PUBLIC

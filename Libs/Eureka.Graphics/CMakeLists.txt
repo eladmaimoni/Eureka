@@ -75,6 +75,7 @@ add_library(
  )
 
 set_target_properties(Eureka.Graphics PROPERTIES FOLDER "Libs")
+configure_code_analysis(Eureka.Graphics)
 
 target_precompile_headers(
     Eureka.Graphics 

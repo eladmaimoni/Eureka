@@ -16,17 +16,18 @@ HeaderFilterRegex: '.*'
 # https://sarcasm.github.io/notes/dev/clang-tidy.html#:~:text=The%20readability%2Didentifier%2Dnaming%20check,compile%20options%20for%20the%20file.
 # https://releases.llvm.org/10.0.0/tools/clang/tools/extra/docs/clang-tidy/checks/readability-identifier-naming.html
 CheckOptions:
-  - { key: readability-identifier-naming.NamespaceCase,       value: lower_case } # namespace should be lower_case, preferrable one word
-  - { key: readability-identifier-naming.ClassCase,           value: CamelCase  } # class names should be Capitalized
-  - { key: readability-identifier-naming.PrivateMemberPrefix, value: _         }
-  - { key: readability-identifier-naming.PrivateMemberCase,   value: camelBack } # private class members
-  - { key: readability-identifier-naming.ProtectedMemberCase, value: camelBack } # private class members
-  - { key: readability-identifier-naming.PublicMemberCase,    value: lower_case } # only for structs
-  - { key: readability-identifier-naming.StructCase,          value: CamelCase  } # class names should be Capitalized
-  - { key: readability-identifier-naming.Method,              value: CamelCase  }
-  #- { key: readability-identifier-naming.FunctionCase,       value: CamelCase }
-  #- { key: readability-identifier-naming.VariableCase,       value: camelBack }
-  - { key: readability-identifier-naming.GlobalConstantCase,  value: UPPER_CASE }
+  - { key: readability-identifier-naming.NamespaceCase,          value: lower_case } # namespace should be lower_case, preferrable one word
+  - { key: readability-identifier-naming.ClassCase,              value: CamelCase  } # class names should be Capitalized
+  - { key: readability-identifier-naming.PrivateMemberPrefix,    value: _         }
+  - { key: readability-identifier-naming.ProtectedMemberPrefix,  value: _         }
+  - { key: readability-identifier-naming.PrivateMemberCase,      value: camelBack } # private class members
+  - { key: readability-identifier-naming.ProtectedMemberCase,    value: camelBack } # private class members
+  - { key: readability-identifier-naming.PublicMemberCase,       value: lower_case } # only for structs
+  - { key: readability-identifier-naming.StructCase,             value: CamelCase  } # class names should be Capitalized
+  - { key: readability-identifier-naming.Method,                 value: CamelCase  }
+  #- { key: readability-identifier-naming.FunctionCase,          value: CamelCase }
+  #- { key: readability-identifier-naming.VariableCase,          value: camelBack }
+  - { key: readability-identifier-naming.GlobalConstantCase,     value: UPPER_CASE }
   - { key: readability-identifier-naming.ConstexprVariableCase,  value: UPPER_CASE }
   
 #HeaderFilterRegex: '.hpp'
