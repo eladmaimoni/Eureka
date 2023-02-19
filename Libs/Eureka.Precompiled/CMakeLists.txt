@@ -1,6 +1,6 @@
 add_library(Eureka.Precompiled STATIC "precompiled.cpp" "global_definitions.hpp")
 set_target_properties(Eureka.Precompiled PROPERTIES FOLDER "Libs")
-set_compiler_flags(Eureka.Precompiled)   
+configure_code_analysis(Eureka.Precompiled)
 if (MSVC)
     target_compile_options(Eureka.Precompiled  PRIVATE /wd4324)
 endif()
