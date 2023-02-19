@@ -1,7 +1,7 @@
 {
     "name": "eureka",
     "version-string": "1.0.0",
-    "builtin-baseline": "34f072dfcb8b9356e6ed2c74947f87390ddb2706",
+    "builtin-baseline": "231a73946227380d63e3d68d0322a01ea921524a",
     "dependencies": [
 		"asio",
 		{ 
