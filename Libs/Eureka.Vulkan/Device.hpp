@@ -72,6 +72,7 @@ namespace eureka::vulkan
     class Device
     {
         DeviceConfig                           _config;
+        Version                                _apiVersion;
         std::string                            _prettyName;
         std::shared_ptr<Instance>              _instance{};
 
@@ -91,7 +92,7 @@ namespace eureka::vulkan
         std::unordered_map<uint32_t, uint32_t> _queuesPerFamily;
 
       
-        std::tuple<VkPhysicalDevice, std::string> ChoosePhysicalDevice(const DeviceConfig& config);
+        std::tuple<VkPhysicalDevice, std::string, Version> ChoosePhysicalDevice(const DeviceConfig& config);
         DeviceCreationDesc MakeDeviceCreationDesc(const DeviceConfig& config);
         bool FamiliySupportsPresentation(uint32_t family, VkSurfaceKHR presentationSurface);
     public:
@@ -99,6 +100,7 @@ namespace eureka::vulkan
         ~Device();
         Device(const Device&) = delete;
         Device& operator=(const Device&) = delete;
+        Version GetApiVersion() const { return _apiVersion; }
         dspan<const char*> EnabledExtentions() const;
         std::string_view GetPrettyName() const;
         VkDevice GetDevice() const;
