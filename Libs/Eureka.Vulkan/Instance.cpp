@@ -127,29 +127,32 @@ namespace eureka::vulkan
     {
         VK_CHECK(volkInitialize());
 
-        VK_CHECK(vkEnumerateInstanceVersion(&_apiVersion));
+        uint32_t apiVersion{};
+        VK_CHECK(vkEnumerateInstanceVersion(&apiVersion));
+        _apiVersion = Version(apiVersion);
 
-        DEBUGGER_TRACE("vulkan api version {}.{}.{}",
-                       VK_API_VERSION_MAJOR(_apiVersion),
-                       VK_API_VERSION_MINOR(_apiVersion),
-                       VK_API_VERSION_PATCH(_apiVersion));
+        DEBUGGER_TRACE("vulkan instance api version {}.{}.{}",
+                       _apiVersion.Major(),
+                       _apiVersion.Minor(),
+                       _apiVersion.Patch());
 
         ValidateRequiredExtentionsExists(config);
         ValidateRequiredLayersExists(config);
 
         if(config.version)
         {
+            DEBUGGER_TRACE("THIS IS WRONG, instance API is sdk version, not the supported api version");
             auto version = *config.version;
-            _apiVersion = VK_MAKE_API_VERSION(0, version.major, version.minor, version.patch);
+            _apiVersion = version;
         }
 
         VkApplicationInfo appInfo {
             .sType = VkStructureType::VK_STRUCTURE_TYPE_APPLICATION_INFO,
             .pApplicationName = "Eureka",
-            .applicationVersion = _apiVersion,
+            .applicationVersion = VK_MAKE_API_VERSION(0, 1, 0, 0),
             .pEngineName = "Eureka Engine",
-            .engineVersion = _apiVersion,
-            .apiVersion = _apiVersion,
+            .engineVersion = VK_MAKE_API_VERSION(0, 1, 0, 0),
+            .apiVersion = _apiVersion.Get(),
         };
 
 
@@ -216,11 +219,7 @@ namespace eureka::vulkan
 
     Version Instance::ApiVersion() const
     {
-        return Version {
-            .major = VK_API_VERSION_MAJOR(_apiVersion),
-            .minor = VK_API_VERSION_MINOR(_apiVersion),
-            .patch = VK_API_VERSION_PATCH(_apiVersion),
-        };
+        return _apiVersion;
     }
 
     void Instance::DestroySurface(VkSurfaceKHR surface) const
@@ -228,10 +227,6 @@ namespace eureka::vulkan
         vkDestroySurfaceKHR(_instance, surface, nullptr);
     }
 
-    uint32_t Instance::RawApiVersion() const
-    {
-        return _apiVersion;
-    }
 
     std::shared_ptr<Instance> MakeDefaultInstance(std::optional<Version> version)
     {
@@ -248,7 +243,7 @@ namespace eureka::vulkan
         config.version = version;
         if (config.version)
         {
-            if (config.version->minor <= 2)
+            if (config.version->Minor() <= 2)
             {
                 config.required_instance_extentions.emplace_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
                 config.required_instance_extentions.emplace_back("VK_KHR_get_surface_capabilities2");

@@ -100,7 +100,7 @@ namespace eureka::vulkan
             .device = _device->GetDevice(),
             .pVulkanFunctions = &vulkanFunction,
             .instance = _instnace->Get(),
-            .vulkanApiVersion = _instnace->RawApiVersion()
+            .vulkanApiVersion = _device->GetApiVersion().Get()
         };
         /*
         VMA_ASSERT(m_VulkanFunctions.vkGetInstanceProcAddr && m_VulkanFunctions.vkGetDeviceProcAddr &&

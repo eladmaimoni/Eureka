@@ -25,12 +25,12 @@ namespace eureka::vulkan
         std::vector<VkExtensionProperties> extentionProperties(propertyCount);
         VK_CHECK(vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &propertyCount, extentionProperties.data()));
 
-        //for (auto availableExtention : extentionProperties)
-        //{
-        //    std::string_view availableExtentionName(availableExtention.extensionName);
-        //
-        //    DEBUGGER_TRACE("available device extention = {}", availableExtentionName);
-        //}
+        for (auto availableExtention : extentionProperties)
+        {
+            std::string_view availableExtentionName(availableExtention.extensionName);
+        
+            DEBUGGER_TRACE("available device extention = {}", availableExtentionName);
+        }
 
 
         for (const auto& requestedExtension : config.required_extentions)
@@ -118,7 +118,7 @@ namespace eureka::vulkan
         _instance(std::move(instance))
     {
 
-        std::tie(_physicalDevice, _prettyName) = ChoosePhysicalDevice(config);
+        std::tie(_physicalDevice, _prettyName, _apiVersion) = ChoosePhysicalDevice(config);
 
 
         auto createDesc = MakeDeviceCreationDesc(config);
@@ -132,20 +132,20 @@ namespace eureka::vulkan
         features12.timelineSemaphore = true;
        
 
-        auto version = _instance->ApiVersion();
+      
 
         VkPhysicalDeviceVulkan13Features features13{};
-        if (version.major >= 1 && version.minor >= 3)
+        //if (_apiVersion.Major() >= 1 && _apiVersion.Minor() >= 3)
         {
             features13.sType = VkStructureType::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
             features13.synchronization2 = true;
             features13.pNext = &features12;
             deviceCreateInfoNext = &features13;
         }
-        else
-        {
-            deviceCreateInfoNext = &features12;
-        }
+        //else
+        //{
+        //    deviceCreateInfoNext = &features12;
+        //}
 
         VkDeviceCreateInfo deviceCreateInfo
         {
@@ -165,7 +165,11 @@ namespace eureka::vulkan
 
         volkLoadDevice(_logicalDevice);
         
-        
+        if (_apiVersion.Major() >= 1 && _apiVersion.Minor() < 3)
+        {
+            vkCmdPipelineBarrier2 = vkCmdPipelineBarrier2KHR;
+            vkCmdCopyBufferToImage2 = vkCmdCopyBufferToImage2KHR;
+        }
         _preferredGraphicsFamily = createDesc.graphics_family;
         _preferredComputeFamily = createDesc.compute_family;
         _preferredCopyFamily = createDesc.copy_family;
@@ -180,18 +184,26 @@ namespace eureka::vulkan
 
     }
 
-    std::tuple<VkPhysicalDevice, std::string> Device::ChoosePhysicalDevice(const DeviceConfig& config)
+    std::tuple<VkPhysicalDevice, std::string, Version> Device::ChoosePhysicalDevice(const DeviceConfig& config)
     {
         auto physicalDevices = _instance->EnumeratePhysicalDevices();
 
         VkPhysicalDevice chosenPhysicalDevice{};
         std::string deviceName;
-
+        VkPhysicalDeviceProperties properties;
+        Version apiVersion;
         for (auto physicalDevice : physicalDevices)
         {
-            VkPhysicalDeviceProperties properties;
             vkGetPhysicalDeviceProperties(physicalDevice, &properties);
-            DEBUGGER_TRACE("Device name: {} type: {}", properties.deviceName, to_string(properties.deviceType));
+            apiVersion = Version(properties.apiVersion);
+
+            DEBUGGER_TRACE("Device name: {} type: {} api version {}.{}.{}",
+                properties.deviceName, 
+                to_string(properties.deviceType),
+                apiVersion.Major(),
+                apiVersion.Minor(),
+                apiVersion.Patch()          
+            );
 
             if (IsDeviceSuitable(physicalDevice, config))
             {
@@ -207,7 +219,7 @@ namespace eureka::vulkan
             throw ResultError(VkResult::VK_ERROR_EXTENSION_NOT_PRESENT, "no compatible device");
         }
 
-        return { chosenPhysicalDevice, deviceName };
+        return { chosenPhysicalDevice, deviceName, apiVersion };
     }
 
     DeviceCreationDesc Device::MakeDeviceCreationDesc(const DeviceConfig& config)
@@ -818,14 +830,15 @@ namespace eureka::vulkan
         deviceConfig.required_extentions.emplace_back(DEVICE_EXTENTION_SWAPCHAIN);
         deviceConfig.presentation_surface = presentationSurface;
 
-        auto version = instance->ApiVersion();
-
-        if (version.major == 1 && version.minor < 3)
+        //if (version.Major() == 1 && version.Minor() < 3)
         {        
             deviceConfig.required_extentions.emplace_back(DEVICE_EXTENTION_PRE13_SYNCHRONIZATION2);
             deviceConfig.required_extentions.emplace_back("VK_KHR_create_renderpass2");
             deviceConfig.required_extentions.emplace_back("VK_KHR_synchronization2");
-            deviceConfig.required_layers.emplace_back("VK_LAYER_KHRONOS_synchronization2");
+            deviceConfig.required_extentions.emplace_back("VK_KHR_copy_commands2");
+
+ 
+            //deviceConfig.required_layers.emplace_back("VK_LAYER_KHRONOS_synchronization2");
             //deviceConfig.required_layers.emplace_back(DEVICE_LAYER_PRE13_SYNCHRONIZATION2);
 
             // I think synchronization2 is dependant on VK_KHR_get_physical_device_properties2 

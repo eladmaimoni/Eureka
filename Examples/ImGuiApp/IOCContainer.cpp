@@ -30,7 +30,7 @@ namespace eureka
     vulkan::InstanceConfig CreateInstanceConfig(const GLFWRuntime& glfw)
     {
         vulkan::InstanceConfig runtime_desc {};
-        runtime_desc.version = vulkan::Version{ 1, 3, 0 };
+        runtime_desc.version = vulkan::Version{ 1, 3, 0 }; // TODO remove this is the sdk version not the device
         runtime_desc.required_instance_extentions = glfw.QueryRequiredVulkanExtentions();
         runtime_desc.required_instance_extentions.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
         //runtime_desc.required_instance_extentions.emplace_back("VK_LAYER_KHRONOS_synchronization2");

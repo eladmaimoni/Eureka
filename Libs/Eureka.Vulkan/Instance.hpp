@@ -21,15 +21,29 @@ namespace eureka::vulkan
     inline constexpr char INSTANCE_EXTENTION_SURFACE_EXTENSION_NAME[] = VK_KHR_SURFACE_EXTENSION_NAME;
     
 
-    struct Version
+    class Version
     {
-        uint32_t major;
-        uint32_t minor;
-        uint32_t patch;
-
+        uint32_t _version;
+    public:
+        uint32_t Major() const
+        {
+            return VK_API_VERSION_MAJOR(_version);
+        }
+        uint32_t Minor() const
+        {
+            return VK_API_VERSION_MINOR(_version);
+        }
+        uint32_t Patch() const
+        {
+            return VK_API_VERSION_PATCH(_version);
+        }
+        
+        explicit Version(uint32_t version) : _version(version) {}
+        explicit Version(uint32_t major, uint32_t minor, uint32_t patch) : _version(VK_MAKE_API_VERSION(0, major, minor, patch)) {}
+        Version() = default;
         uint32_t Get() const
         {
-            return VK_MAKE_VERSION(major, minor, patch);
+            return _version;
         }
     };
 
@@ -46,7 +60,7 @@ namespace eureka::vulkan
     {
     private:
         InstanceConfig _config{};
-        uint32_t _apiVersion{};
+        Version _apiVersion{};
         VkInstance _instance{};
         VkDebugUtilsMessengerEXT _debugMessenger{};
     public:
@@ -54,7 +68,6 @@ namespace eureka::vulkan
         ~Instance();
         std::vector<VkPhysicalDevice> EnumeratePhysicalDevices();
         Version ApiVersion() const;
-        uint32_t RawApiVersion() const;
         VkInstance Get() const { return _instance; }
         void DestroySurface(VkSurfaceKHR surface) const;
         Instance& operator=(const Instance&) = delete;
