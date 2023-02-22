@@ -155,7 +155,8 @@ namespace eureka::flutter
     {
         _flutterRendererConfig.type = FlutterRendererType::kVulkan;
         _flutterRendererConfig.vulkan.struct_size = sizeof(FlutterVulkanRendererConfig);
-        _flutterRendererConfig.vulkan.version = _instance->ApiVersion().Get();
+        //_flutterRendererConfig.vulkan.version = _instance->ApiVersion().Get();
+        _flutterRendererConfig.vulkan.version = VK_API_VERSION_1_2;
         _flutterRendererConfig.vulkan.instance = _instance->Get();
         _flutterRendererConfig.vulkan.physical_device = _globalInheritedData.device->GetPhysicalDevice();
         _flutterRendererConfig.vulkan.device = _globalInheritedData.device->GetDevice();

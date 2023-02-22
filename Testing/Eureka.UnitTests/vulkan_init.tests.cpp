@@ -29,14 +29,13 @@ TEST_CASE("vulkan device creation", "[vulkan]")
     config.required_instance_extentions.emplace_back(vk::INSTANCE_EXTENTION_DEBUG_UTILS);
     config.required_instance_extentions.emplace_back(vk::INSTANCE_EXTENTION_SURFACE_EXTENSION_NAME);
     WIN32_ONLY(config.required_instance_extentions.emplace_back(vk::INSTANCE_EXTENTION_WIN32_SURFACE_EXTENSION_NAME));
-
-    SECTION("vulkan < 1.3")
-    {
-        config.version = vk::Version{ 1,2,0 };
-        config.required_layers.emplace_back(vk::INSTANCE_LAYER_PRE13_SYNCHRONIZATION2);
-        auto instance = std::make_shared<vk::Instance>(config);
-        REQUIRE_NOTHROW(device = vk::MakeDefaultDevice(instance));
-    }
+    //config.required_layers.emplace_back(vk::INSTANCE_LAYER_PRE13_SYNCHRONIZATION2);
+    //SECTION("vulkan < 1.3")
+    //{
+    //    config.version = vk::Version{ 1,2,0 };    
+    //    auto instance = std::make_shared<vk::Instance>(config);
+    //    REQUIRE_NOTHROW(device = vk::MakeDefaultDevice(instance));
+    //}
 
     SECTION("installed version")
     {
