@@ -64,6 +64,8 @@ install(
     TARGETS FlutterEmbedderAPI
     EXPORT FlutterEmbedderAPI
     DESTINATION lib/$<CONFIG>
+    #LIBRARY DESTINATION lib/$<CONFIG>
+    #RUNTIME DESTINATION bin/$<CONFIG>
 )
 
 install(FILES $<TARGET_PDB_FILE:FlutterEmbedderAPI> DESTINATION lib/$<CONFIG> OPTIONAL)
@@ -92,14 +94,20 @@ install(
   DESTINATION cmake
   )
 
-get_target_property(
-    flutter_engine_jit_dll # out value
-    flutter_engine_jit
-	IMPORTED_LOCATION
-)
 
+# this causes the flutter_engine.dll to be copied into the bin directory
 install(
-  FILES
-  ${flutter_engine_jit_dll}
+  IMPORTED_RUNTIME_ARTIFACTS
+  flutter_engine_jit
   DESTINATION bin
   )
+#install(
+#  IMPORTED_RUNTIME_ARTIFACTS
+#  ${flutter_engine_jit_dll}
+#  DESTINATION bin
+#  )
+#install(
+#  FILES
+#  ${flutter_engine_jit_dll}
+#  DESTINATION bin
+#  )

@@ -94,8 +94,9 @@ FlutterEmbedderStatus FlutterEmbedderInit(const EmbedderInitParams* params, EMBE
         *out = instance;
         return FlutterEmbedderStatus::eOk;
     }
-    catch (...)
+    catch (const std::exception& err)
     {
+        DEBUGGER_TRACE("{}", err.what());
         return FlutterEmbedderStatus::eFail;
     }
 }
@@ -106,8 +107,9 @@ FlutterEmbedderStatus FlutterEmbedderFinalize(EMBEDDER_HANDLE embedder)
         delete static_cast<Main*>(embedder);
         return FlutterEmbedderStatus::eOk;
     }
-    catch (...)
+    catch (const std::exception& err)
     {
+        DEBUGGER_TRACE("{}", err.what());
         return FlutterEmbedderStatus::eFail;
     }
 
@@ -119,8 +121,9 @@ FlutterEmbedderStatus FlutterEmbedderRun(EMBEDDER_HANDLE embedder)
         static_cast<Main*>(embedder)->Run();
         return FlutterEmbedderStatus::eOk;
     }
-    catch (...)
+    catch (const std::exception& err)
     {
+        DEBUGGER_TRACE("{}", err.what());
         return FlutterEmbedderStatus::eFail;
     }
 

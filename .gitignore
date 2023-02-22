@@ -1,5 +1,6 @@
 # ignore all files in the build/ directory
 build/
+install/
 #.vscode/
 
 # hlsl compiled files
