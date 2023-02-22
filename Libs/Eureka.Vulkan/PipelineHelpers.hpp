@@ -72,11 +72,11 @@ namespace eureka::vulkan
     template <typename... Attribute>
     auto MakeDeinterleavedVertexLayout()
     {
-        constexpr std::size_t AttributeCount = sizeof...(Attribute);
+        constexpr std::size_t ATTRIBUTE_COUNT = sizeof...(Attribute);
 
         VertexLayout layout {};
-        layout.bindings.resize(AttributeCount);
-        layout.attributes.resize(AttributeCount);
+        layout.bindings.resize(ATTRIBUTE_COUNT);
+        layout.attributes.resize(ATTRIBUTE_COUNT);
         uint32_t i = 0;
 
         // while (i < AttributeCount)
@@ -111,11 +111,11 @@ namespace eureka::vulkan
     {
         VertexStruct value {}; // dummy, TODO maybe we can somehow remove this
         namespace hana = boost::hana;
-        constexpr std::size_t AttributeCount = CountFields<VertexStruct>();
+        constexpr std::size_t ATTRIBUTE_COUNT = CountFields<VertexStruct>();
 
         VertexLayout layout {};
         layout.bindings.resize(1);
-        layout.attributes.resize(AttributeCount);
+        layout.attributes.resize(ATTRIBUTE_COUNT);
         layout.bindings[0] = VkVertexInputBindingDescription {
             .binding = 0,
             .stride = sizeof(VertexStruct),

@@ -57,7 +57,7 @@ namespace eureka::vulkan
         {
             auto [type, multiplier] = _config.multipliers[i];
 
-            perTypeMaxCount[i] = VkDescriptorPoolSize{ .type = type, .descriptorCount = static_cast<uint32_t>(_config.max_sets_per_pool * multiplier) };
+            perTypeMaxCount[i] = VkDescriptorPoolSize{ .type = type, .descriptorCount = static_cast<uint32_t>(static_cast<float>(_config.max_sets_per_pool) * multiplier) };
         }
 
         VkDescriptorPoolCreateInfo descriptorPoolCreateInfo

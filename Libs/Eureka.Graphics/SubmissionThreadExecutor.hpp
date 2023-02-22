@@ -1,5 +1,5 @@
 #pragma once
-
+// NOLINTBEGIN
 
 
 
@@ -168,3 +168,4 @@ namespace eureka
 //    };
 //}
 
+// NOLINTEND

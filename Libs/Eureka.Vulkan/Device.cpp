@@ -3,6 +3,7 @@
 #include <assert.hpp>
 #include <debugger_trace.hpp>
 #include <macros.hpp>
+#include <algorithm>
 
 
 namespace eureka::vulkan
@@ -328,7 +329,7 @@ namespace eureka::vulkan
         deviceCreationDesc.presentation_family = bestPresentationFamily;
 
         
-        auto totalQueues = 0;
+        auto totalQueues = 0u;
         for (auto [idx, count] : queuesPerFamily)
         {
             totalQueues += count;

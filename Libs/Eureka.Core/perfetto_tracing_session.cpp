@@ -73,7 +73,7 @@ namespace trace
         // directly into a file by passing a file descriptor into Setup() above.
         std::ofstream output;
         output.open(trace_file, std::ios::out | std::ios::binary);
-        output.write(&trace_data[0], trace_data.size());
+        output.write(&trace_data[0], static_cast<std::streamsize>(trace_data.size()));
         output.close();
         PERFETTO_LOG("Tracing stopped, wrote to %s", trace_file.c_str());
     }

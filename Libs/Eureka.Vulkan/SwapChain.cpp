@@ -90,7 +90,7 @@ namespace eureka::vulkan
         _surfaceFormat = (fitr != formats.end()) ? *fitr : formats.at(0);
         _selectedPresentMode = (pitr != presentModes.end())
                                    ? VkPresentModeKHR::VK_PRESENT_MODE_FIFO_KHR
-                                   : VkPresentModeKHR::VK_PRESENT_MODE_FIFO_KHR; // currently we don't use mailbox
+                                   : VkPresentModeKHR::VK_PRESENT_MODE_FIFO_KHR; // currently we don't use mailbox 
 
         auto deviceName = _device->GetPrettyName();
 
@@ -142,7 +142,7 @@ namespace eureka::vulkan
         //auto [result, index] = _swapchain.acquireNextImage(UINT64_MAX, semaphoreHandle);
         if(result == VkResult::VK_SUCCESS)
         {
-            _currentSemaphore = (_currentSemaphore + 1) % _imageReadySemapores.size();
+            _currentSemaphore = (_currentSemaphore + 1u) % _imageReadySemapores.size();
             _lastAquiredImage = imageIndex;
             return SwapChainImageReference {.valid = true, .image_index = imageIndex, .image_ready = semaphoreHandle};
         }

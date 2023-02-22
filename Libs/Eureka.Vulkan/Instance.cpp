@@ -25,13 +25,13 @@ namespace eureka::vulkan
            (VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT))
 #endif
         {
-            static constexpr uint32_t chunksSize = 150;
+            static constexpr uint32_t CHUNK_SIZE = 150;
             std::string_view all(pCallbackData->pMessage);
             std::string separated;
-            separated.reserve(all.size() + 2 * (all.size() / chunksSize));
+            separated.reserve(all.size() + 2 * (all.size() / CHUNK_SIZE));
 
             auto prev = 0;
-            for(auto i = chunksSize; i < all.size(); i += chunksSize)
+            for(auto i = CHUNK_SIZE; i < all.size(); i += CHUNK_SIZE)
             {
                 while(i < all.size() && all[i] != ' ')
                 {

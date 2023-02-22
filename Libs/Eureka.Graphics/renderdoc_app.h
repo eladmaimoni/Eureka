@@ -23,7 +23,7 @@
  ******************************************************************************/
 
 #pragma once
-
+ // NOLINTBEGIN
 //////////////////////////////////////////////////////////////////////////////////////////////////
 //
 // Documentation for the API is available at https://renderdoc.org/docs/in_application_api.html
@@ -705,3 +705,4 @@ typedef int(RENDERDOC_CC *pRENDERDOC_GetAPI)(RENDERDOC_Version version, void **o
 #ifdef __cplusplus
 }    // extern "C"
 #endif
+// NOLINTEND
