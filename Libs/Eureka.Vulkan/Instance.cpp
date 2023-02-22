@@ -228,7 +228,7 @@ namespace eureka::vulkan
     }
 
 
-    std::shared_ptr<Instance> MakeDefaultInstance(std::optional<Version> version)
+    std::shared_ptr<Instance> MakeDefaultInstance()
     {
         InstanceConfig config {};
         config.required_instance_extentions.emplace_back(INSTANCE_EXTENTION_SURFACE_EXTENSION_NAME);

@@ -103,6 +103,15 @@
 			"execution": {"noTestsAction": "error", "stopOnFailure": true}
         }
 	],
+	"packagePresets": [
+    {
+      "name": "vs2022r",
+      "configurePreset": "vs2022",
+      "generators": [
+        "TGZ"
+      ]
+    }
+  ],
 	"workflowPresets": [
 		{
             "name": "vs2022r",
