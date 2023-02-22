@@ -67,7 +67,7 @@ int main(int argc, char* argv[])
         eureka::GLFWRuntime glfw{};
 
 
-        auto instance = vk::MakeDefaultInstance(vk::Version{ 1,2,0 });
+        auto instance = vk::MakeDefaultInstance(/*vk::Version{ 1,2,0 }*/);
 
         auto window = std::make_shared<eureka::Window>(glfw, instance->Get(), eureka::WindowConfig{});
         auto device = vk::MakeDefaultDevice(instance, window->GetSurface());

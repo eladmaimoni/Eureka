@@ -4,8 +4,8 @@
 #include <debugger_trace.hpp>
 #include <ranges>
 
-#define VK_MAKE_API_VERSION(variant, major, minor, patch)                                                              \
-    ((((uint32_t)(variant)) << 29) | (((uint32_t)(major)) << 22) | (((uint32_t)(minor)) << 12) | ((uint32_t)(patch)))
+//#define VK_MAKE_API_VERSION(variant, major, minor, patch)                                                              \
+//    ((((uint32_t)(variant)) << 29) | (((uint32_t)(major)) << 22) | (((uint32_t)(minor)) << 12) | ((uint32_t)(patch)))
 
 //#define VK_API_VERSION_MAJOR(version) (((uint32_t)(version) >> 22) & 0x7FU)
 //#define VK_API_VERSION_MINOR(version) (((uint32_t)(version) >> 12) & 0x3FFU)
@@ -152,9 +152,9 @@ namespace eureka::vulkan
             .applicationVersion = VK_MAKE_API_VERSION(0, 1, 0, 0),
             .pEngineName = "Eureka Engine",
             .engineVersion = VK_MAKE_API_VERSION(0, 1, 0, 0),
-            .apiVersion = _apiVersion.Get(),
+            .apiVersion = VK_API_VERSION_1_3, // the application is designed to work with versions 1.2 up to 1.3
         };
-
+        
 
         
         VkInstanceCreateInfo createInfo {
@@ -240,16 +240,16 @@ namespace eureka::vulkan
         config.required_instance_extentions.emplace_back(INSTANCE_EXTENTION_DEBUG_UTILS);
         config.required_layers.emplace_back(INSTANCE_LAYER_VALIDATION);
 #endif
-        config.version = version;
-        if (config.version)
-        {
-            if (config.version->Minor() <= 2)
-            {
-                config.required_instance_extentions.emplace_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
-                config.required_instance_extentions.emplace_back("VK_KHR_get_surface_capabilities2");
-                config.required_layers.emplace_back("VK_LAYER_KHRONOS_synchronization2");
-            }
-        }
+        //config.version = version;
+        //if (config.version)
+        //{
+        //    if (config.version->Minor() <= 2)
+        //    {
+        //        config.required_instance_extentions.emplace_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+        //        config.required_instance_extentions.emplace_back("VK_KHR_get_surface_capabilities2");
+        //        config.required_layers.emplace_back("VK_LAYER_KHRONOS_synchronization2");
+        //    }
+        //}
         return std::make_shared<Instance>(config);
     }
 
