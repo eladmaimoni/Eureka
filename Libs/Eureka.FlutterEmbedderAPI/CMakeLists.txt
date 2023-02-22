@@ -63,10 +63,22 @@ install(FILES ${FLUTTER_EMBEDDER_API_PUBLIC_HEADERS} DESTINATION include)
 install(
     TARGETS FlutterEmbedderAPI
     EXPORT FlutterEmbedderAPI
+    #DESTINATION lib/$<CONFIG>
+    ARCHIVE DESTINATION lib/$<CONFIG>
+    RUNTIME DESTINATION bin/$<CONFIG>
+    #RUNTIME_DEPENDENCY_SET FLUTTER_EMBEDDER_API_RUNTIME_DEPENDENCY_SET
     DESTINATION lib/$<CONFIG>
-    #LIBRARY DESTINATION lib/$<CONFIG>
-    #RUNTIME DESTINATION bin/$<CONFIG>
 )
+
+#add_custom_command(
+#    TARGET FlutterEmbedderAPI 
+#    POST_BUILD
+#    COMMAND ${CMAKE_COMMAND} -E copy
+#        $<TARGET_FILE:FlutterEmbedderAPI> # path to the .dll
+#        ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG> # build directory for the current configuration (e.g. Debug, Release)
+#)
+
+#install(RUNTIME_DEPENDENCY_SET FLUTTER_EMBEDDER_API_RUNTIME_DEPENDENCY_SET)
 
 install(FILES $<TARGET_PDB_FILE:FlutterEmbedderAPI> DESTINATION lib/$<CONFIG> OPTIONAL)
 
