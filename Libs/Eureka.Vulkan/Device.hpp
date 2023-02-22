@@ -66,7 +66,7 @@ namespace eureka::vulkan
     struct SwapChainImageAquisition
     {
         VkResult result{};
-        uint32_t index;
+        uint32_t index{};
     };
 
     class Device

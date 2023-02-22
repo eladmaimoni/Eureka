@@ -6,7 +6,13 @@
 # ,performance-*
 Checks: '
 	-*
-	,readability-identifier-naming    
+	,readability-identifier-naming
+	#,bugprone-*
+	#,-bugprone-macro-parentheses
+	#,-bugprone-use-after-move
+	,cppcoreguidelines-avoid-const-or-ref-data-members
+	,cppcoreguidelines-avoid-reference-coroutine-parameters
+	,cppcoreguidelines-virtual-class-destructor
     '
 HeaderFilterRegex: '.*'
 #
