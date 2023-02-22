@@ -34,7 +34,7 @@ public:
 	{
 		eureka::os::set_system_timer_frequency(1ms);
 
-        auto instance = vk::MakeDefaultInstance(vk::Version{ 1,2,0 });
+        auto instance = vk::MakeDefaultInstance();
 
         auto window = std::make_shared<eureka::Window>(glfw, instance->Get(), eureka::WindowConfig{});
         auto device = vk::MakeDefaultDevice(instance, window->GetSurface());

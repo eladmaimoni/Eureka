@@ -59,7 +59,7 @@ namespace eureka
     //}
 
     IOCContainer::IOCContainer() :
-        _instance(vulkan::MakeDefaultInstance(vulkan::Version{ 1, 3, 0 }))
+        _instance(vulkan::MakeDefaultInstance())
     {}
 
     IOCContainer::~IOCContainer()
