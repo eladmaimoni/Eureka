@@ -88,7 +88,7 @@ find_package(asio-grpc CONFIG REQUIRED)
 find_package(gRPC CONFIG REQUIRED)
 find_package(volk CONFIG REQUIRED)
 
-find_program(glslc_executable NAMES glslc HINTS Vulkan::glslc)
+find_program(glslc_executable NAMES glslc HINTS Vulkan::glslc CONFIG REQUIRED)
 #message("start TINYGLTF_INCLUDE_DIRS")
 #find_path(TINYGLTF_INCLUDE_DIRS "tiny_gltf.h")
 #message("start CUDA")
