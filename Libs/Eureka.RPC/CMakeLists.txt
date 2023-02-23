@@ -13,6 +13,7 @@ set_source_group(
 
 add_library(
 	Eureka.RPC 
+	STATIC
 	${async}
 ) 
 set_target_properties(Eureka.RPC PROPERTIES FOLDER "Libs")

@@ -15,6 +15,7 @@ set_source_group(
 
 add_library(
     Eureka.Flutter
+    STATIC
     ${flutter}
  )
  set_target_properties(Eureka.Flutter PROPERTIES FOLDER "Libs")

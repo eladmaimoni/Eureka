@@ -10,7 +10,7 @@ set_source_group(types
 	"AppTypes.hpp"
 )
 
-add_library(Eureka.Serialization ${json} ${types})
+add_library(Eureka.Serialization STATIC ${json} ${types})
 set_target_properties(Eureka.Serialization PROPERTIES FOLDER "Libs")
 
 configure_code_analysis(Eureka.Serialization)

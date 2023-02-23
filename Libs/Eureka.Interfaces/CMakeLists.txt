@@ -8,6 +8,7 @@ set_source_group(
 
 add_library(
 	Eureka.Interfaces 
+	STATIC
 	${ui}
 ) 
 

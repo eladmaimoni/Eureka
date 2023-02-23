@@ -86,6 +86,7 @@ set_source_group(
 
 add_library(
 	Eureka.Vulkan 
+	STATIC
 	${device}
 	${infrastructure}
 	${objects}

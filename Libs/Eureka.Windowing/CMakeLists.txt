@@ -10,6 +10,7 @@ set_source_group(
 
 add_library(
     Eureka.Windowing
+    STATIC
     ${windowing}
  )
 

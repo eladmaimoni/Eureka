@@ -66,6 +66,7 @@ set_source_group(
 
 add_library(
     Eureka.Graphics
+    STATIC
     #${assets}
     ${infrastructure}
     #${objects}

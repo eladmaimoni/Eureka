@@ -37,6 +37,7 @@ set_source_group(profiling
 
 target_sources(
     Eureka.Core  
+    STATIC
     PRIVATE
     ${compiler}
     ${concepts}

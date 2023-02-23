@@ -17,6 +17,7 @@ set_source_group(
 
 add_library(
     Eureka.RemoteClient
+    STATIC
     ${ui}   
     ${rpc}
 ) 
