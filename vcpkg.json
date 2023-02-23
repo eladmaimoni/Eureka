@@ -35,6 +35,7 @@
         },
         "nlohmann-json",
         "palsigslot",
+		"shaderc",
 		"spirv-reflect",
         "tinygltf",
 		"volk",
