@@ -1,12 +1,19 @@
 ﻿cmake_minimum_required (VERSION 3.21)
 
+if(NOT DEFINED ENV{VCPKG_ROOT})
+    message(FATAL_ERROR 
+    "VCPKG_ROOT envrionment variable is not defined.\n"
+    "please install vcpkg and set the appropriate environment variable."    
+    )
+endif()
 
-
-message("======================================================================================")
-message("======================================================================================")
-message("========================       PROJECT EUREKA      ===================================")
-message("======================================================================================")
-message("======================================================================================")
+message(STATUS
+"\n======================================================================================"
+"\n======================================================================================"
+"\n========================       PROJECT EUREKA      ==================================="
+"\n======================================================================================"
+"\n======================================================================================"
+)
 
 include(targets_utils.cmake)
 include(utility.cmake)
@@ -53,11 +60,13 @@ target_compile_features(
 ############################################################################
 #                            PACKAGES
 ############################################################################
-message("======================================================================================")
-message("======================================================================================")
-message("========================           PACKAGES        ===================================")
-message("======================================================================================")
-message("======================================================================================")
+message(STATUS
+"\n======================================================================================"
+"\n======================================================================================"
+"\n========================           PACKAGES        ==================================="
+"\n======================================================================================"
+"\n======================================================================================"
+)
 #find_program(CCACHE_FOUND ccache) 
 #if(CCACHE_FOUND)
 #    message("CCACHE is found")
@@ -69,7 +78,7 @@ message("=======================================================================
 
 add_compile_definitions(Boost_NO_WARN_NEW_VERSIONS=1)
 set(nlohmann-json_IMPLICIT_CONVERSIONS OFF)
-message("start find package")
+message(DEBUG "start find package")
 find_package(Boost REQUIRED COMPONENTS container)
 find_package(Catch2 CONFIG REQUIRED)
 find_package(concurrencpp CONFIG REQUIRED)
@@ -92,7 +101,7 @@ find_package(volk CONFIG REQUIRED)
 #find_program(glslc_executable NAMES glslc HINTS Vulkan::glslc CONFIG REQUIRED)
 find_program(glslc_executable NAMES glslc HINTS unofficial-shaderc_util::glslc)
 #find_program(glslc_executable NAMES glslc HINTS Vulkan::glslc CONFIG REQUIRED)
-message("found glslc_executable = ${glslc_executable}")
+message(DEBUG "found glslc_executable = ${glslc_executable}")
 
 #message("start TINYGLTF_INCLUDE_DIRS")
 #find_path(TINYGLTF_INCLUDE_DIRS "tiny_gltf.h")
@@ -109,11 +118,13 @@ message("found glslc_executable = ${glslc_executable}")
 #find_path(VULKAN_HPP_INCLUDE_DIRS "vulkan/vulkan.hpp")
 #find_program(dxc_executable NAMES dxc HINTS Vulkan::dxc) points to the dxc shipped with vs
 
-message("======================================================================================")
-message("======================================================================================")
-message("========================         EUREKA TARGETS    ===================================")
-message("======================================================================================")
-message("======================================================================================")
+message(STATUS
+"\n======================================================================================"
+"\n======================================================================================"
+"\n========================       EUREKA TARGETS      ==================================="
+"\n======================================================================================"
+"\n======================================================================================"
+)
 
 ############################################################################
 #                        GLOBAL VARIABLES
@@ -121,8 +132,8 @@ message("=======================================================================
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 set(dxc_executable "$ENV{VULKAN_SDK}/Bin/dxc.exe")
-message("Eureka: dxc_executable = ${dxc_executable}")
-message("Eureka: glslc_executable = ${glslc_executable}")
+message(DEBUG "Eureka: dxc_executable = ${dxc_executable}")
+message(DEBUG "Eureka: glslc_executable = ${glslc_executable}")
 
 
 configure_default_output_directories()
@@ -134,7 +145,7 @@ include(Catch)
 
 if (CMAKE_GENERATOR MATCHES "Visual Studio")
     # Do Visual Studio specific stuff
-	message("ZZZZ addinig include path ${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/include")
+	message(DEBUG "ZZZZ addinig include path ${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/include")
     # it seems that vcpkg based cmake solutions don't add the vcpkg generated include directories to vcproj files' 
     include_directories("${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/include")
 endif()
@@ -161,10 +172,10 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 #                             SUBDIRECTORIES
 ############################################################################
 
-message("============== AVAILABLE TARGETS AFTER IMPORT ==============")
+message(DEBUG "============== AVAILABLE TARGETS AFTER IMPORT ==============")
 get_all_targets(_targets_list)
 foreach(_target ${_targets_list})
-  message("Target: ${_target}")
+  message(DEBUG "Target: ${_target}")
 endforeach()
 
 
@@ -184,11 +195,13 @@ add_subdirectory (Examples)
 
 
 
-message("======================================================================================")
-message("======================================================================================")
-message("========================            END            ===================================")
-message("======================================================================================")
-message("======================================================================================")
+message(STATUS
+"\n======================================================================================"
+"\n======================================================================================"
+"\n========================            END            ==================================="
+"\n======================================================================================"
+"\n======================================================================================"
+)
 
 
 

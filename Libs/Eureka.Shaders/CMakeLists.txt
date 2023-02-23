@@ -47,10 +47,11 @@ endfunction()
 function(configure_hlsl_shader_compilation shader_file)
     get_source_file_property(shader_type ${shader_file} ShaderType)    
     get_filename_component(shader_name ${shader_file} NAME_WE)
-    message("raw shader file = ${shader_file}")
-    message("shader name = ${shader_name}")
-    message("shader type = ${shader_type}")
-    message("out = ${CMAKE_CURRENT_SOURCE_DIR}/${source}")
+    list(APPEND CMAKE_MESSAGE_INDENT "     ")
+    message(DEBUG "raw shader file = ${shader_file}")
+    message(DEBUG "shader name = ${shader_name}")
+    message(DEBUG "shader type = ${shader_type}")
+    message(DEBUG "out = ${CMAKE_CURRENT_SOURCE_DIR}/${source}")
 
     add_custom_command(
         #PRE_BUILD
@@ -78,14 +79,14 @@ endfunction()
 
 
 function(configure_glsl_shaders_compilation)
-    message("glslc_executable = ${glslc_executable}")
+    message(DEBUG "glslc_executable = ${glslc_executable}")
     foreach(shader IN LISTS ARGN)
         configure_glsl_shader_compilation(${shader})
     endforeach()
 endfunction()
 
 function(configure_hlsl_shaders_compilation)
-    message("dxc_executable = ${dxc_executable}")
+    message(DEBUG "dxc_executable = ${dxc_executable}")
     # prevent visual studio hlsl compilation
     # https://stackoverflow.com/questions/43739539/cmake-avoid-compilation-of-hlsl-shader-files-on-visual-studio
     set_source_files_properties(${ARGN} PROPERTIES VS_TOOL_OVERRIDE "None")
@@ -106,7 +107,7 @@ macro(shaders_group group_name shader_type)
     endforeach()
     set(${group_name} "${ARGN}")  
     source_group(${group_name} FILES ${ARGN}) 
-    message("generated shaders generated headers list named : ${list_name}")
+    message(DEBUG "generated shaders generated headers list named : ${list_name}")
 endmacro(shaders_group)
 
 ################################################################################
