@@ -28,6 +28,7 @@ namespace eureka::vulkan
         std::vector<const char*> required_layers;
         std::vector<const char*> required_extentions;
         VkSurfaceKHR             presentation_surface; // optional
+        Version                  min_version = Version(VK_API_VERSION_1_2);
         uint32_t                 preferred_number_of_graphics_queues{ 1 };
         uint32_t                 preferred_number_of_compute_queues{ 1 }; // save one for present, TODO figure out how this should be handled if we don't know in advance which queue support presentation
         uint32_t                 preferred_number_of_copy_queues{ 1 }; // read & write 

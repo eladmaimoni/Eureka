@@ -45,6 +45,24 @@ namespace eureka::vulkan
         {
             return _version;
         }
+
+        bool operator<(const Version& rhs) const
+        {
+            return
+                (Major() < rhs.Major()) ||
+                (Major() == rhs.Major() && Minor() < rhs.Minor()) ||
+                (Major() == rhs.Major() && Minor() == rhs.Minor() && Patch() < rhs.Patch())
+                ;
+        }
+
+        bool operator>=(const Version& rhs) const
+        {
+            return
+                (Major() >= rhs.Major()) ||
+                (Major() == rhs.Major() && Minor() >= rhs.Minor()) ||
+                (Major() == rhs.Major() && Minor() == rhs.Minor() && Patch() >= rhs.Patch())
+                ;
+        }
     };
 
     struct InstanceConfig
