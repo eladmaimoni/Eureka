@@ -145,25 +145,40 @@ include(Catch)
 
 if (CMAKE_GENERATOR MATCHES "Visual Studio")
     # Do Visual Studio specific stuff
-	message(DEBUG "ZZZZ addinig include path ${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/include")
+    message(DEBUG "ZZZZ addinig include path ${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/include")
     # it seems that vcpkg based cmake solutions don't add the vcpkg generated include directories to vcproj files' 
     include_directories("${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/include")
 endif()
 
+set(EUREKA_ALLOWED_BUILD_TYPES Debug RelWithDebInfo)
+
+get_property(isMultiConfig GLOBAL
+    PROPERTY GENERATOR_IS_MULTI_CONFIG
+)
+if(isMultiConfig)
+    list(REMOVE_ITEM CMAKE_CONFIGURATION_TYPES MinSizeRelease;Release)
+else()
+    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "${EUREKA_ALLOWED_BUILD_TYPES}")
+    if(NOT CMAKE_BUILD_TYPE OR (NOT CMAKE_BUILD_TYPE IN_LIST EUREKA_ALLOWED_BUILD_TYPES))
+        message(FATAL_ERROR 
+        "Missing or invalid build type: ${CMAKE_BUILD_TYPE}\n"
+        "Set CMAKE_BUILD_TYPE to one of : ${EUREKA_ALLOWED_BUILD_TYPES}"
+        )
+    endif()
+endif()
+
 # HACK
 if (MSVC)
-    set(CMAKE_CONFIGURATION_TYPES "Debug;RelWithDebInfo" CACHE STRING "" FORCE)
     # https://stackoverflow.com/questions/58708772/cmake-project-in-visual-studio-gives-flag-override-warnings-command-line-warnin
     string(REGEX REPLACE "/W[3|4]" "/w" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}") 
 endif()
 
 if (WIN32)
-	add_compile_definitions(
-	  WIN32_LEAN_AND_MEAN
-	  NOMINMAX # WINDOWS: to avoid defining min/max macros
-	 # _WINSOCKAPI_ # WINDOWS: to avoid re-definition in WinSock2.h
-	)
-
+    add_compile_definitions(
+      WIN32_LEAN_AND_MEAN
+      NOMINMAX # WINDOWS: to avoid defining min/max macros
+     # _WINSOCKAPI_ # WINDOWS: to avoid re-definition in WinSock2.h
+    )
 endif()
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
