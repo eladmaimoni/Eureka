@@ -47,8 +47,11 @@ namespace eureka::vulkan
         eR8G8B8A8UnormSampledShaderResource,
         eR8G8B8A8UnormSampledShaderResourceRenderTargetTransferSrcDst,
         eD24UnormS8UintDepthImage,
+        eD32FloatDepthImage,
         IMAGE2D_ALLOCATION_PRESETS_COUNT
     };
+
+    Image2DAllocationPreset GetDefaultImagePresetForFormat(VkFormat format);
 
     class ResourceAllocator
     {

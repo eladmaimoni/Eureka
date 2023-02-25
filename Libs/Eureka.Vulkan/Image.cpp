@@ -4,6 +4,26 @@
 namespace eureka::vulkan
 {
 
+
+    VkFormat GetDefaultDepthBufferFormat(const Device& device)
+    {
+        //bool found = false;
+        VkFormat depthFormat = DEFAULT_DEPTH_BUFFER_FORMAT;
+        for (auto format : { VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT })
+        {
+            auto props = device.GetFormatProperties(format);
+
+            if (props.optimalTilingFeatures & VkFormatFeatureFlagBits::VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)
+            {
+                depthFormat = format;
+                //found = true;
+                break;
+            }
+        }
+        return depthFormat;
+    }
+
+
     //////////////////////////////////////////////////////////////////////////
     //
     //                         Image

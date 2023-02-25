@@ -63,7 +63,10 @@ namespace eureka::vulkan
         // eR8G8B8A8UnormSampledShaderResourceRenderTargetTransferSrcDst
         Image2DAllocationPresetVals(VkFormat::VK_FORMAT_R8G8B8A8_UNORM, 1, VK_SAMPLE_COUNT_1_BIT , VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_IMAGE_ASPECT_COLOR_BIT),
         // eD24UnormS8UintDepthImage
-        Image2DAllocationPresetVals(VkFormat::VK_FORMAT_D24_UNORM_S8_UINT, 1, VK_SAMPLE_COUNT_1_BIT , VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_IMAGE_ASPECT_DEPTH_BIT)
+        Image2DAllocationPresetVals(VkFormat::VK_FORMAT_D24_UNORM_S8_UINT, 1, VK_SAMPLE_COUNT_1_BIT , VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_IMAGE_ASPECT_DEPTH_BIT),
+        // eD32FloatDepthImage
+        Image2DAllocationPresetVals(VkFormat::VK_FORMAT_D32_SFLOAT, 1, VK_SAMPLE_COUNT_1_BIT , VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_IMAGE_ASPECT_DEPTH_BIT),
+
     };
 
 
@@ -426,6 +429,19 @@ namespace eureka::vulkan
     void ResourceAllocator::FlushBuffer(const BufferAllocation& bufferAllocation)
     {
         VK_CHECK(vmaFlushAllocation(_vma, bufferAllocation.allocation, 0, bufferAllocation.byte_size));
+    }
+
+    Image2DAllocationPreset GetDefaultImagePresetForFormat(VkFormat format)
+    {
+        switch (format)
+        {
+        case VK_FORMAT_D24_UNORM_S8_UINT:
+            return Image2DAllocationPreset::eD24UnormS8UintDepthImage;
+        case VK_FORMAT_D32_SFLOAT:
+            return Image2DAllocationPreset::eD32FloatDepthImage;
+        default:
+            throw std::logic_error("not implemented");
+        }
     }
 
     VkImageView CreateImage2DView(const Device& device, VkImage image, Image2DAllocationPreset preset)

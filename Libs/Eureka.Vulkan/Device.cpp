@@ -129,11 +129,20 @@ namespace eureka::vulkan
         features12.sType = VkStructureType::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
         features12.timelineSemaphore = true;
        
+
         VkPhysicalDeviceVulkan13Features features13{};
         features13.sType = VkStructureType::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
         features13.synchronization2 = true;
         features13.pNext = &features12;
-        deviceCreateInfoNext = &features13;
+
+        if (_apiVersion.Minor() >= 3)
+        {
+            deviceCreateInfoNext = &features13;
+        }
+        else
+        {
+            deviceCreateInfoNext = &features12;
+        }
 
         VkDeviceCreateInfo deviceCreateInfo
         {

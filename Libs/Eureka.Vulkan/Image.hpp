@@ -5,6 +5,9 @@
 
 namespace eureka::vulkan
 {
+    inline constexpr VkFormat DEFAULT_DEPTH_BUFFER_FORMAT = VkFormat::VK_FORMAT_D24_UNORM_S8_UINT;
+
+    VkFormat GetDefaultDepthBufferFormat(const Device& device);
 
     //////////////////////////////////////////////////////////////////////////
     //
