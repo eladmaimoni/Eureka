@@ -129,6 +129,10 @@ namespace eureka::vulkan
         features12.sType = VkStructureType::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
         features12.timelineSemaphore = true;
        
+        VkPhysicalDeviceSynchronization2FeaturesKHR synchronization2Features = {};
+        synchronization2Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES_KHR;
+        synchronization2Features.synchronization2 = VK_TRUE;
+        features12.pNext = &synchronization2Features;
 
         VkPhysicalDeviceVulkan13Features features13{};
         features13.sType = VkStructureType::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
@@ -144,6 +148,8 @@ namespace eureka::vulkan
             deviceCreateInfoNext = &features12;
         }
 
+
+
         VkDeviceCreateInfo deviceCreateInfo
         {
             .sType = VkStructureType::VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
@@ -158,6 +164,8 @@ namespace eureka::vulkan
             .pEnabledFeatures = &deviceFeatures
         };
 
+
+ 
         VK_CHECK(vkCreateDevice(_physicalDevice, &deviceCreateInfo, nullptr, &_logicalDevice));
 
         volkLoadDevice(_logicalDevice);
@@ -182,15 +190,28 @@ namespace eureka::vulkan
 
     std::tuple<VkPhysicalDevice, std::string, Version> Device::ChoosePhysicalDevice(const DeviceConfig& config)
     {
+        // TODO refactor
         auto physicalDevices = _instance->EnumeratePhysicalDevices();
 
         VkPhysicalDevice chosenPhysicalDevice{};
         std::string deviceName;
-        VkPhysicalDeviceProperties properties;
+        VkPhysicalDeviceProperties2 properties2;
+        properties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+        VkPhysicalDeviceSynchronization2FeaturesKHR synchronization2Features = {};
+        synchronization2Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES_KHR;
+        properties2.pNext = &synchronization2Features;
+
         Version apiVersion;
         for (auto physicalDevice : physicalDevices)
         {
-            vkGetPhysicalDeviceProperties(physicalDevice, &properties);
+            //vkGetPhysicalDeviceProperties(physicalDevice, &properties);
+            //VkPhysicalDeviceProperties2 properties2 = {};
+            
+
+
+            vkGetPhysicalDeviceProperties2(physicalDevice, &properties2);
+            
+            auto& properties = properties2.properties;
             apiVersion = Version(properties.apiVersion);
 
             DEBUGGER_TRACE("Device name: {} type: {} api version {}.{}.{}",
@@ -201,7 +222,15 @@ namespace eureka::vulkan
                 apiVersion.Patch()          
             );
 
-            if (apiVersion >= config.min_version && IsDeviceSuitable(physicalDevice, config))
+            // TODO re
+           
+   
+
+            if (
+                apiVersion >= config.min_version 
+                && IsDeviceSuitable(physicalDevice, config) 
+             //   && synchronization2Features.synchronization2 == VK_TRUE
+                )
             {
                 chosenPhysicalDevice = physicalDevice;
                 deviceName = properties.deviceName;

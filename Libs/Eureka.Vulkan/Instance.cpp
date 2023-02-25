@@ -63,11 +63,11 @@ namespace eureka::vulkan
 
         std::vector<VkExtensionProperties> supportedExtentions(propertyCount);
         VK_CHECK(vkEnumerateInstanceExtensionProperties(nullptr, &propertyCount, supportedExtentions.data()));
-        //for (const auto& supportedExtention : supportedExtentions)
-        //{
-        //    std::string_view supported_extention_name(supportedExtention.extensionName);
-        //    DEBUGGER_TRACE("instance extention = {}", supported_extention_name);
-        //}
+        for (const auto& supportedExtention : supportedExtentions)
+        {
+            std::string_view supported_extention_name(supportedExtention.extensionName);
+            DEBUGGER_TRACE("instance extention = {}", supported_extention_name);
+        }
         for(auto requiredExtention : desc.required_instance_extentions)
         {
 
@@ -97,11 +97,11 @@ namespace eureka::vulkan
 
         std::vector<VkLayerProperties> layerProperties(propertyCount);
         VK_CHECK(vkEnumerateInstanceLayerProperties(&propertyCount, layerProperties.data()));
-        //for (const auto& supportedLayer : layerProperties)
-        //{
-        //    std::string_view supported_layer_name(supportedLayer.layerName);
-        //    DEBUGGER_TRACE("instance layer = {}", supported_layer_name);
-        //}
+        for (const auto& supportedLayer : layerProperties)
+        {
+            std::string_view supported_layer_name(supportedLayer.layerName);
+            DEBUGGER_TRACE("instance layer = {}", supported_layer_name);
+        }
         for(const auto& requiredLayer : desc.required_layers)
         {
             bool found = false;
@@ -156,7 +156,7 @@ namespace eureka::vulkan
         };
         
 
-        
+        //VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME
         VkInstanceCreateInfo createInfo {
             .sType = VkStructureType::VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
             .flags = {},
@@ -165,7 +165,7 @@ namespace eureka::vulkan
             .ppEnabledLayerNames = _config.required_layers.data(), // enabled layers
             .enabledExtensionCount = static_cast<uint32_t>(_config.required_instance_extentions.size()),
             .ppEnabledExtensionNames = _config.required_instance_extentions.data(),
-        };
+        }; 
 
         VK_CHECK(vkCreateInstance(&createInfo, nullptr, &_instance));
 
@@ -231,6 +231,8 @@ namespace eureka::vulkan
     std::shared_ptr<Instance> MakeDefaultInstance()
     {
         InstanceConfig config {};
+        
+        config.required_instance_extentions.emplace_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
         config.required_instance_extentions.emplace_back(INSTANCE_EXTENTION_SURFACE_EXTENSION_NAME);
 #ifdef WIN32
         config.required_instance_extentions.emplace_back(INSTANCE_EXTENTION_WIN32_SURFACE_EXTENSION_NAME);
