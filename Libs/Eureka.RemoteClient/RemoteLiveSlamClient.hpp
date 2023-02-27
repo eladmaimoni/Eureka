@@ -5,7 +5,7 @@ EUREKA_MSVC_WARNING_PUSH
 EUREKA_MSVC_WARNING_DISABLE(4127 4702 4005)
 #include <proto/rgorpc.grpc.pb.h>
 EUREKA_MSVC_WARNING_POP
-
+#include <stop_token.hpp>
 #include "PoseGraphStreamer.hpp"
 
 namespace eureka::rpc
@@ -27,15 +27,15 @@ namespace eureka::rpc
         std::shared_ptr<grpc::Channel>                                              _channel;
         std::shared_ptr<rgoproto::LiveSlamUIService::Stub>                            _remoteLiveSlamStub;
         std::atomic<ConnectionState>                                                _state{ ConnectionState::Disconnected };
-        std::stop_source                                                            _connectCancellationSource;
+        stop_source                                                                _connectCancellationSource;
         sigslot::signal<ConnectionState>                                            _connectionStateSignal;
 
         PoseGraphStreamRead _poseGraphStreamRead;
         RealtimePoseStreamRead _realtimePoseStreamRead;
 
         asio::awaitable<void> DoDisconnect();
-        asio::awaitable<void> DoMonitorConnection(std::stop_token stopToken);
-        asio::awaitable<void> DoWaitForConnection(std::stop_token stopToken);
+        asio::awaitable<void> DoMonitorConnection(stop_token stopToken);
+        asio::awaitable<void> DoWaitForConnection(stop_token stopToken);
 
         void SetConnectionState(ConnectionState state);
     public:

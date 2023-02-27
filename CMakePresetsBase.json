@@ -18,7 +18,7 @@
                     "type": "FILEPATH"
                 },
                 "VCPKG_INSTALLED_DIR": "${sourceDir}/build/packages",
-				"VCPKG_OVERLAY_TRIPLETS" : "${sourceDir}/vcpkg_scripts"
+				"VCPKG_OVERLAY_TRIPLETS" : "${sourceDir}/vcpkg_scripts/triplets"
             }
         },
 		{
@@ -56,6 +56,40 @@
 				}
         },
 		{
+            "name": "gcc-12",
+            "hidden": true,
+            "description": "Compile with gcc-12",
+			"toolset": {
+                "value": "host=x64",
+                "strategy": "external"
+            },
+            "architecture": {
+                "value": "x64",
+                "strategy": "external"
+            },
+            "cacheVariables": {
+				"VCPKG_TARGET_TRIPLET": "x64-linux-gcc-12",
+				"VCPKG_CHAINLOAD_TOOLCHAIN_FILE": "${sourceDir}/vcpkg_scripts/toolchains/gcc-12-toolchain.cmake"
+            }
+        },
+		{
+            "name": "clang-15",
+            "hidden": true,
+            "description": "Compile with clang-15",
+			"toolset": {
+                "value": "host=x64",
+                "strategy": "external"
+            },
+            "architecture": {
+                "value": "x64",
+                "strategy": "external"
+            },
+            "cacheVariables": {
+				"VCPKG_TARGET_TRIPLET": "x64-linux-clang-15",
+				"VCPKG_CHAINLOAD_TOOLCHAIN_FILE": "${sourceDir}/vcpkg_scripts/toolchains/clang-15-toolchain.cmake"
+            }
+        },
+		{
             "name": "clang-cl-x64",
             "hidden": true,
             "description": "Target MSVC (Visual Studio 2022) x64",
@@ -77,6 +111,20 @@
 					"intelliSenseMode": "windows-clang-x64"
 				} 
 			}
-        }
+        },
+		{
+			"name": "ninja-linux-x64-clang",
+            "hidden": true,
+			"description": "linux x64 debug with clang",
+			"inherits": ["vcpkg", "clang-15", "ninja-export-commands"],
+			"generator": "Ninja" 
+		},
+		{
+			"name": "ninja-linux-x64-gcc",
+            "hidden": true,
+			"description": "linux x64 debug with gcc",
+			"inherits": ["vcpkg", "gcc-12", "ninja-export-commands"],
+			"generator": "Ninja" 
+		}
     ]
 }

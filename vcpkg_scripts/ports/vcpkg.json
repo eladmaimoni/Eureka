@@ -1,0 +1,56 @@
+{
+  "name": "fluttervk",
+  "version": "1.0.0",
+  "port-version": 1,
+  "description": "flutter vulkan embedder",
+  "homepage": "https://github.com/eladmaimoni/Eureka",
+  "license": "WTFPL",
+  "dependencies": [
+		"asio",
+		{ 
+			"name": "asio-grpc", 
+			"version>=": "2.4.0" 
+		}, 
+        "boost-container",
+		"boost-hana",
+		"boost-lockfree",
+		"boost-pool",
+        "catch2",
+        "concurrencpp",
+        "eigen3",
+        "function2",
+        "glfw3",
+        "glm",
+        {
+            "name": "imgui",
+            "default-features": true,
+            "features": [ "docking-experimental" ]
+        },
+		{ 
+			"name": "implot", 
+			"version>=": "0.14" 
+		},
+		"grpc",
+        {
+            "name": "grpc",
+            "default-features": true,
+            "features": [ "codegen" ]
+        },
+        "nlohmann-json",
+        "palsigslot",
+		"spirv-reflect",
+        "tinygltf",
+		"volk",
+        "vulkan",
+        "vulkan-headers",
+        "vulkan-memory-allocator",
+		{
+		  "name": "vcpkg-cmake",
+		  "host": true
+		},
+		{
+		  "name": "vcpkg-cmake-config",
+		  "host": true
+		}
+    ]
+}

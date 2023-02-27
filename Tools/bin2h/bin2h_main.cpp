@@ -1,5 +1,6 @@
 #include <iostream>
 #include "bin2h.hpp"
+#include <format>
 
 namespace std
 {
@@ -18,7 +19,7 @@ namespace std
 
 int main(int argc, char* argv[])
 {
-    
+    std::cout << std::format("hi {}\n", 42);
     if (argc <= 1)
     {
         std::cout << std::format("bin2h : not enough arguments\n");

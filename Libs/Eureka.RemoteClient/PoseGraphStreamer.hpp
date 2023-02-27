@@ -52,10 +52,10 @@ namespace eureka
     template<typename Policy>
     class GenericStreamRead
     {
-        using ServiceT = Policy::ServiceT;
+        using ServiceT = typename Policy::ServiceT;
         static constexpr auto StreamPrepare = Policy::StreamPrepare;
-        using RequestMessage = Policy::RequestMessage;
-        using IncomingMessageT = Policy::IncomingMessageT;
+        using RequestMessage = typename Policy::RequestMessage;
+        using IncomingMessageT = typename Policy::IncomingMessageT;
 
         std::shared_ptr<ClientCompletionQueueExecutor>                             _cq;
 
@@ -84,7 +84,7 @@ namespace eureka
             }
         }
 
-        asio::awaitable_optional<StreamingReadRPC<IncomingMessageT>> DoInitiateReadStream(ServiceT::Stub& stub)
+        asio::awaitable_optional<StreamingReadRPC<IncomingMessageT>> DoInitiateReadStream(typename ServiceT::Stub& stub)
         {
             StreamingReadRPC<IncomingMessageT> rpc;
             rpc.context = std::make_shared<grpc::ClientContext>();
@@ -194,12 +194,12 @@ namespace eureka
                 if (!finishOk)
                 {
                     DEBUGGER_TRACE("failed finishing pose graph streaming {} total packets read {}", status.error_message(), packetNum);
-                    CLOG("failed finishing pose graph streaming {} total packets read {}", status.error_message(), packetNum);
+                    SPDLOG_DEBUG("failed finishing pose graph streaming {} total packets read {}", status.error_message(), packetNum);
                 }
                 else
                 {
                     DEBUGGER_TRACE("finished pose graph streaming {} total packets read {}", status.error_message(), packetNum);
-                    CLOG("finished pose graph streaming {} total packets read {}", status.error_message(), packetNum);
+                    SPDLOG_DEBUG("finished pose graph streaming {} total packets read {}", status.error_message(), packetNum);
                 }
 
                 _context.reset();
@@ -220,7 +220,7 @@ namespace eureka
                 _context->TryCancel();
 
                 DEBUGGER_TRACE("client - tried cancelling active pose graph streaming");
-                CLOG("client - tried cancelling active pose graph streaming");
+                SPDLOG_DEBUG("client - tried cancelling active pose graph streaming");
                 _context.reset();
             }
         }

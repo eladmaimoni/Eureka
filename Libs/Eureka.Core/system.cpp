@@ -79,6 +79,7 @@ namespace eureka::os
 
 #elif defined(__linux__)
 #include <sys/prctl.h>
+#include <pthread.h>
 
 namespace eureka::os
 {
@@ -89,10 +90,10 @@ namespace eureka::os
 
     void set_thread_name(void* thread_handle, const char* threadName)
     {
-        pthread_setname_np(thread_handle, threadName);
+        pthread_setname_np(reinterpret_cast<pthread_t>(thread_handle), threadName);
     }
 
-    void set_os_timer_frequency(std::chrono::milliseconds) {}
+    void set_system_timer_frequency(std::chrono::milliseconds) {}
 }
 
 #endif

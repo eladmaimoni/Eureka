@@ -1,4 +1,5 @@
 #include "bin2h.hpp"
+#include <format>
 //#include <iostream>
 
 namespace eureka

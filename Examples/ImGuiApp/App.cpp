@@ -69,7 +69,7 @@ namespace eureka
             }
             catch (const std::exception& err)
             {
-                CLOG("FAILED READING MEMO FILE {} err = {}", appMemoFile, err.what());
+                SPDLOG_ERROR("FAILED READING MEMO FILE {} err = {}", appMemoFile.string(), err.what());
                 std::filesystem::rename(appMemoFile, workingDir / "app_memo_that_failed_loading.json");
 
                 _memo = AppMemo{};

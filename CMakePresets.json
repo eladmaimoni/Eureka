@@ -9,6 +9,20 @@
         "CMakePresetsBase.json"
     ],
     "configurePresets": [
+	    {
+			"name": "ninja-ld-clang",
+			"inherits": ["ninja-linux-x64-clang"],
+			"cacheVariables": {
+				"CMAKE_BUILD_TYPE": "Debug"
+			}     
+        },
+	    {
+			"name": "ninja-lr-clang",
+			"inherits": ["ninja-linux-x64-clang"],
+			"cacheVariables": {
+				"CMAKE_BUILD_TYPE": "RelWithDebInfo"
+			}     
+        },
         {
             "name": "ninja-wd",
             "displayName": "windows-x64-debug-ninja",
@@ -86,6 +100,14 @@
 		{
             "name": "ninja-wr",
             "configurePreset": "ninja-wr"
+        },
+				{
+		    "name": "ninja-ld-clang",
+            "configurePreset": "ninja-ld-clang"
+        },
+		{
+            "name": "ninja-lr-clang",
+            "configurePreset": "ninja-lr-clang"
         }
     ],
 	"testPresets" : [

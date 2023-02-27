@@ -108,6 +108,9 @@ namespace eureka::vulkan
         case VkPhysicalDeviceType::VK_PHYSICAL_DEVICE_TYPE_CPU:
             str = "CPU";
             break;
+        default:
+            str = "invalid device type";
+            break;
         }
         return str;
     }
@@ -195,11 +198,11 @@ namespace eureka::vulkan
 
         VkPhysicalDevice chosenPhysicalDevice{};
         std::string deviceName;
-        VkPhysicalDeviceProperties2 properties2;
+        VkPhysicalDeviceProperties2 properties2{};
         properties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-        VkPhysicalDeviceSynchronization2FeaturesKHR synchronization2Features = {};
-        synchronization2Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES_KHR;
-        properties2.pNext = &synchronization2Features;
+        //VkPhysicalDeviceSynchronization2FeaturesKHR synchronization2Features = {};
+        //synchronization2Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES_KHR;
+        //properties2.pNext = &synchronization2Features;
 
         Version apiVersion;
         for (auto physicalDevice : physicalDevices)

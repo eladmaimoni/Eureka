@@ -6,6 +6,7 @@
 #include <ctime>
 #include <iomanip>
 #include <compiler.hpp>
+#include <debugger_trace.hpp>
 
 namespace trace
 {
@@ -31,8 +32,8 @@ namespace trace
         // The system-wide tracing service lets us see our app's events in context
         // with system profiling information.
         args.backends = trace_type == TraceType::kInProcess
-                            ? perfetto::kInProcessBackend
-                            : perfetto::kSystemBackend;
+                            ? perfetto::BackendType::kInProcessBackend
+                            : perfetto::BackendType::kSystemBackend;
         PERFETTO_LOG("Initialized perfetto tracing");
         perfetto::Tracing::Initialize(args);
         perfetto::TrackEvent::Register();
@@ -144,7 +145,7 @@ namespace eureka
         }
         catch (const std::exception& err)
         {
-            PERFETTO_LOG(err.what());
+            DEBUGGER_TRACE("{}", err.what());
         }
     }
 

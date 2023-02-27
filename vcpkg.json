@@ -6,6 +6,7 @@
 		"asio",
 		{ 
 			"name": "asio-grpc", 
+			"features" :["boost-container"],
 			"version>=": "2.4.0" 
 		}, 
         "boost-container",
@@ -13,7 +14,11 @@
 		"boost-lockfree",
 		"boost-pool",
         "catch2",
-        "concurrencpp",
+        "concurrencpp",	
+		{ 
+			"name": "directx-dxc", 
+			"version>=": "2022-12-16" 
+		},
         "eigen3",
         "function2",
         "glfw3",
@@ -36,19 +41,18 @@
         "nlohmann-json",
         "palsigslot",
 		"shaderc",
-		"spirv-reflect",
+		"spdlog",
         "tinygltf",
 		"volk",
-        "vulkan",
         "vulkan-headers",
         "vulkan-memory-allocator"
     ],
 	"features":
 	{	
-		"vcpkg-optional-realsense" : 
+		"vcpkg-optional-unused" : 
 		{
-			"description": "build realsense2 using vcpkg",
-			"dependencies": ["realsense2"]
+			"description": "unused",
+			"dependencies": ["vulkan", "spirv-reflect"]
 		}
 	}
 }

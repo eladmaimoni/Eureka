@@ -14,6 +14,7 @@ set_source_group(app
 add_executable(
     ImGuiApp
     ${app}
+    
 ) 
 
 set_target_properties(ImGuiApp PROPERTIES FOLDER "Examples")
@@ -26,7 +27,7 @@ endif()
 
 target_link_options(ImGuiApp PRIVATE ${SUBSYSTEM_LINKER_OPTIONS})
 
-set_compiler_flags(ImGuiApp)  
+  
 
 target_precompile_headers(
     ImGuiApp 
@@ -49,4 +50,5 @@ target_link_libraries(
     Eureka.RemoteProto
     Eureka.RemoteClient
     concurrencpp::concurrencpp
+    eureka_strict_compiler_flags
 )

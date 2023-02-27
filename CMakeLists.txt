@@ -14,6 +14,8 @@ message(STATUS
 "\n======================================================================================"
 "\n======================================================================================"
 )
+message(STATUS "CMAKE_C_COMPILER = ${CMAKE_C_COMPILER}")
+message(STATUS "CMAKE_CXX_COMPILER = ${CMAKE_CXX_COMPILER}")
 
 include(targets_utils.cmake)
 include(utility.cmake)
@@ -50,6 +52,13 @@ target_compile_options(
   "$<${EUREKA_COMPILER_IS_GCC_LIKE}:${EUREKA_GCC_LIKE_STRICT_FLAGS}>"
   "$<${EUREKA_COMPILER_IS_MSVC}:${EUREKA_MSVC_STRICT_FLAGS}>"
   "${EUREKA_TREAT_WARNING_AS_ERROR}"
+  $<$<CXX_COMPILER_ID:Clang>:-fexperimental-library -stdlib=libc++> # https://discourse.llvm.org/t/linux-what-is-the-status-of-libc-in-llvm-15-apt-packages-ranges-format/65348/4
+)
+
+target_link_options(
+    eureka_strict_compiler_flags
+    INTERFACE
+    $<$<CXX_COMPILER_ID:Clang>: -fexperimental-library -stdlib=libc++>
 )
 
 target_compile_features(
@@ -57,6 +66,17 @@ target_compile_features(
     INTERFACE
     cxx_std_23
 )
+
+# https://discourse.llvm.org/t/linux-what-is-the-status-of-libc-in-llvm-15-apt-packages-ranges-format/65348/4
+#if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+#    target_compile_options(
+#      eureka_strict_compiler_flags 
+#      INTERFACE
+#      $<$<CXX_COMPILER_ID:Clang>:-fexperimental-library -stdlib=libc++>
+#    )
+#
+#)
+#endif()
 ############################################################################
 #                            PACKAGES
 ############################################################################
@@ -82,6 +102,7 @@ message(DEBUG "start find package")
 find_package(Boost REQUIRED COMPONENTS container)
 find_package(Catch2 CONFIG REQUIRED)
 find_package(concurrencpp CONFIG REQUIRED)
+find_package(directx-dxc CONFIG REQUIRED)
 find_package(Eigen3 CONFIG REQUIRED)
 find_package(function2 CONFIG REQUIRED)
 find_package(glfw3 CONFIG REQUIRED)
@@ -90,15 +111,16 @@ find_package(imgui CONFIG REQUIRED)
 find_package(implot CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(PalSigslot CONFIG REQUIRED)
-find_package(Vulkan REQUIRED COMPONENTS glslc)
+find_package(spdlog CONFIG REQUIRED)
+#find_package(Vulkan REQUIRED COMPONENTS glslc)
 find_package(unofficial-shaderc_util CONFIG REQUIRED)  
 find_package(unofficial-vulkan-memory-allocator CONFIG REQUIRED)
-find_package(unofficial-spirv-reflect CONFIG REQUIRED)
+#find_package(unofficial-spirv-reflect CONFIG REQUIRED)
 find_package(asio-grpc CONFIG REQUIRED)
 find_package(gRPC CONFIG REQUIRED)
 find_package(volk CONFIG REQUIRED)
 
-#find_program(glslc_executable NAMES glslc HINTS Vulkan::glslc CONFIG REQUIRED)
+find_program(dxc_executable NAMES dxc HINTS directx-dxc::dxc CONFIG REQUIRED)
 find_program(glslc_executable NAMES glslc HINTS unofficial-shaderc_util::glslc)
 #find_program(glslc_executable NAMES glslc HINTS Vulkan::glslc CONFIG REQUIRED)
 message(DEBUG "found glslc_executable = ${glslc_executable}")
@@ -131,9 +153,9 @@ message(STATUS
 ############################################################################
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
-set(dxc_executable "$ENV{VULKAN_SDK}/Bin/dxc.exe")
-message(DEBUG "Eureka: dxc_executable = ${dxc_executable}")
-message(DEBUG "Eureka: glslc_executable = ${glslc_executable}")
+#set(dxc_executable "$ENV{VULKAN_SDK}/Bin/dxc.exe")
+message(STATUS "Eureka: dxc_executable = ${dxc_executable}")
+message(STATUS "Eureka: glslc_executable = ${glslc_executable}")
 
 
 configure_default_output_directories()

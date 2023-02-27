@@ -1,4 +1,4 @@
-#include "Profiling.hpp"
+#include "profiling.hpp"
 
 #if EUREKA_HAS_NVTOOLSEXT
 #include <nvtx3/nvToolsExt.h>

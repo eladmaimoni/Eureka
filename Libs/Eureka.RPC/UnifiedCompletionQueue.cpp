@@ -22,7 +22,7 @@ namespace eureka
                 }
                 catch (const std::exception& err)
                 {
-                    CLOG("{}", err.what());
+                    SPDLOG_ERROR("{}", err.what());
                 }
 
             });
@@ -36,7 +36,7 @@ namespace eureka
                 }
                 catch (const std::exception& err)
                 {
-                    CLOG("{}", err.what());
+                    SPDLOG_ERROR("{}", err.what());
                 }
 
             }

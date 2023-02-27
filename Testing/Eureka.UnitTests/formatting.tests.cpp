@@ -1,6 +1,8 @@
 #include <catch.hpp>
-#include <debugger_trace.hpp>
-
+//#include <debugger_trace.hpp>
+#include <format>
+#include <formatter_specializations.hpp>
+#include <basic_concepts.hpp>
 
 
 namespace eureka
@@ -96,6 +98,7 @@ namespace eureka
 
 TEST_CASE("formating string", "[formatting]")
 {
+    //auto result = std::vformat("{}", std::make_format_args(std::string("hi")));
     auto result = std::format("{}", std::string("hi"));
 
     CHECK(result == "hi");
@@ -103,7 +106,8 @@ TEST_CASE("formating string", "[formatting]")
 
 TEST_CASE("formatting streamable that is not formattable", "[formatting]")
 {
-    auto result = std::format("{}", eureka::StreamableNotFormattable{ 123 });
+    auto result = std::vformat("{}", std::make_format_args(eureka::StreamableNotFormattable{ 123 })); 
+    //auto result = std::format("{}", eureka::StreamableNotFormattable{ 123 }); // clang WTF?
 
     CHECK(result == "StreamableNotFormattable{123}");
 }
@@ -111,7 +115,8 @@ TEST_CASE("formatting streamable that is not formattable", "[formatting]")
 TEST_CASE("formatting iterable of formattable", "[formatting]")
 {
     std::vector<int> vals{ 1,2,3 };
-    auto result = std::format("{}", vals);
+    auto result = std::vformat("{}", std::make_format_args(vals));  // clang WTF?
+    //auto result = std::format("{}", vals);
 
     CHECK(result == "{1,2,3}");
 }
@@ -119,7 +124,8 @@ TEST_CASE("formatting iterable of formattable", "[formatting]")
 TEST_CASE("formatting iterable of streamable that is not formattable", "[formatting]")
 {
     std::vector<eureka::StreamableNotFormattable> vals{ {1},{2} };
-    auto result = std::format("{}", vals);
+    auto result = std::vformat("{}", std::make_format_args(vals)); // clang??
+    //auto result = std::format("{}", vals);
 
     CHECK(result == "{StreamableNotFormattable{1},StreamableNotFormattable{2}}");
 }
@@ -128,7 +134,8 @@ TEST_CASE("formatting iterable of streamable that is not formattable", "[formatt
 TEST_CASE("formatting eigen matrix", "[formatting]")
 {
     auto mat = Eigen::Matrix3d::Identity();
-    auto result = std::format("{}", mat);
+    auto result = std::vformat("{}", std::make_format_args(mat)); // clang??
+    //auto result = std::format("{}", mat);
     auto expected = "1 0 0\n0 1 0\n0 0 1";
 
     CHECK(result == expected);

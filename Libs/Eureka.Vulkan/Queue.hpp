@@ -5,8 +5,8 @@ namespace eureka::vulkan
 {
     class Queue
     {
+        VkQueue   _queue{};
         uint32_t  _family{};
-        VkQueue _queue{};
     public:
         Queue() = default;
         Queue(VkQueue queue, uint32_t family);

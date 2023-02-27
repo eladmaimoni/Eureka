@@ -34,9 +34,9 @@ namespace eureka
         void Shutdown();
         void PollSystemEvents(std::chrono::high_resolution_clock::time_point deadline);
 
-        std::stop_source      _cancellationSource;
-        std::shared_ptr<Window> _window;
+
+        std::shared_ptr<Window>                    _window;
         std::shared_ptr<rpc::RemoteLiveSlamClient> _remoteHandler;
-        std::shared_ptr<ui::RemoteLiveSlamUI> _remoteUI;
+        std::shared_ptr<ui::RemoteLiveSlamUI>      _remoteUI;
     };
 }    

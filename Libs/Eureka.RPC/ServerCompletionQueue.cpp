@@ -13,7 +13,7 @@ namespace eureka
         _grpcContext(std::move(completionQueue)),
         _workGuard(asio::make_work_guard(_grpcContext))
     {
-        _thread = std::jthread(
+        _thread = jthread(
             [this]
             {
                 try
@@ -28,7 +28,7 @@ namespace eureka
                 }
                 catch (const std::exception& err)
                 {
-                    CLOG("{}", err.what());
+                    SPDLOG_ERROR("{}", err.what());
                 }
             });
     }

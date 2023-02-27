@@ -1,6 +1,5 @@
 #include <catch.hpp>
 #include <debugger_trace.hpp>
-#include <windows.h>
 #include <boost/pool/object_pool.hpp>
 #include <boost/lockfree/stack.hpp>
 #include <stack>

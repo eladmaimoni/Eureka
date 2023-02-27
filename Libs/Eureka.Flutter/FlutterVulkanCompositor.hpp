@@ -38,7 +38,7 @@ namespace eureka::flutter
         FlutterLayersViewPass(graphics::GlobalInheritedData globalInheritedData);
 
 
-        void BindToTargetPass(graphics::TargetInheritedData inheritedData);
+        void BindToTargetPass(graphics::TargetInheritedData inheritedData) override;
 
         void Prepare() override {}
 

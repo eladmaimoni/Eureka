@@ -40,6 +40,7 @@ namespace eureka
     template <typename T>
     inline consteval size_t consteval_file_name_offset(T(&str)[1])
     {
+        (void)str;
         return 0;
     }
 

@@ -8,8 +8,8 @@ namespace eureka::vulkan
     class Semaphore
     {
     protected:
-        VkSemaphore _semaphore{ nullptr };
         std::shared_ptr<Device> _device{ nullptr };
+        VkSemaphore _semaphore{ nullptr };
         Semaphore() = default;
         Semaphore(std::shared_ptr<Device> device);
         ~Semaphore();
@@ -63,34 +63,38 @@ namespace eureka::vulkan
     class CounterSemaphoreBase : protected TimelineSemaphoreBase
     {
     protected:
-        std::atomic_uint64_t _value{0};
+        //std::atomic_uint64_t _value{ 0 };
+        uint64_t _value{0};
         CounterSemaphoreBase(std::shared_ptr<Device> device) : TimelineSemaphoreBase(device, 0) {}
-        ~CounterSemaphoreBase() = default;
-        CounterSemaphoreBase() = default;
-        CounterSemaphoreBase(CounterSemaphoreBase&& that) noexcept :
-            TimelineSemaphoreBase(std::move(that)),
-            _value(that._value.load())
-        {
+        //~CounterSemaphoreBase() = default;
+        //CounterSemaphoreBase() = default;
+        //CounterSemaphoreBase(CounterSemaphoreBase&& that) noexcept :
+        //    TimelineSemaphoreBase(std::move(that)),
+        //    //_value(that._value.load())
+        //    _value(that._value)
+        //{
 
-        }
+        //}
+        EUREKA_DEFAULT_MOVEABLE_COPYABLE(CounterSemaphoreBase);
+        //CounterSemaphoreBase(const CounterSemaphoreBase& that) :
+        //    TimelineSemaphoreBase(that),
+        //    _value(that._value.load())
+        //{
 
-        CounterSemaphoreBase(const CounterSemaphoreBase& that) :
-            TimelineSemaphoreBase(that),
-            _value(that._value.load())
-        {
-
-        }
+        //}
     public:
         using Semaphore::Get;
 
         uint64_t Increment()
         {
-            return _value.fetch_add(1);
+            //return _value.fetch_add(1);
+            return _value++;
         }
 
         uint64_t IncrementAndSignal()
         {
-            auto prev = _value.fetch_add(1);
+            //auto prev = _value.fetch_add(1);
+            auto prev = _value++;
             TimelineSemaphoreBase::Signal(_value);
             return prev;
         }

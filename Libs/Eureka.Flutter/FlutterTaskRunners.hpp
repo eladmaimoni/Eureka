@@ -3,6 +3,7 @@
 #include <set>
 #include <flutter/flutter_embedder.h>
 #include <mutex>
+#include <thread>
 
 namespace eureka::flutter
 {

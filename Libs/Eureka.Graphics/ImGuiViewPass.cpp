@@ -25,9 +25,9 @@ namespace eureka::graphics
         std::shared_ptr<IImGuiLayout> layout
     ) :
         IViewPass(std::move(globalInheritedData)),
-        _layout(std::move(layout)),
         _descriptorSet(_globalInheritedData.device, _globalInheritedData.descriptor_allocator),
-        _fontImage(_globalInheritedData.device, _globalInheritedData.resource_allocator)
+        _fontImage(_globalInheritedData.device, _globalInheritedData.resource_allocator),
+        _layout(std::move(layout))
     {
 
     }

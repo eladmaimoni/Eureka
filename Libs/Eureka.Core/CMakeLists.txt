@@ -6,12 +6,13 @@ if (NOT TARGET_NAME_IF_EXISTS:CUDA::nvToolsExt)
 
     if (MSVC)
 	    target_compile_options(Eureka.Core PRIVATE /permissive- /bigobj) # https://github.com/google/perfetto/issues/214
-	    target_compile_definitions(
+    endif()
+
+    target_compile_definitions(
           Eureka.Core 
           PUBLIC 
           PERFETTO_TRACING
-	    )
-    endif()
+	)
 else()
     message("ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ NO PERFETTO")
 endif()
@@ -24,7 +25,7 @@ set_source_group(error "basic_errors.hpp" "assert.hpp")
 set_source_group(formatting "formatter_specializations.hpp")
 set_source_group(logging "logging.hpp" "logging_impl.hpp" "logging_impl.cpp")
 set_source_group(containers "containers_aliases.hpp" "fixed_capacity_vector.hpp")
-set_source_group(os "system.hpp" "system.cpp" "thread_name.hpp" "thread_name.cpp" "windows.hpp" "future.hpp")
+set_source_group(os "system.hpp" "system.cpp" "thread_name.hpp" "thread_name.cpp" "windows.hpp" "future.hpp" "jthread.hpp" "stop_token.hpp")
 
 set_source_group(profiling 
     "profiling.cpp" 
@@ -68,6 +69,8 @@ target_include_directories(
 
 target_link_libraries(
     Eureka.Core 
+    PUBLIC
+    spdlog::spdlog
     PRIVATE
     $<TARGET_NAME_IF_EXISTS:CUDA::nvToolsExt>
     eureka_strict_compiler_flags

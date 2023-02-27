@@ -72,8 +72,8 @@ namespace eureka::vulkan
                          Queue                   graphicsQueue) :
         _window(std::move(window)),
         _device(std::move(device)),
-        _presentationQueue(presentQueue),
-        _graphicsQueue(graphicsQueue)
+        _graphicsQueue(graphicsQueue),
+        _presentationQueue(presentQueue)
     {
         auto surface = _window->GetSurface();
         auto [capabilities, formats, presentModes] = _device->GetSwapChainSupport(surface);

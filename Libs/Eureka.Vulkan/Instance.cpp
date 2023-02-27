@@ -30,7 +30,7 @@ namespace eureka::vulkan
             std::string separated;
             separated.reserve(all.size() + 2 * (all.size() / CHUNK_SIZE));
 
-            auto prev = 0;
+            auto prev = 0u;
             for(auto i = CHUNK_SIZE; i < all.size(); i += CHUNK_SIZE)
             {
                 while(i < all.size() && all[i] != ' ')

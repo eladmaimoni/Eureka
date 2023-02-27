@@ -3,6 +3,7 @@
 #include "Image.hpp"
 #include "SwapChain.hpp"
 #include <debugger_trace.hpp>
+#include <compiler.hpp>
 #include "Commands.hpp"
 
 namespace eureka::vulkan
@@ -43,7 +44,7 @@ namespace eureka::vulkan
             return _frameBuffer;
         }
     };
-
+    EUREKA_CLANG_WARNING_DISABLE(-Wmissing-field-initializers)
     class RenderTarget
     {
     public:
@@ -65,9 +66,9 @@ namespace eureka::vulkan
         VkRect2D                     _area;
         std::shared_ptr<RenderPass>  _renderPass{ nullptr };
         FrameBuffer                  _frameBuffer;
-        VkRenderPassBeginInfo        _beginInfo{ VkStructureType::VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO, };
+        VkRenderPassBeginInfo        _beginInfo{ VkStructureType::VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO, nullptr, {},{},{},{},{} };
     };
-
+    EUREKA_CLANG_WARNING_RESTORE()
 
     class DepthColorRenderTarget : public RenderTarget
     {

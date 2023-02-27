@@ -131,10 +131,10 @@ namespace eureka::graphics
         std::shared_ptr<SubmissionThreadExecutionContext> submissionThreadExecutionContext
     ) :
         _device(std::move(device)),
-        _frameContext(std::move(frameContext)),
-        _submissionThreadExecutionContext(std::move(submissionThreadExecutionContext)),
         _copyQueue(copyQueue),
-        _graphicsQueue(graphicsQueue)
+        _graphicsQueue(graphicsQueue),
+        _submissionThreadExecutionContext(std::move(submissionThreadExecutionContext)),
+        _frameContext(std::move(frameContext))
     {
         _executingCopies.reserve(20);
         _executingGraphics.reserve(20);

@@ -22,4 +22,17 @@ EUREKA_MSVC_WARNING_DISABLE(__VA_ARGS__)
 #define EUREKA_REENABLE_OPTIMIZATIONS() 
 #endif
 
+
+#if defined(__clang__)
+#define DO_PRAGMA(x) _Pragma(#x)
+#define EUREKA_CLANG_WARNING_DISABLE(...) \
+    _Pragma("clang diagnostic push") \
+    DO_PRAGMA(clang diagnostic push #__VA_ARGS__)
+#define EUREKA_CLANG_WARNING_RESTORE() \
+    _Pragma("clang diagnostic pop")
+#else
+#define EUREKA_CLANG_WARNING_DISABLE(...)
+#define EUREKA_CLANG_WARNING_RESTORE()
+#endif
+
 // NOLINTEND(*)

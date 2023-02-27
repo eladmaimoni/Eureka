@@ -25,12 +25,12 @@ namespace eureka::graphics
 
     future_t<void> AsyncDataLoader::UploadImageAsync(const vulkan::ImageStageUploadDesc& transferDesc)
     {
-        auto uploadCommandsSequence =
-            CreateImageUploadCommandSequence(
-                _oneShotSubmissionHandler->CopyQueue(),
-                _oneShotSubmissionHandler->GraphicsQueue(),
-                transferDesc
-            );
+        //auto uploadCommandsSequence =
+        //    CreateImageUploadCommandSequence(
+        //        _oneShotSubmissionHandler->CopyQueue(),
+        //        _oneShotSubmissionHandler->GraphicsQueue(),
+        //        transferDesc
+        //    );
         auto uploadCommandsSequence2 =
             CreateImageUploadCommandSequence2(
                 _oneShotSubmissionHandler->CopyQueue(),

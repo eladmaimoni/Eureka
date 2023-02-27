@@ -59,7 +59,7 @@ namespace eureka
         formatted_str[current++] = ' ';
 
 
-        for (auto i = 0; i < (USER_STR_N - 1); ++i)
+        for (auto i = 0u; i < (USER_STR_N - 1); ++i)
         {
             formatted_str[current++] = user_str[i];
         }

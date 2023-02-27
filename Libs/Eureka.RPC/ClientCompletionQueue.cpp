@@ -33,7 +33,7 @@ namespace eureka
 
     ClientCompletionQueueThreadExecutor::ClientCompletionQueueThreadExecutor()
     {
-        _thread = std::jthread(
+        _thread = jthread(
             [this]
             {
                 try
@@ -43,7 +43,7 @@ namespace eureka
                 }
                 catch (const std::exception& err)
                 {
-                    CLOG("{}", err.what());
+                    SPDLOG_ERROR("{}", err.what());
                 }
             });
     }

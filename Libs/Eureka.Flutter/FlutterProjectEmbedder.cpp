@@ -9,10 +9,10 @@ namespace eureka::flutter
                        std::shared_ptr<Window>                  window) :
 
         _config(std::move(config)),
+        _aotData(nullptr, FlutterEngineCollectAOTData),
         _compositor(std::move(compositor)),
         _window(std::move(window)),
-        _combinedTaskRunner(std::this_thread::get_id()),
-        _aotData(nullptr, FlutterEngineCollectAOTData)
+        _combinedTaskRunner(std::this_thread::get_id())
     {
 
         _taskRunners.thread_priority_setter = [](FlutterThreadPriority) -> void { return; };

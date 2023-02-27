@@ -4,7 +4,7 @@
 #include <grpcpp/create_channel.h>
 #include <debugger_trace.hpp>
 #include <basic_errors.hpp>
-
+#include <stop_token.hpp>
 using namespace std::chrono_literals;
 
 namespace eureka::rpc
@@ -51,7 +51,7 @@ namespace eureka::rpc
         auto expected = ConnectionState::Disconnected;
         if (_state.compare_exchange_strong(expected, ConnectionState::Connecting))
         {
-            _connectCancellationSource = std::stop_source();
+            _connectCancellationSource = stop_source();
             auto stopToken = _connectCancellationSource.get_token();
 
             _channel = grpc::CreateChannel(remoteServerEndpoint, grpc::InsecureChannelCredentials());
@@ -108,7 +108,7 @@ namespace eureka::rpc
         _realtimePoseStreamRead.Stop();
     }
 
-    asio::awaitable<void> RemoteLiveSlamClient::DoWaitForConnection(std::stop_token stopToken)
+    asio::awaitable<void> RemoteLiveSlamClient::DoWaitForConnection(stop_token stopToken)
     {
         auto state = _channel->GetState(true); // true means initiate connection
 
@@ -175,7 +175,7 @@ namespace eureka::rpc
         co_return;
     }
 
-    asio::awaitable<void> RemoteLiveSlamClient::DoMonitorConnection(std::stop_token stopToken)
+    asio::awaitable<void> RemoteLiveSlamClient::DoMonitorConnection(stop_token stopToken)
     {
         auto state = _channel->GetState(false); // true means initiate connection
 

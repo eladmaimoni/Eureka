@@ -1,6 +1,7 @@
 #pragma once
 #include <volk.h>
 #include <stdexcept>
+#include <string>
 
 namespace eureka::vulkan
 {
@@ -18,6 +19,8 @@ namespace eureka::vulkan
         {
 
         }
+
+        VkResult GetResult() const { return _result; }
     };
 
     //void CheckResult(VkResult res, const char* stmt, const char* fname, int line)

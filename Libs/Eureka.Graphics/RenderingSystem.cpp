@@ -21,12 +21,12 @@ namespace eureka::graphics
     )
         :
         _device(std::move(device)),
+        _graphicsQueue(graphicsQueue),
+        _copyQueue(copyQueue),
         _frameContext(std::move(frameContext)),
-        _mainPass(std::move(mainPass)),
         _submissionThreadExecutionContext(/*std::move(*/submissionThreadExecutionContext/*)*/), // TODO
         _oneShotSubmissionHandler(std::move(oneShotSubmissionHandler)),
-        _graphicsQueue(graphicsQueue),
-        _copyQueue(copyQueue)
+        _mainPass(std::move(mainPass))
     {
 
     }

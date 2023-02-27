@@ -67,6 +67,7 @@ namespace eureka::graphics
         */
     public:
         IViewPass(GlobalInheritedData globalInheritedData) : IPass(std::move(globalInheritedData)) {}
+        virtual ~IViewPass() {}
         virtual void BindToTargetPass(TargetInheritedData targetInheritedData) = 0;
         virtual void HandleResize(uint32_t w, uint32_t h) = 0;
     };
@@ -81,6 +82,7 @@ namespace eureka::graphics
         TargetInheritedData                 _targetInheritedData;
         ITargetPass(GlobalInheritedData globalInheritedData) : IPass(std::move(globalInheritedData)) {}
     public:
+        virtual ~ITargetPass() {}
         virtual VkExtent2D GetSize() = 0;
         virtual void AddViewPass(std::shared_ptr<IViewPass> viewPass) = 0;
         virtual TargetPassBeginInfo PreRecord() = 0;

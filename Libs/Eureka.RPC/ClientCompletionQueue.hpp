@@ -11,7 +11,7 @@ EUREKA_MSVC_WARNING_DISABLE(4127 4702)
 #endif
 #include <agrpc/asio_grpc.hpp>
 EUREKA_MSVC_WARNING_POP
-#include <thread>
+#include <jthread.hpp>
 
 namespace asio
 {
@@ -79,7 +79,7 @@ namespace eureka
 
     class ClientCompletionQueueThreadExecutor : public ClientCompletionQueueExecutor
     {
-        std::jthread  _thread;
+        jthread  _thread;
     public:
         ClientCompletionQueueThreadExecutor();
         ~ClientCompletionQueueThreadExecutor();

@@ -5,7 +5,7 @@ namespace eureka::vulkan
 {
 
 
-    FreeableDescriptorSetAllocator::FreeableDescriptorSetAllocator(std::shared_ptr<Device> device, DescriptorAllocatorConfig config /*= {}*/)
+    FreeableDescriptorSetAllocator::FreeableDescriptorSetAllocator(std::shared_ptr<Device> device, DescriptorAllocatorConfig /*config*/ /*= {}*/)
         : _device(std::move(device))
     {
 
