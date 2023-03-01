@@ -25,7 +25,7 @@ namespace eureka::vulkan
     
     struct DeviceConfig
     {
-        std::vector<const char*> required_layers;
+        std::vector<const char*> optional_layers;
         std::vector<const char*> required_extentions;
         VkSurfaceKHR             presentation_surface; // optional
         Version                  min_version = Version(VK_API_VERSION_1_2);
@@ -37,7 +37,7 @@ namespace eureka::vulkan
     struct DeviceCreationDesc
     {
         std::vector<float>                     queue_priorities;
-        std::vector<VkDeviceQueueCreateInfo>   queu_create_info;
+        std::vector<VkDeviceQueueCreateInfo>   queue_create_info;
         std::unordered_map<uint32_t, uint32_t> queues_per_index;
 
         uint32_t                               graphics_family;

@@ -4,7 +4,7 @@
 #include <debugger_trace.hpp>
 #include <macros.hpp>
 #include <algorithm>
-
+#include <containers_aliases.hpp>
 
 namespace eureka::vulkan
 {
@@ -18,7 +18,7 @@ namespace eureka::vulkan
         VkQueueFlags flags;
     };
 
-    bool IsDeviceSuitable(VkPhysicalDevice physicalDevice, const DeviceConfig& config)
+    bool IsDeviceSupportsExtensions(VkPhysicalDevice physicalDevice, dcspan<const char*> requiredExtensions)
     {
         uint32_t propertyCount = 0;
         VK_CHECK(vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &propertyCount, nullptr));
@@ -28,12 +28,11 @@ namespace eureka::vulkan
         for (auto availableExtention : extentionProperties)
         {
             std::string_view availableExtentionName(availableExtention.extensionName);
-        
+
             DEBUGGER_TRACE("available device extention = {}", availableExtentionName);
         }
 
-
-        for (const auto& requestedExtension : config.required_extentions)
+        for (const auto& requestedExtension : requiredExtensions)
         {
             bool found = false;
             for (const auto& availableExtention : extentionProperties)
@@ -53,11 +52,16 @@ namespace eureka::vulkan
                 return false;
             }
         }
+        return true;
+    }
 
-        propertyCount = 0;
+    svec3<const char*> FilterDeviceSupportedLayers(VkPhysicalDevice physicalDevice, dcspan<const char*> requiredLayers)
+    {
+        uint32_t propertyCount = 0;
         VK_CHECK(vkEnumerateDeviceLayerProperties(physicalDevice, &propertyCount, nullptr));
         std::vector<VkLayerProperties> layerProperties(propertyCount);
         VK_CHECK(vkEnumerateDeviceLayerProperties(physicalDevice, &propertyCount, layerProperties.data()));
+
 
         for (const auto& availableLayer : layerProperties)
         {
@@ -65,7 +69,9 @@ namespace eureka::vulkan
 
             DEBUGGER_TRACE("available layer = {}", availableLayerName);
         }
-        for (const auto& requestedLayer : config.required_layers)
+
+        svec3<const char*> supportedLayers;
+        for (const auto& requestedLayer : requiredLayers)
         {
             bool found = false;
             for (const auto& availableLayer : layerProperties)
@@ -73,18 +79,13 @@ namespace eureka::vulkan
                 std::string_view availableLayerName(availableLayer.layerName);
                 if (availableLayerName == requestedLayer)
                 {
-                    found = true;
+                    supportedLayers.emplace_back(requestedLayer);
                     break;
                 }
             }
-
-            if (!found)
-            {
-                return false;
-            }
         }
 
-        return true;
+        return supportedLayers;
     }
 
     std::string to_string(VkPhysicalDeviceType deviceType) // 
@@ -151,17 +152,17 @@ namespace eureka::vulkan
             deviceCreateInfoNext = &features12;
         }
 
-
+        auto supportedLayers = FilterDeviceSupportedLayers(_physicalDevice, config.optional_layers);
 
         VkDeviceCreateInfo deviceCreateInfo
         {
             .sType = VkStructureType::VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
             .pNext = deviceCreateInfoNext,
             .flags = VkDeviceCreateFlags{},
-            .queueCreateInfoCount = static_cast<uint32_t>(createDesc.queu_create_info.size()),
-            .pQueueCreateInfos = createDesc.queu_create_info.data(),
-            .enabledLayerCount = static_cast<uint32_t>(config.required_layers.size()),
-            .ppEnabledLayerNames = config.required_layers.data(),
+            .queueCreateInfoCount = static_cast<uint32_t>(createDesc.queue_create_info.size()),
+            .pQueueCreateInfos = createDesc.queue_create_info.data(),
+            .enabledLayerCount = static_cast<uint32_t>(supportedLayers.size()),
+            .ppEnabledLayerNames = supportedLayers.data(),
             .enabledExtensionCount = static_cast<uint32_t>(config.required_extentions.size()),
             .ppEnabledExtensionNames = config.required_extentions.data(),
             .pEnabledFeatures = &deviceFeatures
@@ -225,14 +226,9 @@ namespace eureka::vulkan
                 apiVersion.Patch()          
             );
 
-            // TODO re
-           
-   
-
             if (
                 apiVersion >= config.min_version 
-                && IsDeviceSuitable(physicalDevice, config) 
-             //   && synchronization2Features.synchronization2 == VK_TRUE
+                && IsDeviceSupportsExtensions(physicalDevice, config.required_extentions) 
                 )
             {
                 chosenPhysicalDevice = physicalDevice;
@@ -431,7 +427,7 @@ namespace eureka::vulkan
         auto priorityPtr = deviceCreationDesc.queue_priorities.data();
         for (auto [idx, count] : queuesPerFamily)
         {
-            deviceCreationDesc.queu_create_info.emplace_back(
+            deviceCreationDesc.queue_create_info.emplace_back(
                 VkDeviceQueueCreateInfo
                 {
                    .sType = VkStructureType::VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
@@ -874,7 +870,7 @@ namespace eureka::vulkan
         //deviceConfig.required_extentions.emplace_back(DEVICE_EXTENTION_PRE13_SYNCHRONIZATION2);
 
 
-        DEBUG_ONLY(deviceConfig.required_layers.emplace_back(DEVICE_LAYER_VALIDATION));
+        DEBUG_ONLY(deviceConfig.optional_layers.emplace_back(DEVICE_LAYER_VALIDATION));
         
         return std::make_shared<Device>(std::move(instance), std::move(deviceConfig));
     }
