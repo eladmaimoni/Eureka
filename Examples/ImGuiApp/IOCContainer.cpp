@@ -38,7 +38,7 @@ namespace eureka
 
         if constexpr(IS_DEBUG_BUILD)
         {
-            runtime_desc.required_layers.emplace_back(eureka::vulkan::INSTANCE_LAYER_VALIDATION);
+            runtime_desc.optional_layers.emplace_back(eureka::vulkan::INSTANCE_LAYER_VALIDATION);
         }
 
         return runtime_desc;

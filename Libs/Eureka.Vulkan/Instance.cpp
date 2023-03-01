@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <debugger_trace.hpp>
 #include <ranges>
+#include <containers_aliases.hpp>
 
 //#define VK_MAKE_API_VERSION(variant, major, minor, patch)                                                              \
 //    ((((uint32_t)(variant)) << 29) | (((uint32_t)(major)) << 22) | (((uint32_t)(minor)) << 12) | ((uint32_t)(patch)))
@@ -90,8 +91,9 @@ namespace eureka::vulkan
         }
     }
 
-    void ValidateRequiredLayersExists(const InstanceConfig& desc)
+    svec3<const char*> FilterSupportedLayers(dcspan<const char*> requiredLayers)
     {
+        svec3<const char*> supportedLayers;
         uint32_t propertyCount = 0;
         VK_CHECK(vkEnumerateInstanceLayerProperties(&propertyCount, nullptr));
 
@@ -102,24 +104,26 @@ namespace eureka::vulkan
             std::string_view supported_layer_name(supportedLayer.layerName);
             DEBUGGER_TRACE("instance layer = {}", supported_layer_name);
         }
-        for(const auto& requiredLayer : desc.required_layers)
+        for(const auto& requiredLayer : requiredLayers)
         {
-            bool found = false;
+      
             for(const auto& supportedLayer : layerProperties)
             {
                 std::string_view supported_layer_name(supportedLayer.layerName);
                 if(supported_layer_name == requiredLayer)
                 {
-                    found = true;
+                    supportedLayers.emplace_back(requiredLayer);
                     break;
                 }
             }
 
-            if(!found)
-            {
-                throw ResultError(VkResult::VK_ERROR_LAYER_NOT_PRESENT, requiredLayer);
-            }
+            //if(!found)
+            //{
+            //    throw ResultError(VkResult::VK_ERROR_LAYER_NOT_PRESENT, requiredLayer);
+            //}
         }
+
+        return supportedLayers;
     }
 
     Instance::Instance(const InstanceConfig& config) :
@@ -137,7 +141,7 @@ namespace eureka::vulkan
                        _apiVersion.Patch());
 
         ValidateRequiredExtentionsExists(config);
-        ValidateRequiredLayersExists(config);
+        auto supportedLayers = FilterSupportedLayers(config.optional_layers);
 
         if(config.version)
         {
@@ -161,8 +165,8 @@ namespace eureka::vulkan
             .sType = VkStructureType::VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
             .flags = {},
             .pApplicationInfo = &appInfo,
-            .enabledLayerCount = static_cast<uint32_t>(_config.required_layers.size()),
-            .ppEnabledLayerNames = _config.required_layers.data(), // enabled layers
+            .enabledLayerCount = static_cast<uint32_t>(supportedLayers.size()),
+            .ppEnabledLayerNames = supportedLayers.data(), // enabled layers
             .enabledExtensionCount = static_cast<uint32_t>(_config.required_instance_extentions.size()),
             .ppEnabledExtensionNames = _config.required_instance_extentions.data(),
         }; 
@@ -240,7 +244,7 @@ namespace eureka::vulkan
 
 #ifndef NDEBUG
         config.required_instance_extentions.emplace_back(INSTANCE_EXTENTION_DEBUG_UTILS);
-        config.required_layers.emplace_back(INSTANCE_LAYER_VALIDATION);
+        config.optional_layers.emplace_back(INSTANCE_LAYER_VALIDATION);
 #endif
         //config.version = version;
         //if (config.version)

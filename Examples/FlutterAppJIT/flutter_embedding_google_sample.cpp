@@ -457,14 +457,14 @@ TEST_CASE("flutter engine debug mode sample", "[flutter][vulkan]")
     namespace vk = eureka::vulkan;
 
     vk::InstanceConfig config{};
-    config.required_layers.emplace_back(vk::INSTANCE_LAYER_VALIDATION);
+    config.optional_layers.emplace_back(vk::INSTANCE_LAYER_VALIDATION);
     config.required_instance_extentions.emplace_back(vk::INSTANCE_EXTENTION_DEBUG_UTILS);
     config.required_instance_extentions.emplace_back(vk::INSTANCE_EXTENTION_SURFACE_EXTENSION_NAME);
     WIN32_ONLY(config.required_instance_extentions.emplace_back(vk::INSTANCE_EXTENTION_WIN32_SURFACE_EXTENSION_NAME));
 
 
     config.version = vk::Version{ 1,2,0 };
-    config.required_layers.emplace_back(vk::INSTANCE_LAYER_PRE13_SYNCHRONIZATION2);
+    config.optional_layers.emplace_back(vk::INSTANCE_LAYER_PRE13_SYNCHRONIZATION2);
     auto instance = std::make_shared<vk::Instance>(config);
 
     g_state.instance = instance->Get();

@@ -69,7 +69,7 @@ namespace eureka::vulkan
     {
         std::optional<Version> version;
         std::vector<const char*> required_instance_extentions;
-        std::vector<const char*> required_layers;
+        std::vector<const char*> optional_layers;
     };
 
 

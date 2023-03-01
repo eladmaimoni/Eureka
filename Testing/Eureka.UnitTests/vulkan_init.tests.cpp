@@ -25,7 +25,7 @@ TEST_CASE("vulkan device creation", "[vulkan]")
     std::shared_ptr<vk::Device> device;
 
     vk::InstanceConfig config{};
-    config.required_layers.emplace_back(vk::INSTANCE_LAYER_VALIDATION);
+    config.optional_layers.emplace_back(vk::INSTANCE_LAYER_VALIDATION);
     config.required_instance_extentions.emplace_back(vk::INSTANCE_EXTENTION_DEBUG_UTILS);
     config.required_instance_extentions.emplace_back(vk::INSTANCE_EXTENTION_SURFACE_EXTENSION_NAME);
     WIN32_ONLY(config.required_instance_extentions.emplace_back(vk::INSTANCE_EXTENTION_WIN32_SURFACE_EXTENSION_NAME));
@@ -48,7 +48,7 @@ TEST_CASE("vulkan device creation", "[vulkan]")
 TEST_CASE("vulkan queue creation", "[vulkan]")
 { 
     vk::InstanceConfig config{};
-    config.required_layers.emplace_back(vk::INSTANCE_LAYER_VALIDATION);
+    config.optional_layers.emplace_back(vk::INSTANCE_LAYER_VALIDATION);
     config.required_instance_extentions.emplace_back(vk::INSTANCE_EXTENTION_DEBUG_UTILS);
     config.required_instance_extentions.emplace_back(vk::INSTANCE_EXTENTION_SURFACE_EXTENSION_NAME);
     WIN32_ONLY(config.required_instance_extentions.emplace_back(vk::INSTANCE_EXTENTION_WIN32_SURFACE_EXTENSION_NAME));
@@ -86,7 +86,7 @@ TEST_CASE("vulkan queue creation with presentation", "[vulkan]")
     eureka::GLFWRuntime glfw;
 
     vk::InstanceConfig config{};
-    config.required_layers.emplace_back(vk::INSTANCE_LAYER_VALIDATION);
+    config.optional_layers.emplace_back(vk::INSTANCE_LAYER_VALIDATION);
     DEBUG_ONLY(config.required_instance_extentions.emplace_back(vk::INSTANCE_EXTENTION_DEBUG_UTILS));
     config.required_instance_extentions.emplace_back(vk::INSTANCE_EXTENTION_SURFACE_EXTENSION_NAME);
     WIN32_ONLY(config.required_instance_extentions.emplace_back(vk::INSTANCE_EXTENTION_WIN32_SURFACE_EXTENSION_NAME));

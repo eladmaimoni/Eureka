@@ -73,7 +73,6 @@ namespace eureka::vulkan
         svec3<const char*> supportedLayers;
         for (const auto& requestedLayer : requiredLayers)
         {
-            bool found = false;
             for (const auto& availableLayer : layerProperties)
             {
                 std::string_view availableLayerName(availableLayer.layerName);
