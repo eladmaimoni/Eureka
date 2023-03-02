@@ -277,6 +277,8 @@ namespace eureka::vulkan
                         int a_has_compute_flag = static_cast<bool>(a.flags & VkQueueFlagBits::VK_QUEUE_COMPUTE_BIT);
                         int b_has_copy_flag = static_cast<bool>(b.flags & VkQueueFlagBits::VK_QUEUE_TRANSFER_BIT);
                         int b_has_compute_flag = static_cast<bool>(b.flags & VkQueueFlagBits::VK_QUEUE_COMPUTE_BIT);
+
+                        // if it doesn't have copy and compute flags than it is more specific
                         return (a_has_copy_flag + a_has_compute_flag) < (b_has_copy_flag + b_has_compute_flag);
                     }
                 );
@@ -294,6 +296,8 @@ namespace eureka::vulkan
                         int a_has_graphics_flag = static_cast<bool>(a.flags & VkQueueFlagBits::VK_QUEUE_GRAPHICS_BIT);
                         int b_has_copy_flag = static_cast<bool>(b.flags & VkQueueFlagBits::VK_QUEUE_TRANSFER_BIT);
                         int b_has_graphics_flag = static_cast<bool>(b.flags & VkQueueFlagBits::VK_QUEUE_GRAPHICS_BIT);
+
+                        // if it doesn't have copy and graphics flags than it is more specific
                         return (a_has_copy_flag + a_has_graphics_flag) < (b_has_copy_flag + b_has_graphics_flag);
                     }
                 );
@@ -309,9 +313,9 @@ namespace eureka::vulkan
                     {
                         int a_has_graphics_flag = static_cast<bool>(a.flags & VkQueueFlagBits::VK_QUEUE_GRAPHICS_BIT);
                         int a_has_compute_flag = static_cast<bool>(a.flags & VkQueueFlagBits::VK_QUEUE_COMPUTE_BIT);
-                        int b_has_copy_flag = static_cast<bool>(b.flags & VkQueueFlagBits::VK_QUEUE_TRANSFER_BIT);
+                        int b_has_compute_flag = static_cast<bool>(b.flags & VkQueueFlagBits::VK_QUEUE_COMPUTE_BIT);
                         int b_has_graphics_flag = static_cast<bool>(b.flags & VkQueueFlagBits::VK_QUEUE_GRAPHICS_BIT);
-                        return (a_has_graphics_flag + a_has_compute_flag) < (b_has_copy_flag + b_has_graphics_flag);
+                        return (a_has_graphics_flag + a_has_compute_flag) < (b_has_compute_flag + b_has_graphics_flag);
                     }
                 );
             }
