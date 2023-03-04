@@ -3,6 +3,10 @@
 
 namespace eureka::flutter
 {
+    std::chrono::nanoseconds CurrentTimeNanoseconds()
+    {
+        return std::chrono::nanoseconds(FlutterEngineGetCurrentTime());
+    }
     uint64_t CurrentTimeMicroseconds()
     {
         return FlutterEngineGetCurrentTime() / 1000;

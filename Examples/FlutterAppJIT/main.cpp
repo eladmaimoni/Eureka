@@ -12,8 +12,8 @@
 #include "../Eureka.Vulkan/FrameContext.hpp" 
 //#include "../Eureka.Vulkan/RenderTarget.hpp"  
 #include "../Eureka.Graphics/TargetPass.hpp"
-#include "../Eureka.Flutter/FlutterVulkanCompositor.hpp"
-#include "../Eureka.Flutter/FlutterProjectEmbedder.hpp"
+#include "../Eureka.Flutter/VulkanCompositor.hpp"
+#include "../Eureka.Flutter/VulkanDesktopEmbedder.hpp"
 namespace vk = eureka::vulkan;
 namespace fl = eureka::flutter;
 namespace prof = eureka::profiling;
@@ -78,7 +78,6 @@ int main(int argc, char* argv[])
 
         auto swapChain = std::make_shared<vk::SwapChain>(window, device, presntationQueue, graphicsQueue);
 
-
         //auto asyncDataLoader = std::make_shared<graphics::AsyncDataLoader>(_oneShotSubmissionHandler, uploadPool);
 
         auto shaderCache = std::make_shared<eureka::vulkan::ShaderCache>(device);
@@ -106,9 +105,9 @@ int main(int argc, char* argv[])
             .icudtl_path = FLUTTER_EXAMPLE_DBG_PROJECT_ICUDTL_PATH,
         };
 
-        auto flutterCompositor = std::make_shared<fl::FlutterVulkanCompositor>(instance, globalInheritedData, frameContext, depthColorTarget);
+        auto flutterCompositor = std::make_shared<fl::VulkanCompositor>(instance, globalInheritedData, frameContext, depthColorTarget);
 
-        auto flutterProjectEmbedder = std::make_shared<fl::Embedder>(embedderConfig, flutterCompositor, window);
+        auto flutterProjectEmbedder = std::make_shared<fl::VulkanDesktopEmbedder>(embedderConfig, flutterCompositor, window);
 
         flutterProjectEmbedder->Run();
         

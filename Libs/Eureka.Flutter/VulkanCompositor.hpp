@@ -11,11 +11,11 @@
 
 namespace eureka::flutter
 {
-    class FlutterVulkanCompositor;
+    class VulkanCompositor;
 
     struct BackingStoreData
     {
-        FlutterVulkanCompositor*      self; // owner, perhaps should be void*
+        VulkanCompositor*      self; // owner, perhaps should be void*
         vulkan::PoolAllocatedImage2D  image;
         vulkan::FreeableDescriptorSet descriptor_set; // TODO maybe simply linear allocation
         FlutterVulkanImage            flutter_image;
@@ -58,7 +58,7 @@ namespace eureka::flutter
 
     };
 
-    class FlutterVulkanCompositor
+    class VulkanCompositor
     {
         std::shared_ptr<vulkan::Instance> _instance;
         graphics::GlobalInheritedData     _globalInheritedData;
@@ -73,9 +73,11 @@ namespace eureka::flutter
 
         RenderDocIntegration                     _renderDoc;
         std::shared_ptr<vulkan::ImageMemoryPool> _backingStorePool;
-        vulkan::Sampler                         _backingStoreSampler;
+        vulkan::Sampler                          _backingStoreSampler;
+
+        std::chrono::nanoseconds                 _lastPresentationTimepoint;
     public:
-        FlutterVulkanCompositor(
+        VulkanCompositor(
             std::shared_ptr<vulkan::Instance>              instance,
             graphics::GlobalInheritedData                  globalInheritedData,
             std::shared_ptr<vulkan::FrameContext>          frameContext, // TODO should probably not be here?
@@ -87,7 +89,7 @@ namespace eureka::flutter
         //
         const FlutterRendererConfig& GetFlutterRendererConfig() const;
         const FlutterCompositor&     GetFlutterCompositor() const;
-
+        std::chrono::nanoseconds GetLastPresntationTimepoint() const { return _lastPresentationTimepoint; }
     private:
         //
         // Flutter callbacks (members)

@@ -1,7 +1,7 @@
 #pragma once
 #include "../Eureka.Windowing/Window.hpp"
-#include "FlutterTaskRunners.hpp"
-#include "FlutterVulkanCompositor.hpp"
+#include "TaskRunners.hpp"
+#include "VulkanCompositor.hpp"
 #include <deque>
 #include <filesystem>
 
@@ -13,7 +13,7 @@ namespace eureka::flutter
 {
     using namespace std::chrono_literals;
 
-    class FlutterVulkanCompositor;
+    class VulkanCompositor;
 
     using UniqueAotDataPtr = std::unique_ptr<_FlutterEngineAOTData, FlutterEngineCollectAOTDataFnPtr>;
 
@@ -24,29 +24,43 @@ namespace eureka::flutter
         std::filesystem::path aot_path;
     };
 
-    class Embedder
+    struct FlutterNotifyVsyncRequest
     {
-        EmbedderConfig                           _config;
-        UniqueAotDataPtr                         _aotData;
-        std::mutex                               _mtx;
-        std::shared_ptr<FlutterVulkanCompositor> _compositor;
-        std::shared_ptr<Window>                  _window;
-        TaskRunner                               _combinedTaskRunner;
-        FlutterCustomTaskRunners                 _taskRunners;
-        FlutterEngine                            _flutterEngine {nullptr};
-        sigslot::scoped_connection               _winSize;
-        sigslot::scoped_connection               _mouseButton;
-        sigslot::scoped_connection               _cursorPos;
-        std::deque<intptr_t>                     _pendingBatons;
-        uint64_t                                 _lastPresentDone;
-        uint64_t                                 _nextPresentTime;
-        std::chrono::nanoseconds                 _frameDuration = 16667us;
-        uint64_t                                 _frameDurationNs;
-        double _cursorX{ 0.0 };
-        double _cursorY{ 0.0 };
-        bool _mouseDown = false;
+        FlutterNotifyVsyncRequest() = default;
+        FlutterNotifyVsyncRequest(intptr_t baton, std::chrono::nanoseconds requestTimepoint) 
+            : baton(baton), request_timepoint(requestTimepoint)
+        {
+
+        }
+        intptr_t                 baton;
+        std::chrono::nanoseconds request_timepoint;
+    };
+
+    class VulkanDesktopEmbedder
+    {
+        EmbedderConfig                    _config;
+        UniqueAotDataPtr                  _aotData;
+        std::mutex                        _mtx;
+        std::shared_ptr<VulkanCompositor> _compositor;
+        std::shared_ptr<Window>           _window;
+        TaskRunner                        _combinedTaskRunner;
+        FlutterCustomTaskRunners          _taskRunners;
+        FlutterEngine                     _flutterEngine {nullptr};
+        sigslot::scoped_connection        _winSize;
+        sigslot::scoped_connection        _mouseButton;
+        sigslot::scoped_connection        _cursorPos;
+        std::deque<FlutterNotifyVsyncRequest>              _pendingVsyncNotifyRequests;
+
+        std::chrono::nanoseconds          _frameDuration = 16667us;
+        uint64_t                          _frameDurationNs;
+        double                            _cursorX {0.0};
+        double                            _cursorY {0.0};
+        bool                              _mouseDown = false;
+
     public:
-        Embedder(EmbedderConfig config, std::shared_ptr<FlutterVulkanCompositor> compositor, std::shared_ptr<Window> window);
+        VulkanDesktopEmbedder(EmbedderConfig                    config,
+                       std::shared_ptr<VulkanCompositor> compositor,
+                       std::shared_ptr<Window>           window);
 
         static void PlatformMessageStatic(const FlutterPlatformMessage* /* message*/, void* /* user data */)
         {
@@ -58,7 +72,7 @@ namespace eureka::flutter
         }
         static void VsyncStatic(void* userData, intptr_t baton)
         {
-            auto self = static_cast<Embedder*>(userData);
+            auto self = static_cast<VulkanDesktopEmbedder*>(userData);
             self->Vsync(baton);
         }
 
@@ -66,10 +80,10 @@ namespace eureka::flutter
         {
             //DEBUGGER_TRACE("Vsync");
             std::scoped_lock lk(_mtx);
-            _pendingBatons.emplace_back(baton);
+            _pendingVsyncNotifyRequests.emplace_back(baton, CurrentTimeNanoseconds());
         }
 
-        ~Embedder()
+        ~VulkanDesktopEmbedder()
         {
             if(_flutterEngine)
             {
@@ -92,8 +106,7 @@ namespace eureka::flutter
             event.pixel_ratio = static_cast<double>(event.width) / static_cast<double>(event.height);
             FLUTTER_CHECK(FlutterEngineSendWindowMetricsEvent(_flutterEngine, &event));
 
-            _lastPresentDone = FlutterEngineGetCurrentTime();
-            _nextPresentTime = _lastPresentDone + _frameDuration.count();
+
             _frameDurationNs = _frameDuration.count();
         }
 
