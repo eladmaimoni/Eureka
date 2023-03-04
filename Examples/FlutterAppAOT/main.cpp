@@ -12,8 +12,9 @@
 #include "../Eureka.Vulkan/FrameContext.hpp" 
 //#include "../Eureka.Vulkan/RenderTarget.hpp"  
 #include "../Eureka.Graphics/TargetPass.hpp"
-#include "../Eureka.Flutter/FlutterVulkanCompositor.hpp"
-#include "../Eureka.Flutter/FlutterProjectEmbedder.hpp"
+#include "../Eureka.Flutter/VulkanCompositor.hpp"
+#include "../Eureka.Flutter/VulkanDesktopEmbedder.hpp"
+
 namespace vk = eureka::vulkan;
 namespace fl = eureka::flutter;
 namespace prof = eureka::profiling;
