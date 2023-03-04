@@ -43,7 +43,7 @@ namespace eureka::flutter
             .icu_data_path = icu_data_path_str.c_str(),
             .platform_message_callback = nullptr, // PlatformMessageStatic,
             //.root_isolate_create_callback = RootIsolateCreateStatic,
-            .vsync_callback = VsyncStatic,
+            .vsync_callback = EnqueueHandleNotifyOnNextVSyncRequestStatic,
             .custom_task_runners = &_taskRunners,
             .compositor = &_compositor->GetFlutterCompositor(),
             .aot_data = _aotData.get(),
@@ -69,7 +69,8 @@ namespace eureka::flutter
             event.struct_size = sizeof(FlutterWindowMetricsEvent);
             event.width = w;
             event.height = h;
-            event.pixel_ratio = static_cast<double>(w) / static_cast<double>(h);
+            //event.pixel_ratio = static_cast<double>(w) / static_cast<double>(h);
+            event.pixel_ratio = 1.0f; // TODO
             FLUTTER_CHECK(FlutterEngineSendWindowMetricsEvent(_flutterEngine, &event));
         });
 
@@ -117,6 +118,30 @@ namespace eureka::flutter
         });
     }
 
+    VulkanDesktopEmbedder::~VulkanDesktopEmbedder()
+    {
+        if (_flutterEngine)
+        {
+            FlutterEngineResult result = FlutterEngineShutdown(_flutterEngine);
+
+            if (result != FlutterEngineResult::kSuccess)
+            {
+                DEBUGGER_TRACE("failed to run flutter application");
+            }
+        }
+    }
+
+    void VulkanDesktopEmbedder::Run()
+    {
+        FLUTTER_CHECK(FlutterEngineRunInitialized(_flutterEngine));
+        FlutterWindowMetricsEvent event = {};
+        event.struct_size = sizeof(FlutterWindowMetricsEvent);
+        event.width = _window->GetWidth();
+        event.height = _window->GetHeight();
+        event.pixel_ratio = 1.0f; // TODO
+        FLUTTER_CHECK(FlutterEngineSendWindowMetricsEvent(_flutterEngine, &event));
+    }
+
     void VulkanDesktopEmbedder::Loop()
     {
         static constexpr uint64_t MILLI = std::chrono::duration_cast<std::chrono::nanoseconds>(1ms).count();
@@ -125,54 +150,76 @@ namespace eureka::flutter
             _window->PollEvents();
             _combinedTaskRunner.RunReadyTasksFor(1ms);
 
+            HandleNotifyOnNextVSyncRequest();
 
-            std::unique_lock lk(_mtx);
-            while(!_pendingVsyncNotifyRequests.empty())
+
+            //FLUTTER_CHECK(FlutterEngineScheduleFrame(_flutterEngine));
+            
+        }
+    }
+    void VulkanDesktopEmbedder::PlatformMessageStatic(const FlutterPlatformMessage*, void*)
+    {
+        DEBUGGER_TRACE("FlutterPlatformMessageCallback");
+    }
+    void VulkanDesktopEmbedder::RootIsolateCreateStatic(void*)
+    {
+        DEBUGGER_TRACE("RootIsolateStatic");
+    }
+    void VulkanDesktopEmbedder::EnqueueHandleNotifyOnNextVSyncRequestStatic(void* userData, intptr_t baton)
+    {
+        auto self = static_cast<VulkanDesktopEmbedder*>(userData);
+        self->EnqueueHandleNotifyOnNextVSyncRequest(baton);
+    }
+    void VulkanDesktopEmbedder::EnqueueHandleNotifyOnNextVSyncRequest(intptr_t baton)
+    {
+        //DEBUGGER_TRACE("Vsync");
+        std::scoped_lock lk(_mtx);
+        _pendingVsyncNotifyRequests.emplace_back(baton, CurrentTimeNanoseconds());
+    }
+
+    void VulkanDesktopEmbedder::HandleNotifyOnNextVSyncRequest()
+    {
+        std::unique_lock lk(_mtx);
+        while (!_pendingVsyncNotifyRequests.empty())
+        {
+
+            auto request = _pendingVsyncNotifyRequests.front();
+
+            _pendingVsyncNotifyRequests.pop_front();
+            lk.unlock();
+
+
+            auto lastVsync = _compositor->GetLastPresntationTimepoint();
+            auto nextVsync = lastVsync + FRAME_INTERVAL_60_FPS_NS;
+
+            if (request.request_timepoint < lastVsync)
             {
+                // at the time of the request, last vsync did not yet occur. we should release flutter wait immediatly
 
-                auto request = _pendingVsyncNotifyRequests.front();
-
-                _pendingVsyncNotifyRequests.pop_front();
-                lk.unlock();
-
-
-                auto lastVsync = _compositor->GetLastPresntationTimepoint();
-                auto nextVsync = lastVsync + FRAME_INTERVAL_60_FPS_NS;
-
-                if (request.request_timepoint < lastVsync)
-                {
-                    // at the time of the request, last vsync did not yet occur. we should release flutter wait immediatly
-
-                    FLUTTER_CHECK(FlutterEngineOnVsync(
-                        _flutterEngine,
-                        request.baton,
-                        lastVsync.count(), // engine will not wait since this already happend
-                        nextVsync.count()
-                    ));
-                }
-                else
-                {
-                    // the request happened after last vsync, flutter should wait for next vsync
-                    FLUTTER_CHECK(FlutterEngineOnVsync(
-                        _flutterEngine,
-                        request.baton,
-                        nextVsync.count(), // engine will not wait to next vsync
-                        (nextVsync + FRAME_INTERVAL_60_FPS_NS).count()
-                    ));
-                }
-
-                PROFILE_CATEGORIZED_SCOPE("FlutterEngineOnVsync",
-                                          eureka::profiling::Color::Green,
-                                          eureka::profiling::PROFILING_CATEGORY_SYSTEM);
-
-             
-
-                lk.lock();
-                //DEBUGGER_TRACE("FlutterEngineOnVsync {} {}", now, _nextPresentTime);
+                FLUTTER_CHECK(FlutterEngineOnVsync(
+                    _flutterEngine,
+                    request.baton,
+                    lastVsync.count(), // engine will not wait since this already happend
+                    nextVsync.count()
+                ));
+            }
+            else
+            {
+                // the request happened after last vsync, flutter should wait for next vsync
+                FLUTTER_CHECK(FlutterEngineOnVsync(
+                    _flutterEngine,
+                    request.baton,
+                    nextVsync.count(), // engine will not wait to next vsync
+                    (nextVsync + FRAME_INTERVAL_60_FPS_NS).count()
+                ));
             }
 
-                //FLUTTER_CHECK(FlutterEngineScheduleFrame(_flutterEngine));
-            
+            PROFILE_CATEGORIZED_SCOPE("FlutterEngineOnVsync",
+                eureka::profiling::Color::Green,
+                eureka::profiling::PROFILING_CATEGORY_SYSTEM);
+
+            lk.lock();
+            //DEBUGGER_TRACE("FlutterEngineOnVsync {} {}", now, _nextPresentTime);
         }
     }
 } // namespace eureka::flutter
