@@ -5,6 +5,12 @@
 #include <macros.hpp>
 #include <algorithm>
 #include <containers_aliases.hpp>
+#include <compiler.hpp>
+
+
+#define EUREKA_VULKAN_REPLACE_WITH_KHR_INTERNAL(func, postfix) func##postfix
+#define EUREKA_VULKAN_REPLACE_WITH_KHR(func) if (!func) func = EUREKA_VULKAN_REPLACE_WITH_KHR_INTERNAL(func, KHR);
+
 
 namespace eureka::vulkan
 {
@@ -175,8 +181,8 @@ namespace eureka::vulkan
         
         if (_apiVersion.Major() >= 1 && _apiVersion.Minor() < 3)
         {
-            vkCmdPipelineBarrier2 = vkCmdPipelineBarrier2KHR;
-            vkCmdCopyBufferToImage2 = vkCmdCopyBufferToImage2KHR;
+            EUREKA_VULKAN_REPLACE_WITH_KHR(vkCmdPipelineBarrier2);
+            EUREKA_VULKAN_REPLACE_WITH_KHR(vkCmdCopyBufferToImage2);
         }
 
         _preferredGraphicsFamily = createDesc.graphics_family;

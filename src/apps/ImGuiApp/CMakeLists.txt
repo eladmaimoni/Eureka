@@ -17,7 +17,7 @@ add_executable(
     
 ) 
 
-set_target_properties(ImGuiApp PROPERTIES FOLDER "Examples")
+set_target_properties(ImGuiApp PROPERTIES FOLDER "Apps")
 
 if (WIN32)
     set(SUBSYSTEM_LINKER_OPTIONS "$<IF:$<CONFIG:Debug>,/SUBSYSTEM:CONSOLE,/SUBSYSTEM:WINDOWS" "/ENTRY:mainCRTStartup>")

@@ -216,11 +216,7 @@ foreach(_target ${_targets_list})
 endforeach()
 
 
-add_subdirectory (3rdParty)
-add_subdirectory (Tools)
-add_subdirectory (Libs)
-add_subdirectory (Testing)
-add_subdirectory (Examples)   
+add_subdirectory(src) 
 
 ########################################################################################################
 #
