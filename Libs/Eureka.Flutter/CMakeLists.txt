@@ -3,12 +3,12 @@ set_source_group(
     flutter 
     "FlutterUtils.hpp"
     "FlutterUtils.cpp"
-    "FlutterProjectEmbedder.hpp"
-    "FlutterProjectEmbedder.cpp"
-    "FlutterTaskRunners.hpp"
-    "FlutterTaskRunners.cpp"
-    "FlutterVulkanCompositor.hpp"
-    "FlutterVulkanCompositor.cpp"
+    "VulkanDesktopEmbedder.hpp"
+    "VulkanDesktopEmbedder.cpp"
+    "TaskRunners.hpp"
+    "TaskRunners.cpp"
+    "VulkanCompositor.hpp"
+    "VulkanCompositor.cpp"
 
 )
 

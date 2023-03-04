@@ -27,7 +27,7 @@ namespace prof = eureka::profiling;
 class Main
 {
 	eureka::GLFWRuntime glfw;
-    std::shared_ptr<fl::Embedder> _embedder;
+    std::shared_ptr<fl::VulkanDesktopEmbedder> _embedder;
 public:
 
 	Main(const EmbedderInitParams* params)
@@ -71,9 +71,9 @@ public:
             .icudtl_path = params->icudtl_path,
         };
 
-        auto flutterCompositor = std::make_shared<fl::FlutterVulkanCompositor>(instance, globalInheritedData, frameContext, depthColorTarget);
+        auto flutterCompositor = std::make_shared<fl::VulkanCompositor>(instance, globalInheritedData, frameContext, depthColorTarget);
 
-        _embedder = std::make_shared<fl::Embedder>(embedderConfig, flutterCompositor, window);
+        _embedder = std::make_shared<fl::VulkanDesktopEmbedder>(embedderConfig, flutterCompositor, window);
 
 	}
 

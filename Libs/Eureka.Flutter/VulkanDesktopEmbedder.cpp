@@ -1,12 +1,12 @@
-#include "FlutterProjectEmbedder.hpp"
+#include "VulkanDesktopEmbedder.hpp"
 
 namespace eureka::flutter
 {
     using namespace std::chrono_literals;
 
-    Embedder::Embedder(EmbedderConfig                           config,
-                       std::shared_ptr<FlutterVulkanCompositor> compositor,
-                       std::shared_ptr<Window>                  window) :
+    VulkanDesktopEmbedder::VulkanDesktopEmbedder(EmbedderConfig                    config,
+                                                 std::shared_ptr<VulkanCompositor> compositor,
+                                                 std::shared_ptr<Window>           window) :
 
         _config(std::move(config)),
         _aotData(nullptr, FlutterEngineCollectAOTData),
@@ -20,13 +20,13 @@ namespace eureka::flutter
         _taskRunners.platform_task_runner = &_combinedTaskRunner.GetDescription();
         _taskRunners.render_task_runner = &_combinedTaskRunner.GetDescription();
 
-        auto assets_path_str = _config.asset_dir.string();
-        auto icu_data_path_str = _config.icudtl_path.string();
+        auto        assets_path_str = _config.asset_dir.string();
+        auto        icu_data_path_str = _config.icudtl_path.string();
         std::string aot_path_str;
 
         FlutterEngineAOTData aotData = nullptr;
 
-        if (!_config.aot_path.empty())
+        if(!_config.aot_path.empty())
         {
             aot_path_str = _config.aot_path.string();
             FlutterEngineAOTDataSource source = {};
@@ -36,7 +36,6 @@ namespace eureka::flutter
             FLUTTER_CHECK(FlutterEngineCreateAOTData(&source, &aotData));
             _aotData.reset(aotData);
         }
-
 
         FlutterProjectArgs flutterProjectArgs {
             .struct_size = sizeof(FlutterProjectArgs),
@@ -118,7 +117,7 @@ namespace eureka::flutter
         });
     }
 
-    void Embedder::Loop()
+    void VulkanDesktopEmbedder::Loop()
     {
         static constexpr uint64_t MILLI = std::chrono::duration_cast<std::chrono::nanoseconds>(1ms).count();
         while(!_window->ShouldClose())
@@ -126,29 +125,54 @@ namespace eureka::flutter
             _window->PollEvents();
             _combinedTaskRunner.RunReadyTasksFor(1ms);
 
-            auto now = FlutterEngineGetCurrentTime();
 
-            if(now > _nextPresentTime || (_nextPresentTime - now) < MILLI)
+            std::unique_lock lk(_mtx);
+            while(!_pendingVsyncNotifyRequests.empty())
             {
-                std::unique_lock lk(_mtx);
 
-                if(!_pendingBatons.empty())
+                auto request = _pendingVsyncNotifyRequests.front();
+
+                _pendingVsyncNotifyRequests.pop_front();
+                lk.unlock();
+
+
+                auto lastVsync = _compositor->GetLastPresntationTimepoint();
+                auto nextVsync = lastVsync + FRAME_INTERVAL_60_FPS_NS;
+
+                if (request.request_timepoint < lastVsync)
                 {
+                    // at the time of the request, last vsync did not yet occur. we should release flutter wait immediatly
 
-                    auto oldestBaton = _pendingBatons.front();
-                    _pendingBatons.pop_front();
-                    lk.unlock();
-
-                    _nextPresentTime = now + 1000000000 / 60;
-                    PROFILE_CATEGORIZED_SCOPE("FlutterEngineOnVsync",
-                                              eureka::profiling::Color::Green,
-                                              eureka::profiling::PROFILING_CATEGORY_SYSTEM);
-                    FLUTTER_CHECK(FlutterEngineOnVsync(_flutterEngine, oldestBaton, now, _nextPresentTime));
-                    //DEBUGGER_TRACE("FlutterEngineOnVsync {} {}", now, _nextPresentTime);
+                    FLUTTER_CHECK(FlutterEngineOnVsync(
+                        _flutterEngine,
+                        request.baton,
+                        lastVsync.count(), // engine will not wait since this already happend
+                        nextVsync.count()
+                    ));
+                }
+                else
+                {
+                    // the request happened after last vsync, flutter should wait for next vsync
+                    FLUTTER_CHECK(FlutterEngineOnVsync(
+                        _flutterEngine,
+                        request.baton,
+                        nextVsync.count(), // engine will not wait to next vsync
+                        (nextVsync + FRAME_INTERVAL_60_FPS_NS).count()
+                    ));
                 }
 
-                //FLUTTER_CHECK(FlutterEngineScheduleFrame(_flutterEngine));
+                PROFILE_CATEGORIZED_SCOPE("FlutterEngineOnVsync",
+                                          eureka::profiling::Color::Green,
+                                          eureka::profiling::PROFILING_CATEGORY_SYSTEM);
+
+             
+
+                lk.lock();
+                //DEBUGGER_TRACE("FlutterEngineOnVsync {} {}", now, _nextPresentTime);
             }
+
+                //FLUTTER_CHECK(FlutterEngineScheduleFrame(_flutterEngine));
+            
         }
     }
 } // namespace eureka::flutter

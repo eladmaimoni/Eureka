@@ -106,9 +106,9 @@ int main(int argc, char* argv[])
             .aot_path = FLUTTER_EXAMPLE_PROJECT_AOT_PATH,
         };
 
-        auto flutterCompositor = std::make_shared<fl::FlutterVulkanCompositor>(instance, globalInheritedData, frameContext, depthColorTarget);
+        auto flutterCompositor = std::make_shared<fl::VulkanCompositor>(instance, globalInheritedData, frameContext, depthColorTarget);
 
-        auto flutterProjectEmbedder = std::make_shared<fl::Embedder>(embedderConfig, flutterCompositor, window);
+        auto flutterProjectEmbedder = std::make_shared<fl::VulkanDesktopEmbedder>(embedderConfig, flutterCompositor, window);
 
         flutterProjectEmbedder->Run();
         
