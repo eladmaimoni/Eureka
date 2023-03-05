@@ -1,5 +1,7 @@
-# Project-level configuration.
-cmake_minimum_required(VERSION 3.14)
+###################################################################################
+# ROOT CMAKE FOR FLUTTER APP
+###################################################################################
+cmake_minimum_required(VERSION 3.25)
 project(ultrawis LANGUAGES CXX)
 
 # The name of the executable created for the application. Change this to change
