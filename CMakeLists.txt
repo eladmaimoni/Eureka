@@ -17,8 +17,13 @@ message(STATUS
 message(STATUS "CMAKE_C_COMPILER = ${CMAKE_C_COMPILER}")
 message(STATUS "CMAKE_CXX_COMPILER = ${CMAKE_CXX_COMPILER}")
 
-include(targets_utils.cmake)
-include(utility.cmake)
+include(cmake/compiler_flags.cmake)
+include(cmake/global_setup.cmake)
+include(cmake/debugging_utils.cmake)
+include(cmake/code_analysis.cmake)
+include(cmake/dynamic_library_link.cmake)
+include(cmake/target_helpers.cmake)
+
 project ("Eureka")
 
 set(EUREKA_CLANG_TIDY_CONFIG_PATH "${CMAKE_CURRENT_SOURCE_DIR}/.clang-tidy")
@@ -28,44 +33,6 @@ set(EUREKA_CLANG_TIDY_CONFIG_PATH "${CMAKE_CURRENT_SOURCE_DIR}/.clang-tidy")
 #  -header-filter=.;
 #  --config-file=${EUREKA_CLANG_TIDY_CONFIG_PATH};
 #)
-
-
-
-
-
-add_library(eureka_strict_compiler_flags INTERFACE)
-
-
-#set(EUREKA_NOT_DEBUG "$<OR:$<CONFIG:Release>, $<CONFIG:RelWithDebInfo>>")
-set(EUREKA_NOT_DEBUG "$<NOT:$<CONFIG:Debug>>")
-set(EUREKA_COMPILER_IS_GCC_LIKE "$<COMPILE_LANG_AND_ID:CXX,ARMClang,AppleClang,Clang,GNU,LCC>")
-set(EUREKA_COMPILER_IS_MSVC "$<COMPILE_LANG_AND_ID:CXX,MSVC>")
-set(EUREKA_GCC_LIKE_STRICT_FLAGS "-Wall;-Wextra;-Wshadow;-Wformat=2;-Wunused")
-set(EUREKA_MSVC_STRICT_FLAGS "/W4") # (/EHsc) is somehow not set on Ninja
-set(EUREKA_WARNING_AS_ERROR_FLAG "$<IF:${EUREKA_COMPILER_IS_MSVC},/WX,-Werror>")
-set(EUREKA_TREAT_WARNING_AS_ERROR "$<${EUREKA_NOT_DEBUG}:${EUREKA_WARNING_AS_ERROR_FLAG}>")
-
-
-target_compile_options(
-  eureka_strict_compiler_flags 
-  INTERFACE
-  "$<${EUREKA_COMPILER_IS_GCC_LIKE}:${EUREKA_GCC_LIKE_STRICT_FLAGS}>"
-  "$<${EUREKA_COMPILER_IS_MSVC}:${EUREKA_MSVC_STRICT_FLAGS}>"
-  "${EUREKA_TREAT_WARNING_AS_ERROR}"
-  $<$<CXX_COMPILER_ID:Clang>:-fexperimental-library -stdlib=libc++> # https://discourse.llvm.org/t/linux-what-is-the-status-of-libc-in-llvm-15-apt-packages-ranges-format/65348/4
-)
-
-target_link_options(
-    eureka_strict_compiler_flags
-    INTERFACE
-    $<$<CXX_COMPILER_ID:Clang>: -fexperimental-library -stdlib=libc++>
-)
-
-target_compile_features(
-    eureka_strict_compiler_flags
-    INTERFACE
-    cxx_std_23
-)
 
 # https://discourse.llvm.org/t/linux-what-is-the-status-of-libc-in-llvm-15-apt-packages-ranges-format/65348/4
 #if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")

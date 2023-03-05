@@ -15,7 +15,6 @@ add_library(
 
 set_target_properties(Eureka.Interfaces PROPERTIES FOLDER "Libs")
 
-set_compiler_flags(Eureka.Interfaces) 
 configure_code_analysis(Eureka.Interfaces)
 
 target_include_directories(
@@ -24,3 +23,8 @@ target_include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
+target_link_libraries(
+	Eureka.Interfaces
+    PRIVATE 
+	eureka_strict_compiler_flags
+)
