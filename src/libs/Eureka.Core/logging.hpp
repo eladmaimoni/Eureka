@@ -1,5 +1,18 @@
 #pragma once
 #include <spdlog/spdlog.h>
+
+namespace eureka
+{
+    inline spdlog::logger* g_default_logger = nullptr;
+    void InitializeDefaultLogger();
+}
+
+#ifndef EUREKA_LOGGING_MACROS
+#    define EUREKA_LOG_INFO(...) SPDLOG_LOGGER_INFO(eureka::g_default_logger, __VA_ARGS__)
+#    define EUREKA_LOG_ERROR(...) SPDLOG_LOGGER_ERROR(eureka::g_default_logger, __VA_ARGS__)
+#    define EUREKA_LOG_CRITICAL(...) SPDLOG_LOGGER_CRITICAL(eureka::g_default_logger, __VA_ARGS__)
+#endif
+
 //#include <source_location>
 //#include <chrono>
 //#include <iostream>
