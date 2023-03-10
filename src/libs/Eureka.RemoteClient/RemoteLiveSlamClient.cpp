@@ -5,6 +5,7 @@
 #include <debugger_trace.hpp>
 #include <basic_errors.hpp>
 #include <stop_token.hpp>
+#include <logging.hpp>
 using namespace std::chrono_literals;
 
 namespace eureka::rpc

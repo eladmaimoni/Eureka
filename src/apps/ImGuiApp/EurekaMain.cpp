@@ -1,5 +1,5 @@
 #include "App.hpp"
-#include <debugger_trace.hpp>
+#include <logging.hpp>
 #ifdef PERFETTO_TRACING
 #include "perfetto_tracing_session.hpp"
 #endif
@@ -25,8 +25,8 @@ int main(int argc, char* argv[])
 #endif
     try
     {
-
-        DEBUGGER_TRACE("createing app");
+        eureka::InitializeDefaultLogger();
+        EUREKA_LOG_INFO("createing app");
 
         PROFILE_PUSH_CATEGORIZED_RANGE("System Initialization", profiling::Color::Blue, profiling::PROFILING_CATEGORY_SYSTEM);
         App app;
@@ -37,7 +37,7 @@ int main(int argc, char* argv[])
     }
     catch (const std::exception& err)
     {
-        DEBUGGER_TRACE("{}", err.what());
+        EUREKA_LOG_ERROR("{}", err.what());
     }
 
     return 0;
