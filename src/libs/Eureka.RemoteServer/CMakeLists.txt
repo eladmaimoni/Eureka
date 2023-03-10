@@ -1,17 +1,25 @@
 
 
 set_source_group(
-    app 
-    "server_main.cpp"
-    "RemoteUIServer.hpp"
-    "RemoteUIServer.cpp"
-	"VisualizationService.hpp"
-    "VisualizationService.cpp"
+    src 
+    GrpcContext.hpp
+    GrpcContext.cpp
+    LiveSlamServer.hpp
+    LiveSlamServer.cpp
+    LiveSlamServiceHelpers.hpp
+    LiveSlamServiceHelpers.cpp
+    RemoteUIServer.hpp
+    RemoteUIServer.cpp
+    StreamHandlers.hpp
+    StreamHandlers.cpp
+    UnaryHandlers.hpp
+	VisualizationService.hpp
+    VisualizationService.cpp
 )
 
 add_library(
     Eureka.RemoteServer
-    ${app}    
+    ${src}    
 ) 
  
 target_include_directories(
@@ -20,13 +28,14 @@ target_include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
+set_target_properties(Eureka.RemoteServer PROPERTIES FOLDER "Libs")
 
-set_compiler_flags(Eureka.RemoteServer)   
-
- target_link_libraries(
+target_link_libraries(
      Eureka.RemoteServer 
-     PRIVATE
+     PUBLIC
      Eureka.RPC
 	 Eureka.RemoteProto
+     PRIVATE
+     eureka_strict_compiler_flags
  )
   

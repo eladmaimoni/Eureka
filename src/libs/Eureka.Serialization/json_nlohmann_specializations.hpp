@@ -68,9 +68,9 @@ namespace nlohmann
 namespace nlohmann
 {
     //template <>
-    //struct adl_serializer<rgo::SE3Pose>
+    //struct adl_serializer<eureka::SE3Pose>
     //{
-    //    static void to_json(json& j, const rgo::SE3Pose& v)
+    //    static void to_json(json& j, const eureka::SE3Pose& v)
     //    {
     //        j = json::array({});
 
@@ -82,13 +82,13 @@ namespace nlohmann
     //        j.push_back(j_r);
     //    }
 
-    //    static void from_json(const json& j, rgo::SE3Pose& v)
+    //    static void from_json(const json& j, eureka::SE3Pose& v)
     //    {
     //        Eigen::Vector3d t;
     //        Eigen::Matrix3d r;
     //        adl_serializer<Eigen::Vector3d>::from_json(j.at(0), v.translation());
     //        adl_serializer<Eigen::Matrix3d>::from_json(j.at(1), v.rotation());
-    //        v = rgo::SE3Pose(t, r);
+    //        v = eureka::SE3Pose(t, r);
 
     //    }
     //};
