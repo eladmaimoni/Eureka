@@ -141,7 +141,7 @@ namespace eureka::vulkan
         VkPhysicalDeviceSynchronization2FeaturesKHR synchronization2Features = {};
         synchronization2Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES_KHR;
         synchronization2Features.synchronization2 = VK_TRUE;
-        features12.pNext = &synchronization2Features;
+        
 
         VkPhysicalDeviceVulkan13Features features13{};
         features13.sType = VkStructureType::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
@@ -154,6 +154,7 @@ namespace eureka::vulkan
         }
         else
         {
+            features12.pNext = &synchronization2Features;
             deviceCreateInfoNext = &features12;
         }
 
