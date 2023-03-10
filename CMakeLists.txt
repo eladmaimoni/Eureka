@@ -26,6 +26,24 @@ include(cmake/target_helpers.cmake)
 
 project ("Eureka")
 
+
+add_library(
+    Eureka.configuration
+    INTERFACE
+    cmake/code_analysis.cmake
+    cmake/compiler_flags.cmake
+    cmake/debugging_utils.cmake
+    cmake/global_setup.cmake
+    cmake/target_helpers.cmake
+    CMakePresetsBase.json
+    CMakePresets.json
+    vcpkg.json
+    .clang-tidy
+    .clang-format
+)
+
+set_target_properties(Eureka.configuration PROPERTIES FOLDER Config)
+
 set(EUREKA_CLANG_TIDY_CONFIG_PATH "${CMAKE_CURRENT_SOURCE_DIR}/.clang-tidy")
 
 #set(CMAKE_CXX_CLANG_TIDY 
@@ -145,7 +163,7 @@ get_property(isMultiConfig GLOBAL
     PROPERTY GENERATOR_IS_MULTI_CONFIG
 )
 if(isMultiConfig)
-    list(REMOVE_ITEM CMAKE_CONFIGURATION_TYPES MinSizeRelease;Release)
+    list(REMOVE_ITEM CMAKE_CONFIGURATION_TYPES MinSizeRel;Release)
 else()
     set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "${EUREKA_ALLOWED_BUILD_TYPES}")
     if(NOT CMAKE_BUILD_TYPE OR (NOT CMAKE_BUILD_TYPE IN_LIST EUREKA_ALLOWED_BUILD_TYPES))
