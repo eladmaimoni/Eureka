@@ -7,23 +7,29 @@
     },
     "configurePresets": [
         {
-            "name": "vcpkg",
-			"description": "configures vcpkg and install directories",
+            "name": "basic_paths",
             "hidden": true,
             "binaryDir": "${sourceDir}/build/${presetName}",
             "cacheVariables": {
-				"CMAKE_INSTALL_PREFIX": "${sourceDir}/install/${presetName}",
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/install/${hostSystemName}"
+            }
+        },
+        {
+            "name": "vcpkg",
+            "description": "configures vcpkg and install directories",
+            "hidden": true,
+            "cacheVariables": {
                 "CMAKE_TOOLCHAIN_FILE": {
                     "value": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
                     "type": "FILEPATH"
                 },
                 "VCPKG_INSTALLED_DIR": "${sourceDir}/build/packages",
-				"VCPKG_OVERLAY_TRIPLETS" : "${sourceDir}/vcpkg_scripts/triplets"
+                "VCPKG_OVERLAY_TRIPLETS": "${sourceDir}/vcpkg_scripts/triplets"
             }
         },
-		{
+        {
             "name": "ninja-export-commands",
-			"description": "tells ninja to export compile database (compile_commands.json)",
+            "description": "tells ninja to export compile database (compile_commands.json)",
             "hidden": true,
             "cacheVariables": {
                 "CMAKE_EXPORT_COMPILE_COMMANDS": true
@@ -33,7 +39,7 @@
             "name": "msvc143-x64",
             "hidden": true,
             "description": "Target MSVC (Visual Studio 2022) x64",
-			"toolset": {
+            "toolset": {
                 "value": "host=x64",
                 "strategy": "external"
             },
@@ -44,22 +50,21 @@
             "cacheVariables": {
                 "CMAKE_C_COMPILER": "cl.exe",
                 "CMAKE_CXX_COMPILER": "cl.exe",
-				"MSVC_TOOLSET_VERSION": "143",
+                "MSVC_TOOLSET_VERSION": "143",
                 "VCPKG_TARGET_TRIPLET": "x64-windows-static-md"
             },
-            "vendor": 
-				{ "microsoft.com/VisualStudioSettings/CMake/1.0": 
-				{ 
-					"hostOS": [ "Windows" ],
-					"enableClangTidyCodeAnalysis" : true
-				} 
-				}
+            "vendor": {
+                "microsoft.com/VisualStudioSettings/CMake/1.0": {
+                    "hostOS": [ "Windows" ],
+                    "enableClangTidyCodeAnalysis": true
+                }
+            }
         },
-		{
+        {
             "name": "gcc-12",
             "hidden": true,
             "description": "Compile with gcc-12",
-			"toolset": {
+            "toolset": {
                 "value": "host=x64",
                 "strategy": "external"
             },
@@ -68,15 +73,15 @@
                 "strategy": "external"
             },
             "cacheVariables": {
-				"VCPKG_TARGET_TRIPLET": "x64-linux-gcc-12",
-				"VCPKG_CHAINLOAD_TOOLCHAIN_FILE": "${sourceDir}/vcpkg_scripts/toolchains/gcc-12-toolchain.cmake"
+                "VCPKG_TARGET_TRIPLET": "x64-linux-gcc-12",
+                "VCPKG_CHAINLOAD_TOOLCHAIN_FILE": "${sourceDir}/vcpkg_scripts/toolchains/gcc-12-toolchain.cmake"
             }
         },
-		{
+        {
             "name": "clang-15",
             "hidden": true,
             "description": "Compile with clang-15",
-			"toolset": {
+            "toolset": {
                 "value": "host=x64",
                 "strategy": "external"
             },
@@ -85,15 +90,15 @@
                 "strategy": "external"
             },
             "cacheVariables": {
-				"VCPKG_TARGET_TRIPLET": "x64-linux-clang-15",
-				"VCPKG_CHAINLOAD_TOOLCHAIN_FILE": "${sourceDir}/vcpkg_scripts/toolchains/clang-15-toolchain.cmake"
+                "VCPKG_TARGET_TRIPLET": "x64-linux-clang-15",
+                "VCPKG_CHAINLOAD_TOOLCHAIN_FILE": "${sourceDir}/vcpkg_scripts/toolchains/clang-15-toolchain.cmake"
             }
         },
-		{
+        {
             "name": "clang-cl-x64",
             "hidden": true,
             "description": "Target MSVC (Visual Studio 2022) x64",
-			"toolset": "ClangCL",
+            "toolset": "ClangCL",
             "architecture": {
                 "value": "x64",
                 "strategy": "external"
@@ -103,28 +108,26 @@
                 "CMAKE_CXX_COMPILER": "clang-cl",
                 "VCPKG_TARGET_TRIPLET": "x64-win-llvm-static-md"
             },
-            "vendor": 
-			{ 
-				"microsoft.com/VisualStudioSettings/CMake/1.0": 
-				{ 
-					"hostOS": [ "Windows" ],
-					"intelliSenseMode": "windows-clang-x64"
-				} 
-			}
+            "vendor": {
+                "microsoft.com/VisualStudioSettings/CMake/1.0": {
+                    "hostOS": [ "Windows" ],
+                    "intelliSenseMode": "windows-clang-x64"
+                }
+            }
         },
-		{
-			"name": "ninja-linux-x64-clang",
+        {
+            "name": "ninja-linux-x64-clang",
             "hidden": true,
-			"description": "linux x64 debug with clang",
-			"inherits": ["vcpkg", "clang-15", "ninja-export-commands"],
-			"generator": "Ninja" 
-		},
-		{
-			"name": "ninja-linux-x64-gcc",
+            "description": "linux x64 debug with clang",
+            "inherits": [ "basic_paths", "vcpkg", "clang-15", "ninja-export-commands" ],
+            "generator": "Ninja"
+        },
+        {
+            "name": "ninja-linux-x64-gcc",
             "hidden": true,
-			"description": "linux x64 debug with gcc",
-			"inherits": ["vcpkg", "gcc-12", "ninja-export-commands"],
-			"generator": "Ninja" 
-		}
+            "description": "linux x64 debug with gcc",
+            "inherits": [ "basic_paths", "vcpkg", "gcc-12", "ninja-export-commands" ],
+            "generator": "Ninja"
+        }
     ]
 }

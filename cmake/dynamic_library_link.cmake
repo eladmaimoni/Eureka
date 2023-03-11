@@ -1,25 +1,55 @@
-function(link_library_and_copy_dynamic_library_to_output_path target_name dynamic_library_target)	
-    # get the full path to the dll of the dynamic library we wish to link
-	
-	
-	
-    get_target_property(
-        dynamic_library_target_imported_location_release # out value
-        ${dynamic_library_target}
-		IMPORTED_LOCATION
-		#"$<$<CONFIG:DEBUG>:IMPORTED_LOCATION_DEBUG,IMPORTED_LOCATION>"
-		#CONFIGURATION $<CONFIG>
-    )
 
-    get_target_property(
-        dynamic_library_target_imported_location_debug # out value
-		${dynamic_library_target}
-		IMPORTED_LOCATION_DEBUG
-    )
+
+#function(setup_copy_release_version_of_imported_library_to_output_dir target_name dynamic_library_target)
+#	get_target_property(
+#        dynamic_library_target_imported_location_release # out value
+#        ${dynamic_library_target}
+#		IMPORTED_LOCATION_RELEASE
+#    )
+#	add_custom_command(
+#		TARGET ${target_name} POST_BUILD
+#		COMMAND "${CMAKE_COMMAND}" -E
+#		copy_if_different ${dynamic_library_target_imported_location_release} $<TARGET_FILE_DIR:${target_name}>
+#	)
+#endfunction()
+
+function(setup_copy_dynamic_library_to_output_directory target_name dynamic_library_target)	
+
+	add_custom_command(
+		TARGET ${target_name} POST_BUILD
+		COMMAND "${CMAKE_COMMAND}" -E
+		copy_if_different $<TARGET_FILE:${dynamic_library_target}> $<TARGET_FILE_DIR:${target_name}>
+	)
+
+	# PREVIOUS VERSION - LESS ROBUST AS IT RELIES ON IMPORTED_LOCATION
+
+	    # get the full path to the dll of the dynamic library we wish to link
+	# this assumes:
+	# - IMPORTED_CONFIGURATIONS target property is DEBUG and RELEASE
+	#
+    #get_target_property(
+    #    dynamic_library_target_imported_location_debug # out value
+    #    ${dynamic_library_target}
+	#	IMPORTED_LOCATION_DEBUG
+    #)
+	#
+	#get_target_property(
+    #    dynamic_library_target_imported_location_release # out value
+    #    ${dynamic_library_target}
+	#	IMPORTED_LOCATION_RELEASE
+	#	#"$<$<CONFIG:DEBUG>:IMPORTED_LOCATION_DEBUG,IMPORTED_LOCATION>"
+	#	#CONFIGURATION $<CONFIG>
+    #)
+	#
+	#set(IS_DEBUG_VARIANT $<CONFIG:Debug>) # An abbreviation to make the example easier to read.
+	#set(IS_RELEASE_VARIANT $<NOT:$<CONFIG:Debug>>) # An abbreviation to make the example easier to read.
+	#add_custom_command(
+	#	TARGET ${target_name} POST_BUILD
+	#	COMMAND "${CMAKE_COMMAND}" -E
+	#	copy_if_different $<IF:${IS_DEBUG_VARIANT},${dynamic_library_target_imported_location_debug},${dynamic_library_target_imported_location_release}> $<TARGET_FILE_DIR:${target_name}>
+	#)
 	
-	
-	set(IS_DEBUG_VARIANT $<CONFIG:Debug>) # An abbreviation to make the example easier to read.
-	set(IS_RELEASE_VARIANT $<NOT:$<CONFIG:Debug>>) # An abbreviation to make the example easier to read.
+
 	#add_custom_command(
 	#	TARGET ${target_name} POST_BUILD
 	#	COMMAND "${CMAKE_COMMAND}" -E
@@ -45,11 +75,7 @@ function(link_library_and_copy_dynamic_library_to_output_path target_name dynami
 	#	# in the case of a non-release build
 	#	copy_if_different ${dynamic_library_target_imported_location_release} $<TARGET_FILE_DIR:${target_name}>
 	#)
-	add_custom_command(
-		TARGET ${target_name} POST_BUILD
-		COMMAND "${CMAKE_COMMAND}" -E
-		copy_if_different $<IF:${IS_DEBUG_VARIANT},${dynamic_library_target_imported_location_debug},${dynamic_library_target_imported_location_release}> $<TARGET_FILE_DIR:${target_name}>
-	)
+
 	#if(MSVC)
 	#	add_custom_command(TARGET ${target_name} PRE_BUILD
 	#		COMMAND cmd.exe if "$(Configuration)" == "Debug" "${CMAKE_COMMAND}" -E copy_if_different "${dynamic_library_target_imported_location_debug}" "$<TARGET_FILE_DIR:${target_name}>" )
@@ -76,13 +102,17 @@ function(link_library_and_copy_dynamic_library_to_output_path target_name dynami
     #    $<TARGET_FILE_DIR:${target_name}>   # <--this is out-file path
     #)    
     
-    target_link_libraries(
-        ${target_name}
-        PRIVATE
-        ${dynamic_library_target}
-    )
 endfunction()
 
 
+function(setup_copy_runtime_dlls_to_output_directory target_name)	
 
+	add_custom_command(
+		TARGET ${target_name} POST_BUILD
+		COMMAND "${CMAKE_COMMAND}" -E
+		copy_if_different $<TARGET_RUNTIME_DLLS:${target_name}> $<TARGET_FILE_DIR:${target_name}>
+		COMMAND_EXPAND_LISTS
+	)
+    
+endfunction()
 

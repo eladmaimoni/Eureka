@@ -17,11 +17,12 @@ message(STATUS
 message(STATUS "CMAKE_C_COMPILER = ${CMAKE_C_COMPILER}")
 message(STATUS "CMAKE_CXX_COMPILER = ${CMAKE_CXX_COMPILER}")
 
-include(cmake/compiler_flags.cmake)
-include(cmake/global_setup.cmake)
-include(cmake/debugging_utils.cmake)
 include(cmake/code_analysis.cmake)
+include(cmake/compiler_flags.cmake)
+include(cmake/debugging_utils.cmake)
 include(cmake/dynamic_library_link.cmake)
+include(cmake/global_setup.cmake)
+include(cmake/installation.cmake)
 include(cmake/target_helpers.cmake)
 
 project ("Eureka")
@@ -33,7 +34,9 @@ add_library(
     cmake/code_analysis.cmake
     cmake/compiler_flags.cmake
     cmake/debugging_utils.cmake
+    cmake/dynamic_library_link.cmake
     cmake/global_setup.cmake
+    cmake/installation.cmake
     cmake/target_helpers.cmake
     CMakePresetsBase.json
     CMakePresets.json
@@ -158,21 +161,7 @@ if (CMAKE_GENERATOR MATCHES "Visual Studio")
 endif()
 
 set(EUREKA_ALLOWED_BUILD_TYPES Debug RelWithDebInfo)
-
-get_property(isMultiConfig GLOBAL
-    PROPERTY GENERATOR_IS_MULTI_CONFIG
-)
-if(isMultiConfig)
-    list(REMOVE_ITEM CMAKE_CONFIGURATION_TYPES MinSizeRel;Release)
-else()
-    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "${EUREKA_ALLOWED_BUILD_TYPES}")
-    if(NOT CMAKE_BUILD_TYPE OR (NOT CMAKE_BUILD_TYPE IN_LIST EUREKA_ALLOWED_BUILD_TYPES))
-        message(FATAL_ERROR 
-        "Missing or invalid build type: ${CMAKE_BUILD_TYPE}\n"
-        "Set CMAKE_BUILD_TYPE to one of : ${EUREKA_ALLOWED_BUILD_TYPES}"
-        )
-    endif()
-endif()
+set_available_project_configurations(Debug RelWithDebInfo)
 
 # HACK
 if (MSVC)

@@ -1,4 +1,4 @@
-# ultrawis
+# eureka_flutter
 
 A new Flutter project.
 
