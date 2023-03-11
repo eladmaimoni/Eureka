@@ -1,5 +1,5 @@
 
-#include "FlutterEmbedderAPI.h"
+#include "fvkde/fvkde.h"
 #include <debugger_trace.hpp>
 #include <sigslot/signal.hpp>
 #ifdef PERFETTO_TRACING
@@ -31,7 +31,7 @@ class Main
     std::shared_ptr<fl::VulkanDesktopEmbedder> _embedder;
 public:
 
-	Main(const EmbedderInitParams* params)
+	Main(const FVKDE_INIT_PARAMS* params)
 	{
 		eureka::os::set_system_timer_frequency(1ms);
 
@@ -86,46 +86,45 @@ public:
     }
 };
 
-
-FlutterEmbedderStatus FlutterEmbedderInit(const EmbedderInitParams* params, EMBEDDER_HANDLE* out)
+FVKDE_STATUS fvkde_init(const FVKDE_INIT_PARAMS* params, FVKDE_HANDLE* out)
 {
     try
     {
         auto instance = new Main(params);
         *out = instance;
-        return FlutterEmbedderStatus::eOk;
+        return FVKDE_STATUS::eOk;
     }
     catch (const std::exception& err)
     {
         DEBUGGER_TRACE("{}", err.what());
-        return FlutterEmbedderStatus::eFail;
+        return FVKDE_STATUS::eFail;
     }
 }
-FlutterEmbedderStatus FlutterEmbedderFinalize(EMBEDDER_HANDLE embedder)
+FVKDE_STATUS fvkde_finalize(FVKDE_HANDLE embedder)
 {
     try
     {
         delete static_cast<Main*>(embedder);
-        return FlutterEmbedderStatus::eOk;
+        return FVKDE_STATUS::eOk;
     }
     catch (const std::exception& err)
     {
         DEBUGGER_TRACE("{}", err.what());
-        return FlutterEmbedderStatus::eFail;
+        return FVKDE_STATUS::eFail;
     }
 
 }
-FlutterEmbedderStatus FlutterEmbedderRun(EMBEDDER_HANDLE embedder)
+FVKDE_STATUS fvkde_run(FVKDE_HANDLE embedder)
 {
     try
     {
         static_cast<Main*>(embedder)->Run();
-        return FlutterEmbedderStatus::eOk;
+        return FVKDE_STATUS::eOk;
     }
     catch (const std::exception& err)
     {
         DEBUGGER_TRACE("{}", err.what());
-        return FlutterEmbedderStatus::eFail;
+        return FVKDE_STATUS::eFail;
     }
 
 }

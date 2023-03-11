@@ -1,0 +1,6 @@
+{
+  "enable-custom-devices": true,
+  "build-dir": "build2",
+  "android-studio-dir": "C:\\Program Files\\Android\\Android Studio",
+  "android-sdk": "C:\\Users\\mrmai\\AppData\\Local\\Android\\sdk"
+}

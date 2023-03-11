@@ -55,5 +55,28 @@ function(set_no_warnings_compiler_flags target_name)
     endif()
 endfunction()
 
+# Define settings for the Profile build mode.
+macro(set_profile_mode_default_flags)
+    set(CMAKE_EXE_LINKER_FLAGS_PROFILE "${CMAKE_EXE_LINKER_FLAGS_RELEASE}")
+    set(CMAKE_SHARED_LINKER_FLAGS_PROFILE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE}")
+    set(CMAKE_C_FLAGS_PROFILE "${CMAKE_C_FLAGS_RELEASE}")
+    set(CMAKE_CXX_FLAGS_PROFILE "${CMAKE_CXX_FLAGS_RELEASE}")
+endmacro()
+
+function(set_available_project_configurations)
+    # Define build configuration option.
+    get_property(IS_MULTICONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
+    if(IS_MULTICONFIG)
+      set(CMAKE_CONFIGURATION_TYPES ${ARGN}
+        CACHE STRING "" FORCE)
+    else()
+      if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+        set(CMAKE_BUILD_TYPE "Debug" CACHE
+          STRING "Flutter build mode" FORCE)
+        set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS ${ARGN})
+      endif()
+    endif()
+endfunction()
+
 
 

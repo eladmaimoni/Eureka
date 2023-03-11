@@ -1,5 +1,11 @@
 
-
+function(print_generator_expression_at_build_time custom_target_name expression)
+    add_custom_target(${custom_target_name}
+        COMMENT "Result of generator expression:"
+        COMMAND ${CMAKE_COMMAND} -E echo "generator_expression = ${expression}"
+        VERBATIM
+    )
+endfunction()
 function(dump_cmake_variables)
     get_cmake_property(_variableNames VARIABLES)
     list (SORT _variableNames)

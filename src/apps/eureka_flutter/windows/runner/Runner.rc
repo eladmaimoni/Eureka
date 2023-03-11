@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "com.example" "\0"
-            VALUE "FileDescription", "ultrawis" "\0"
+            VALUE "FileDescription", "eureka_flutter" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "ultrawis" "\0"
+            VALUE "InternalName", "eureka_flutter" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2023 com.example. All rights reserved." "\0"
-            VALUE "OriginalFilename", "ultrawis.exe" "\0"
-            VALUE "ProductName", "ultrawis" "\0"
+            VALUE "OriginalFilename", "eureka_flutter.exe" "\0"
+            VALUE "ProductName", "eureka_flutter" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

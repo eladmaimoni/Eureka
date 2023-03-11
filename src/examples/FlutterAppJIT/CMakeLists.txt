@@ -34,8 +34,7 @@ target_include_directories(
 target_precompile_headers(FlutterAppJIT REUSE_FROM Eureka.Precompiled)
 
 
-
-link_library_and_copy_dynamic_library_to_output_path(
+setup_copy_dynamic_library_to_output_directory(
     FlutterAppJIT
     flutter_engine_jit
 )
@@ -49,6 +48,7 @@ target_link_libraries(
     Eureka.Shaders
     Eureka.Flutter
     flutter_engine
+    flutter_engine_jit
     eureka_strict_compiler_flags
     #concurrencpp::concurrencpp
 )

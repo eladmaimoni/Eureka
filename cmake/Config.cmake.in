@@ -1,3 +1,23 @@
 @PACKAGE_INIT@
 
-include ( "${CMAKE_CURRENT_LIST_DIR}/${target_name}.cmake" )
+# include the targets file that will include all the targets-<config> that defines the IMPORTED_CONFIG
+include ( "${CMAKE_CURRENT_LIST_DIR}/@target_name@-targets.cmake" )
+
+get_property(
+	available_configurations
+    TARGET @target_name@ 
+    PROPERTY IMPORTED_CONFIGURATIONS 
+  )
+
+if (NOT "DEBUG" IN_LIST available_configurations)
+    message(FATAL "@target_name@ DOES NOT have the DEBUG imported configuration. Available CONFIGURATIONS = ${available_configurations}")
+endif()
+
+if (NOT "RELEASE" IN_LIST available_configurations)
+	message(STATUS "@target_name@ has the no Release configuration, mapping to RelWithDebInfo")
+	set_target_properties( 
+	  @target_name@ PROPERTIES
+	  MAP_IMPORTED_CONFIG_RELEASE RelWithDebInfo
+	  )
+endif()
+

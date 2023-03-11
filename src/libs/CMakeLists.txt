@@ -10,7 +10,7 @@ add_subdirectory (Eureka.Graphics)
 add_subdirectory (Eureka.Shaders)
 add_subdirectory (Eureka.Flutter)
 if (WIN32) #currently only supports windows, we need to compile flutter engine on linux
-	add_subdirectory (Eureka.FlutterEmbedderAPI)
+	add_subdirectory (flutter_vulkan_desktop_embedder)
 endif()
 add_subdirectory (Eureka.RemoteClient)
 add_subdirectory (Eureka.RemoteServer)      
